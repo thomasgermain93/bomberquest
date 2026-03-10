@@ -16,6 +16,7 @@ import Glossary from "./pages/Glossary";
 import Changelog from "./pages/Changelog";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
+import UsernameRequiredDialog from "./components/UsernameRequiredDialog";
 
 const queryClient = new QueryClient();
 
@@ -27,6 +28,7 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
+            <UsernameRequiredDialog />
             <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/auth" element={<Auth />} />
