@@ -207,25 +207,8 @@ const GameGrid: React.FC<GameGridProps> = ({ gameState }) => {
     return () => cancelAnimationFrame(animFrameRef.current);
   }, [draw]);
 
-  const chestsOpened = gameState.map.chests.filter(c => c.hp <= 0).length;
-  const totalChests = gameState.map.chests.length;
-  const chestPct = totalChests > 0 ? Math.round((chestsOpened / totalChests) * 100) : 0;
-
   return (
     <div className="relative overflow-auto rounded-lg bg-[hsl(var(--game-bg-deep))] p-1.5 shadow-[0_0_30px_rgba(0,0,0,0.5),inset_0_0_20px_rgba(0,0,0,0.3)]" style={{ border: '3px solid hsl(230, 20%, 22%)' }}>
-      {/* Chest progress overlay */}
-      {totalChests > 0 && (
-        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 bg-background/80 backdrop-blur-sm rounded-full px-3 py-1.5 shadow-lg border border-border/50">
-          <span className="text-[10px]">📦</span>
-          <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-primary to-game-gold rounded-full transition-all duration-500"
-              style={{ width: `${chestPct}%` }}
-            />
-          </div>
-          <span className="font-pixel text-[8px] text-foreground">{chestsOpened}/{totalChests}</span>
-        </div>
-      )}
       <canvas
         ref={canvasRef}
         style={{ imageRendering: 'pixelated' }}
