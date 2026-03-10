@@ -1,8 +1,8 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { Bomb, Swords, Trophy, Users, Sparkles, Shield, ChevronDown, Zap, Crown, Star, BookOpen, Clock, ChevronRight, History, Bug, Plus } from 'lucide-react';
+import { Bomb, Swords, Trophy, Users, Sparkles, Shield, ChevronDown, Zap, Crown, Star, BookOpen, Clock, ChevronRight, History, Bug, Plus, Menu, X } from 'lucide-react';
 import PixelIcon from '@/components/PixelIcon';
 import { GUIDE_ARTICLES } from '@/data/guides';
 
@@ -288,29 +288,64 @@ const RARITIES = [
 const Landing: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const closeMenuAndNavigate = (path: string) => {
+    setMobileMenuOpen(false);
+    navigate(path);
+  };
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
       {/* Top nav */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-card/80 backdrop-blur border-b border-border px-4 py-2.5 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <PixelIcon icon="bomb" size={18} color="hsl(var(--primary))" />
-          <span className="font-pixel text-[9px] text-foreground">BOMBERQUEST</span>
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-card/80 backdrop-blur border-b border-border px-4 py-2.5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <PixelIcon icon="bomb" size={18} color="hsl(var(--primary))" />
+            <span className="font-pixel text-[9px] text-foreground">BOMBERQUEST</span>
+          </div>
+
+          <div className="hidden md:flex items-center gap-3">
+            <Link to="/wiki" className="font-pixel text-[7px] text-muted-foreground hover:text-foreground transition-colors">WIKI</Link>
+            <Link to="/guides" className="font-pixel text-[7px] text-muted-foreground hover:text-foreground transition-colors">GUIDES</Link>
+            <Link to="/changelog" className="font-pixel text-[7px] text-muted-foreground hover:text-foreground transition-colors">CHANGELOG</Link>
+            {user ? (
+              <button onClick={() => navigate('/game')} className="pixel-btn pixel-btn-gold font-pixel text-[7px] px-3 py-1.5 min-h-[44px]">
+                JOUER
+              </button>
+            ) : (
+              <button onClick={() => navigate('/auth')} className="pixel-btn font-pixel text-[7px] px-3 py-1.5 min-h-[44px]">
+                CONNEXION
+              </button>
+            )}
+          </div>
+
+          <button
+            onClick={() => setMobileMenuOpen(prev => !prev)}
+            className="md:hidden pixel-btn pixel-btn-secondary p-2 min-h-[44px] min-w-[44px] flex items-center justify-center"
+            aria-label="Ouvrir le menu"
+            aria-expanded={mobileMenuOpen}
+          >
+            {mobileMenuOpen ? <X size={16} /> : <Menu size={16} />}
+          </button>
         </div>
-        <div className="flex items-center gap-3">
-          <Link to="/wiki" className="font-pixel text-[7px] text-muted-foreground hover:text-foreground transition-colors">WIKI</Link>
-          <Link to="/guides" className="font-pixel text-[7px] text-muted-foreground hover:text-foreground transition-colors">GUIDES</Link>
-          <Link to="/changelog" className="font-pixel text-[7px] text-muted-foreground hover:text-foreground transition-colors">CHANGELOG</Link>
-          {user ? (
-            <button onClick={() => navigate('/game')} className="pixel-btn pixel-btn-gold font-pixel text-[7px] px-3 py-1.5">
-              JOUER
-            </button>
-          ) : (
-            <button onClick={() => navigate('/auth')} className="pixel-btn font-pixel text-[7px] px-3 py-1.5">
-              CONNEXION
-            </button>
-          )}
-        </div>
+
+        {mobileMenuOpen && (
+          <div className="md:hidden mt-2 pt-2 border-t border-border flex flex-col gap-1.5">
+            <Link onClick={() => setMobileMenuOpen(false)} to="/wiki" className="font-pixel text-[8px] text-muted-foreground hover:text-foreground transition-colors px-2 py-2.5 min-h-[44px] flex items-center">WIKI</Link>
+            <Link onClick={() => setMobileMenuOpen(false)} to="/guides" className="font-pixel text-[8px] text-muted-foreground hover:text-foreground transition-colors px-2 py-2.5 min-h-[44px] flex items-center">GUIDES</Link>
+            <Link onClick={() => setMobileMenuOpen(false)} to="/changelog" className="font-pixel text-[8px] text-muted-foreground hover:text-foreground transition-colors px-2 py-2.5 min-h-[44px] flex items-center">CHANGELOG</Link>
+            {user ? (
+              <button onClick={() => closeMenuAndNavigate('/game')} className="pixel-btn pixel-btn-gold font-pixel text-[8px] px-3 py-2.5 min-h-[44px] mt-1">
+                JOUER
+              </button>
+            ) : (
+              <button onClick={() => closeMenuAndNavigate('/auth')} className="pixel-btn font-pixel text-[8px] px-3 py-2.5 min-h-[44px] mt-1">
+                CONNEXION
+              </button>
+            )}
+          </div>
+        )}
       </nav>
 
       {/* Hero Section — canvas gameplay as full background */}
