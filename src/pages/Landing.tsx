@@ -47,6 +47,7 @@ const Landing: React.FC = () => {
           <span className="font-pixel text-[9px] text-foreground">BOMBERQUEST</span>
         </div>
         <div className="flex items-center gap-3">
+          <Link to="/wiki" className="font-pixel text-[7px] text-muted-foreground hover:text-foreground transition-colors">WIKI</Link>
           <Link to="/guides" className="font-pixel text-[7px] text-muted-foreground hover:text-foreground transition-colors">GUIDES</Link>
           {user ? (
             <button onClick={() => navigate('/game')} className="pixel-btn pixel-btn-gold font-pixel text-[7px] px-3 py-1.5">
@@ -278,6 +279,8 @@ const Landing: React.FC = () => {
             <span className="font-pixel text-[8px] text-foreground">BOMBERQUEST</span>
           </div>
           <div className="flex items-center gap-4">
+            <Link to="/wiki" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Wiki</Link>
+            <Link to="/wiki/glossaire" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Glossaire</Link>
             <Link to="/guides" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Guides</Link>
             <Link to="/auth" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Connexion</Link>
           </div>
