@@ -55,6 +55,12 @@ const Index = () => {
   const [storyRegionIdx, setStoryRegionIdx] = useState(0);
   const huntSpeedRef = useRef(1);
   const gameLoopRef = useRef<number>();
+
+  useEffect(() => {
+    const saved = Number(localStorage.getItem('hunt-speed') || '1');
+    const initialSpeed = saved === 2 || saved === 3 ? saved : 1;
+    huntSpeedRef.current = initialSpeed;
+  }, []);
   const lastTickRef = useRef<number>(Date.now());
   const processedExplosionsRef = useRef<Set<string>>(new Set());
 
@@ -504,7 +510,7 @@ const Index = () => {
       chestsOpened: 0,
       isRunning: true,
       isPaused: false,
-      speed: 1,
+      speed: huntSpeedRef.current,
       mapCompleted: false,
       eventLog: [`⚔️ ${stage.name} - Combat lancé!`],
       isStoryMode: true,
@@ -1071,6 +1077,7 @@ const Index = () => {
                     onClick={() => {
                       const nextSpeed = gameState.speed === 1 ? 2 : gameState.speed === 2 ? 3 : 1;
                       huntSpeedRef.current = nextSpeed;
+                      localStorage.setItem('hunt-speed', String(nextSpeed));
                       setGameState(prev => (prev ? { ...prev, speed: nextSpeed } : prev));
                     }}
                     className="font-pixel text-[8px] px-2 py-1.5 rounded transition-all bg-primary text-primary-foreground shadow-md min-w-[38px]"
