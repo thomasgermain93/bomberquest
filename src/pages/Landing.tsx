@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -11,21 +11,45 @@ import gameHeroes from '@/assets/game-heroes.jpg';
 import gameBoss from '@/assets/game-boss.jpg';
 import gameMap from '@/assets/game-map.jpg';
 
-const DEMO_TILE = 32;
-const DEMO_MAP = [
-  [1,1,1,1,1,1,1,1,1],
-  [1,0,0,2,0,2,0,0,1],
-  [1,0,1,0,1,0,1,0,1],
-  [1,2,0,0,0,0,0,2,1],
-  [1,0,1,0,1,0,1,0,1],
-  [1,0,0,2,0,2,0,0,1],
-  [1,1,1,1,1,1,1,1,1],
+const BG_TILE = 48;
+const BG_HERO_COLORS = [
+  { body: '#3a8ee8', hi: '#6aaeff' },
+  { body: '#e84a3a', hi: '#ff7a6a' },
+  { body: '#3ac860', hi: '#6affa0' },
+  { body: '#c8b830', hi: '#ffe07a' },
 ];
-// Hero path keyframes: [frameInLoop, col, row]
-const HERO_PATH = [[0,1,1],[25,3,1],[45,3,3],[58,2,3],[80,1,3],[120,1,1],[200,1,1]];
-const LOOP_FRAMES = 200;
 
-const GameDemoCanvas: React.FC = () => {
+interface BgBomb { col: number; row: number; timer: number; }
+interface BgExplosion { tiles: [number, number][]; timer: number; }
+interface BgHero {
+  px: number; py: number;
+  col: number; row: number;
+  targetCol: number; targetRow: number;
+  speed: number;
+  moving: boolean;
+  colorIdx: number;
+  cooldown: number;
+}
+
+function buildBgMap(cols: number, rows: number): number[][] {
+  // 0=floor, 1=wall, 2=crate, 3=chest
+  return Array.from({ length: rows }, (_, r) =>
+    Array.from({ length: cols }, (_, c) => {
+      const border = r === 0 || r === rows - 1 || c === 0 || c === cols - 1;
+      const pillar = r % 2 === 0 && c % 2 === 0;
+      const safe = (r <= 2 && c <= 2) || (r <= 2 && c >= cols - 3) ||
+                   (r >= rows - 3 && c <= 2) || (r >= rows - 3 && c >= cols - 3);
+      if (border || pillar) return 1;
+      if (safe) return 0;
+      const rnd = Math.random();
+      if (rnd < 0.08) return 3;
+      if (rnd < 0.42) return 2;
+      return 0;
+    })
+  );
+}
+
+const TreasureHuntCanvas: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -34,150 +58,173 @@ const GameDemoCanvas: React.FC = () => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const T = DEMO_TILE;
+    const T = BG_TILE;
+    let map: number[][];
+    let heroes: BgHero[] = [];
+    let bombs: BgBomb[] = [];
+    let explosions: BgExplosion[] = [];
     let frame = 0;
     let lastTime = 0;
     let rafId = 0;
 
-    function getHeroPos(f: number) {
-      const t = f % LOOP_FRAMES;
-      for (let i = 0; i < HERO_PATH.length - 1; i++) {
-        const [fa, xa, ya] = HERO_PATH[i];
-        const [fb, xb, yb] = HERO_PATH[i + 1];
-        if (t >= fa && t <= fb) {
-          const pct = (t - fa) / (fb - fa);
-          return { x: xa + (xb - xa) * pct, y: ya + (yb - ya) * pct };
-        }
-      }
-      return { x: 1, y: 1 };
+    function canWalk(c: number, r: number) {
+      if (r < 0 || r >= map.length || c < 0 || c >= map[0].length) return false;
+      const t = map[r][c];
+      return t === 0 || t === 3;
     }
 
-    function render(f: number) {
-      const frameInLoop = f % LOOP_FRAMES;
-      const showBomb = frameInLoop >= 45 && frameInLoop < 110;
-      const showExplosion = frameInLoop >= 110 && frameInLoop < 140;
-      const bombTimer = showBomb ? (frameInLoop - 45) / 65 : 0;
-      const explodeProgress = showExplosion ? (frameInLoop - 110) / 30 : 0;
+    function init() {
+      const cols = Math.ceil(canvas.width / T) + 2;
+      const rows = Math.ceil(canvas.height / T) + 2;
+      map = buildBgMap(cols, rows);
+      bombs = [];
+      explosions = [];
+      const corners: [number, number][] = [[1,1],[cols-2,1],[1,rows-2],[cols-2,rows-2]];
+      heroes = BG_HERO_COLORS.map((_, i) => {
+        const [c, r] = corners[i % 4];
+        return { px: c*T, py: r*T, col: c, row: r, targetCol: c, targetRow: r, speed: 2+Math.random()*0.8, moving: false, colorIdx: i, cooldown: 40+i*30 };
+      });
+    }
 
-      ctx.fillStyle = '#080c12';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    function pickTarget(h: BgHero): [number, number] {
+      const dirs: [number,number][] = [[0,-1],[0,1],[-1,0],[1,0]];
+      const shuffled = dirs.sort(() => Math.random()-0.5);
+      for (const [dc, dr] of shuffled) {
+        const nc = h.col+dc, nr = h.row+dr;
+        if (canWalk(nc, nr)) return [nc, nr];
+      }
+      return [h.col, h.row];
+    }
 
-      for (let row = 0; row < DEMO_MAP.length; row++) {
-        for (let col = 0; col < DEMO_MAP[row].length; col++) {
-          const px = col * T, py = row * T;
-          const type = DEMO_MAP[row][col];
-          if (type === 1) {
-            ctx.fillStyle = '#181828';
-            ctx.fillRect(px, py, T, T);
-            ctx.fillStyle = '#121222';
-            ctx.fillRect(px + 2, py + 2, T - 4, T - 4);
-            ctx.fillStyle = '#22223a';
-            ctx.fillRect(px + 2, py + 2, T - 4, 2);
-            ctx.fillRect(px + 2, py + 2, 2, T - 4);
-          } else if (type === 2) {
-            ctx.fillStyle = '#1e1208';
-            ctx.fillRect(px, py, T, T);
-            ctx.strokeStyle = '#503820';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(px + 2, py + 2, T - 4, T - 4);
-            ctx.beginPath();
-            ctx.moveTo(px + T / 2, py + 3); ctx.lineTo(px + T / 2, py + T - 3);
-            ctx.moveTo(px + 3, py + T / 2); ctx.lineTo(px + T - 3, py + T / 2);
-            ctx.stroke();
-          } else {
-            ctx.fillStyle = (row + col) % 2 === 0 ? '#0c1018' : '#0a0e14';
-            ctx.fillRect(px, py, T, T);
-          }
+    function explode(col: number, row: number) {
+      const range = 2;
+      const tiles: [number,number][] = [[col, row]];
+      [[1,0],[-1,0],[0,1],[0,-1]].forEach(([dc, dr]) => {
+        for (let d = 1; d <= range; d++) {
+          const nc = col+dc*d, nr = row+dr*d;
+          if (nr < 0 || nr >= map.length || nc < 0 || nc >= map[0].length) break;
+          if (map[nr][nc] === 1) break;
+          tiles.push([nc, nr]);
+          if (map[nr][nc] === 2 || map[nr][nc] === 3) { map[nr][nc] = 0; break; }
         }
-      }
+      });
+      explosions.push({ tiles, timer: 18 });
+    }
 
-      if (showBomb) {
-        const bx = 3 * T + T / 2, by = 3 * T + T / 2;
-        ctx.fillStyle = '#0a0a0a';
-        ctx.beginPath();
-        ctx.arc(bx, by + 3, T / 3 - 1, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#222';
-        ctx.beginPath();
-        ctx.arc(bx - 4, by - 2, 4, 0, Math.PI * 2);
-        ctx.fill();
-        const fuseOn = Math.floor(f / 3) % 2 === 0;
-        ctx.strokeStyle = fuseOn ? '#ff8800' : '#ffcc00';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(bx - 1, by - T / 3 + 3);
-        ctx.quadraticCurveTo(bx + 8, by - T / 2, bx + 4, by - T / 2 - 6);
-        ctx.stroke();
-        const hue = Math.round(120 - bombTimer * 120);
-        ctx.strokeStyle = `hsl(${hue},100%,55%)`;
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.arc(bx, by + 3, T / 3 + 2, -Math.PI / 2, -Math.PI / 2 + (1 - bombTimer) * Math.PI * 2);
-        ctx.stroke();
-      }
-
-      if (showExplosion) {
-        const alpha = explodeProgress < 0.5 ? explodeProgress * 2 : 2 - explodeProgress * 2;
-        const dirs = [[0,0],[1,0],[2,0],[-1,0],[-2,0],[0,1],[0,2],[0,-1],[0,-2]];
-        dirs.forEach(([dx, dy]) => {
-          const mx = 3 + dx, my = 3 + dy;
-          if (my < 0 || my >= DEMO_MAP.length || mx < 0 || mx >= DEMO_MAP[0].length) return;
-          if (DEMO_MAP[my][mx] === 1) return;
-          const dist = Math.abs(dx) + Math.abs(dy);
-          ctx.globalAlpha = Math.max(0, Math.min(1, alpha * (1 - dist * 0.15)));
-          const phase = Math.floor(explodeProgress * 6) % 3;
-          ctx.fillStyle = ['#ff4400','#ff8800','#ffcc00'][phase];
-          const m = 2 + dist;
-          ctx.fillRect(mx * T + m, my * T + m, T - m * 2, T - m * 2);
-          if (dist === 0) {
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(mx * T + T / 2 - 4, my * T + T / 2 - 4, 8, 8);
+    function update() {
+      heroes.forEach(h => {
+        h.cooldown--;
+        if (!h.moving) {
+          if (map[h.row]?.[h.col] === 3) map[h.row][h.col] = 0;
+          if (h.cooldown <= 0 && bombs.length < 4) {
+            bombs.push({ col: h.col, row: h.row, timer: 55 });
+            h.cooldown = 100 + Math.random()*80;
           }
-        });
-        ctx.globalAlpha = 1;
-      }
+          const [tc, tr] = pickTarget(h);
+          h.targetCol = tc; h.targetRow = tr;
+          if (tc !== h.col || tr !== h.row) h.moving = true;
+        } else {
+          const tx = h.targetCol*T, ty = h.targetRow*T;
+          const dx = tx-h.px, dy = ty-h.py;
+          const dist = Math.sqrt(dx*dx+dy*dy);
+          if (dist <= h.speed) { h.px=tx; h.py=ty; h.col=h.targetCol; h.row=h.targetRow; h.moving=false; }
+          else { h.px+=dx/dist*h.speed; h.py+=dy/dist*h.speed; }
+        }
+      });
+      bombs = bombs.filter(b => { b.timer--; if (b.timer<=0) { explode(b.col,b.row); return false; } return true; });
+      explosions = explosions.filter(e => { e.timer--; return e.timer>0; });
+      frame++;
+    }
 
-      const { x: hx, y: hy } = getHeroPos(f);
-      const hpx = hx * T + 4, hpy = hy * T + 4;
-      const s = T - 8;
-      ctx.fillStyle = '#4a9eff';
-      ctx.fillRect(hpx, hpy, s, s);
-      ctx.fillStyle = '#7ab8ff';
-      ctx.fillRect(hpx, hpy, s, 3);
-      ctx.fillRect(hpx, hpy, 3, s);
-      ctx.fillStyle = '#fff';
-      ctx.fillRect(hpx + 4, hpy + 5, 5, 5);
-      ctx.fillRect(hpx + s - 9, hpy + 5, 5, 5);
-      ctx.fillStyle = '#000';
-      ctx.fillRect(hpx + 6, hpy + 7, 2, 2);
-      ctx.fillRect(hpx + s - 7, hpy + 7, 2, 2);
-      ctx.fillStyle = '#000';
-      ctx.fillRect(hpx + 5, hpy + s - 8, 3, 2);
-      ctx.fillRect(hpx + s - 8, hpy + s - 8, 3, 2);
+    function drawTile(c: number, r: number) {
+      const type = map[r]?.[c] ?? 0;
+      const px = c*T, py = r*T;
+      if (type === 1) {
+        ctx.fillStyle = '#12121f'; ctx.fillRect(px,py,T,T);
+        ctx.fillStyle = '#0c0c18'; ctx.fillRect(px+2,py+2,T-4,T-4);
+        ctx.fillStyle = '#1e1e32'; ctx.fillRect(px+2,py+2,T-4,2); ctx.fillRect(px+2,py+2,2,T-4);
+      } else if (type === 2) {
+        ctx.fillStyle = '#1a0e06'; ctx.fillRect(px,py,T,T);
+        ctx.strokeStyle = '#4a2e10'; ctx.lineWidth = 2;
+        ctx.strokeRect(px+2,py+2,T-4,T-4);
+        ctx.beginPath();
+        ctx.moveTo(px+T/2,py+3); ctx.lineTo(px+T/2,py+T-3);
+        ctx.moveTo(px+3,py+T/2); ctx.lineTo(px+T-3,py+T/2);
+        ctx.stroke();
+      } else if (type === 3) {
+        ctx.fillStyle = '#0f0c00'; ctx.fillRect(px,py,T,T);
+        ctx.fillStyle = '#1a1400'; ctx.fillRect(px+3,py+3,T-6,T-6);
+        ctx.fillStyle = '#c8960a'; ctx.fillRect(px+6,py+8,T-12,T-16);
+        ctx.fillStyle = '#ffd700'; ctx.fillRect(px+6,py+6,T-12,6);
+        ctx.fillStyle = '#ffe94d'; ctx.fillRect(px+6,py+6,T-12,2);
+      } else {
+        ctx.fillStyle = (c+r)%2===0 ? '#0c0f14' : '#0a0d11';
+        ctx.fillRect(px,py,T,T);
+      }
+    }
+
+    function drawBomb(b: BgBomb) {
+      const progress = b.timer / 55;
+      const px = b.col*T+T/2, py = b.row*T+T/2;
+      ctx.fillStyle = '#0a0a0a';
+      ctx.beginPath(); ctx.arc(px,py+3,T/3,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#222';
+      ctx.beginPath(); ctx.arc(px-5,py-4,5,0,Math.PI*2); ctx.fill();
+      ctx.strokeStyle = frame%6<3 ? '#ff8800' : '#ffcc00'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(px-2,py-T/3+3); ctx.quadraticCurveTo(px+10,py-T/2+2,px+5,py-T/2-6); ctx.stroke();
+      ctx.strokeStyle = `hsl(${Math.round(120-120*(1-progress))},100%,55%)`; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(px,py+3,T/3+3,-Math.PI/2,-Math.PI/2+progress*Math.PI*2); ctx.stroke();
+    }
+
+    function drawExplosion(e: BgExplosion) {
+      const a = e.timer/18;
+      e.tiles.forEach(([tc,tr],i) => {
+        ctx.globalAlpha = a*0.85;
+        ctx.fillStyle = ['#ff4400','#ff8800','#ffcc00'][(frame+i)%3];
+        ctx.fillRect(tc*T+3,tr*T+3,T-6,T-6);
+        if (i===0) { ctx.fillStyle='#fff'; ctx.fillRect(tc*T+T/2-5,tr*T+T/2-5,10,10); }
+      });
+      ctx.globalAlpha = 1;
+    }
+
+    function drawHero(h: BgHero) {
+      const { body, hi } = BG_HERO_COLORS[h.colorIdx];
+      const px = h.px+5, py = h.py+5, s = T-10;
+      ctx.fillStyle = body; ctx.fillRect(px,py,s,s);
+      ctx.fillStyle = hi; ctx.fillRect(px,py,s,4); ctx.fillRect(px,py,4,s);
+      ctx.fillStyle = '#fff'; ctx.fillRect(px+5,py+6,6,7); ctx.fillRect(px+s-11,py+6,6,7);
+      ctx.fillStyle = '#000'; ctx.fillRect(px+7,py+8,3,4); ctx.fillRect(px+s-9,py+8,3,4);
+      ctx.fillRect(px+5,py+s-10,4,2); ctx.fillRect(px+s-9,py+s-10,4,2);
+    }
+
+    function render() {
+      ctx.fillStyle = '#080c10';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      const cols = Math.ceil(canvas.width/T)+2, rows = Math.ceil(canvas.height/T)+2;
+      for (let r=0; r<rows; r++) for (let c=0; c<cols; c++) drawTile(c,r);
+      explosions.forEach(e => drawExplosion(e));
+      bombs.forEach(b => drawBomb(b));
+      heroes.forEach(h => drawHero(h));
     }
 
     function animate(time: number) {
-      if (time - lastTime >= 50) {
-        render(frame);
-        frame++;
-        lastTime = time;
-      }
+      if (time - lastTime >= 50) { update(); render(); lastTime = time; }
       rafId = requestAnimationFrame(animate);
     }
 
+    function resize() {
+      const p = canvas.parentElement;
+      if (p) { canvas.width = p.offsetWidth; canvas.height = p.offsetHeight; }
+      init();
+    }
+
+    resize();
+    window.addEventListener('resize', resize);
     rafId = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(rafId);
+    return () => { cancelAnimationFrame(rafId); window.removeEventListener('resize', resize); };
   }, []);
 
-  return (
-    <canvas
-      ref={canvasRef}
-      width={9 * DEMO_TILE}
-      height={7 * DEMO_TILE}
-      className="pixel-border"
-      style={{ imageRendering: 'pixelated', display: 'block' }}
-    />
-  );
+  return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" style={{ imageRendering: 'pixelated' }} />;
 };
 
 const CHANGELOG = [
@@ -241,13 +288,6 @@ const RARITIES = [
 const Landing: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [scrollY, setScrollY] = useState(0);
-
-  useEffect(() => {
-    const handle = () => setScrollY(window.scrollY);
-    window.addEventListener('scroll', handle);
-    return () => window.removeEventListener('scroll', handle);
-  }, []);
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
@@ -272,29 +312,27 @@ const Landing: React.FC = () => {
         </div>
       </nav>
 
-      {/* Hero Section */}
+      {/* Hero Section — canvas gameplay as full background */}
       <section className="relative min-h-screen flex flex-col items-center justify-center px-4 overflow-hidden pt-12">
-        {/* Animated background grid */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute inset-0" style={{
-            backgroundImage: `
-              linear-gradient(hsl(var(--border)) 1px, transparent 1px),
-              linear-gradient(90deg, hsl(var(--border)) 1px, transparent 1px)
-            `,
-            backgroundSize: '40px 40px',
-            transform: `translateY(${scrollY * 0.1}px)`,
-          }} />
-        </div>
+        {/* Live treasure-hunt gameplay canvas — fills the entire hero section */}
+        <TreasureHuntCanvas />
 
-        {/* Floating pixel decorations */}
-        <motion.div animate={{ y: [0, -20, 0], rotate: [0, 5, -5, 0] }} transition={{ duration: 4, repeat: Infinity }} className="absolute top-24 left-[10%] opacity-20">
-          <PixelIcon icon="bomb" size={48} color="hsl(var(--game-neon-red))" />
-        </motion.div>
-        <motion.div animate={{ y: [0, 15, 0], rotate: [0, -5, 5, 0] }} transition={{ duration: 5, repeat: Infinity, delay: 1 }} className="absolute top-36 right-[15%] opacity-20">
-          <PixelIcon icon="crown" size={40} color="hsl(var(--game-gold))" />
-        </motion.div>
-        <motion.div animate={{ y: [0, -10, 0] }} transition={{ duration: 3, repeat: Infinity, delay: 0.5 }} className="absolute bottom-40 left-[20%] opacity-15">
-          <PixelIcon icon="gem" size={36} color="hsl(var(--game-rarity-super-rare))" />
+        {/* Dark gradient overlay so text stays legible */}
+        <div className="absolute inset-0 bg-gradient-to-b from-background/55 via-background/40 to-background pointer-events-none" />
+        {/* Vignette sides */}
+        <div className="absolute inset-0 bg-gradient-to-r from-background/60 via-transparent to-background/60 pointer-events-none" />
+
+        {/* Badge "CHASSE AU TRÉSOR EN DIRECT" */}
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+          className="absolute top-20 right-6 z-10"
+        >
+          <span className="font-pixel text-[6px] bg-primary/20 border border-primary/40 text-primary px-2 py-1 flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+            CHASSE AU TRÉSOR EN DIRECT
+          </span>
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} className="text-center z-10">
@@ -331,20 +369,7 @@ const Landing: React.FC = () => {
           </div>
         </motion.div>
 
-        {/* Animated game preview */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.4 }}
-          className="mt-10 z-10 flex flex-col items-center gap-2"
-        >
-          <p className="font-pixel text-[7px] text-muted-foreground tracking-widest">APERÇU DU JEU</p>
-          <div className="relative" style={{ filter: 'drop-shadow(0 0 16px hsl(var(--primary) / 0.4))' }}>
-            <GameDemoCanvas />
-          </div>
-        </motion.div>
-
-        <motion.div animate={{ y: [0, 8, 0] }} transition={{ duration: 2, repeat: Infinity }} className="absolute bottom-8">
+        <motion.div animate={{ y: [0, 8, 0] }} transition={{ duration: 2, repeat: Infinity }} className="absolute bottom-8 z-10">
           <ChevronDown size={28} className="text-muted-foreground" />
         </motion.div>
       </section>
