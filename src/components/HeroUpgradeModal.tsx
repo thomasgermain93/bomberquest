@@ -51,7 +51,7 @@ const HeroUpgradeModal: React.FC<HeroUpgradeModalProps> = ({ hero, coins, allHer
 
   return (
     <Dialog open={!!hero} onOpenChange={() => onClose()}>
-      <DialogContent className="pixel-border bg-card border-border max-w-md p-0 overflow-hidden">
+      <DialogContent className="pixel-border bg-card border-border max-w-md p-0 overflow-hidden rounded-none sm:rounded-lg max-h-[90vh]">
         {/* Header with rarity gradient */}
         <div
           className="p-5 pb-3 relative"

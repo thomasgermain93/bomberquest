@@ -90,7 +90,7 @@
   }
 
   .pixel-btn {
-    @apply font-pixel text-xs px-4 py-3 transition-all duration-100;
+    @apply font-pixel text-xs px-4 py-3 transition-all duration-100 min-h-[44px] sm:min-h-[auto];
     background: hsl(var(--primary));
     color: hsl(var(--primary-foreground));
     border: 3px solid hsl(var(--primary));

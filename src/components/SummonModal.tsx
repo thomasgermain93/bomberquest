@@ -89,7 +89,7 @@ const SummonModal: React.FC<SummonModalProps> = ({ isOpen, onClose, onSummon, co
           initial={{ scale: 0.8, y: 20 }}
           animate={{ scale: 1, y: 0 }}
           exit={{ scale: 0.8, y: 20 }}
-          className="pixel-border bg-card p-5 max-w-lg w-full max-h-[90vh] overflow-y-auto"
+          className="pixel-border bg-card p-3 sm:p-5 max-w-lg w-full max-h-[90vh] overflow-y-auto rounded-none sm:rounded-lg"
           onClick={e => e.stopPropagation()}
         >
           <h2 className="font-pixel text-sm text-center text-foreground mb-3 flex items-center justify-center gap-2">
@@ -173,10 +173,10 @@ const SummonModal: React.FC<SummonModalProps> = ({ isOpen, onClose, onSummon, co
           </div>
 
           {/* Pity counters */}
-          <div className="flex gap-2 justify-center mb-3 text-[8px] font-pixel">
+          <div className="flex gap-1 sm:gap-2 justify-center mb-3 text-[7px] sm:text-[8px] font-pixel flex-wrap">
             <span style={{ color: 'hsl(var(--game-rarity-rare))' }}>Rare: {pityCounters.rare}/10</span>
-            <span style={{ color: 'hsl(var(--game-rarity-epic))' }}>Epic: {pityCounters.epic}/50</span>
-            <span style={{ color: 'hsl(var(--game-rarity-legend))' }}>Legend: {pityCounters.legend}/200</span>
+            <span style={{ color: 'hsl(var(--game-rarity-epic))' }} className="hidden sm:inline">Epic: {pityCounters.epic}/50</span>
+            <span style={{ color: 'hsl(var(--game-rarity-legend))' }} className="hidden sm:inline">Legend: {pityCounters.legend}/200</span>
           </div>
 
           {/* Buttons */}

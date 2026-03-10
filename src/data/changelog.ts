@@ -8,7 +8,7 @@ export interface ChangelogEntry {
   }[];
 }
 
-export const CHANGELOG: ChangelogEntry[
+export const CHANGELOG: ChangelogEntry[] = [
   {
     version: 'Unreleased',
     date: '2026-03-10',
@@ -16,7 +16,7 @@ export const CHANGELOG: ChangelogEntry[
     changes: [
       { type: 'feature', description: 'fix: bouton vitesse unique cyclique x1/x2/x3 (#23)' },
     ],
-  },] = [
+  },
   {
     version: '1.5.0',
     date: '2026-03-10',

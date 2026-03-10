@@ -696,37 +696,41 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-x-hidden">
       {/* Top Bar */}
-      <header className="sticky top-0 z-40 bg-card/95 backdrop-blur border-b border-border px-4 py-2.5 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <Bomb size={18} className="text-primary" />
-          <h1 className="font-pixel text-[10px] sm:text-xs text-foreground tracking-wider">BOMBERQUEST</h1>
-        </div>
+      <header className="sticky top-0 z-40 bg-card/95 backdrop-blur border-b border-border px-2 sm:px-4 py-2 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
+          <Bomb size={18} className="text-primary shrink-0" />
+          <h1 className="font-pixel text-[8px] sm:text-xs text-foreground tracking-wider hidden xs:block">BOMBERQUEST</h1>
+        </div>
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-end">
           <button
             onClick={toggleMute}
-            className="p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+            className="p-2 sm:p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground min-w-[44px] sm:min-w-[auto] min-h-[36px] sm:min-h-[auto] flex items-center justify-center"
             title={muted ? 'Activer le son' : 'Couper le son'}
           >
             {muted ? <VolumeX size={16} /> : <Volume2 size={16} />}
           </button>
-          <div className="flex items-center gap-1.5 pixel-border px-3 py-1.5 bg-muted">
-            <Coins size={14} className="text-game-gold" />
-            <span className="font-pixel text-[10px] text-game-gold">
+          <div className="flex items-center gap-1.5 pixel-border px-2 sm:px-3 py-1.5 bg-muted">
+            <Coins size={14} className="text-game-gold shrink-0" />
+            <span className="font-pixel text-[9px] sm:text-[10px] text-game-gold">
               {(player.bomberCoins + (gameState?.coinsEarned || 0)).toLocaleString()}
               {gameState?.coinsEarned ? <span className="text-[8px] opacity-70 ml-1">(+{gameState.coinsEarned})</span> : null}
             </span>
           </div>
-          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+          <div className="hidden sm:flex items-center gap-1.5 text-[10px] text-muted-foreground">
             <Star size={12} /> Lv.{player.accountLevel}
             <span className="text-border">|</span>
             <Users size={12} /> {player.heroes.length}
           </div>
+          <div className="flex sm:hidden items-center gap-1 text-[9px] text-muted-foreground">
+            <Star size={10} /> {player.accountLevel}
+            <Users size={10} /> {player.heroes.length}
+          </div>
           {user && (
             <button
               onClick={async () => { await signOut(); navigate('/'); }}
-              className="p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+              className="p-2 sm:p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground min-w-[44px] sm:min-w-[auto] min-h-[36px] sm:min-h-[auto] flex items-center justify-center"
               title="Déconnexion"
             >
               <DoorOpen size={16} />
@@ -737,7 +741,7 @@ const Index = () => {
 
       {/* Navigation */}
       {!isInBattle && (
-        <nav className="sticky top-[49px] z-30 bg-card/90 backdrop-blur border-b border-border px-2 py-1.5 flex gap-1.5 overflow-x-auto">
+        <nav className="sticky top-[49px] sm:top-[49px] z-30 bg-card/90 backdrop-blur border-b border-border px-1 sm:px-2 py-1.5 flex gap-1 overflow-x-auto">
           {[
             { id: 'hub' as Screen, label: 'Hub', icon: <Home size={14} /> },
             { id: 'story' as Screen, label: 'Histoire', icon: <BookOpen size={14} /> },
@@ -750,7 +754,7 @@ const Index = () => {
                 if (tab.id === 'summon') setSummonOpen(true);
                 else setScreen(tab.id);
               }}
-              className={`font-pixel text-[8px] px-3 py-2 rounded flex items-center gap-1.5 transition-all whitespace-nowrap ${
+              className={`font-pixel text-[7px] sm:text-[8px] px-2.5 sm:px-3 py-2.5 sm:py-2 rounded flex items-center gap-1.5 transition-all whitespace-nowrap min-h-[44px] ${
                 screen === tab.id
                   ? 'bg-primary text-primary-foreground shadow-md'
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted'
@@ -959,7 +963,7 @@ const Index = () => {
                             </p>
                             <button
                               onClick={() => toggleHeroSelection(hero.id)}
-                              className="text-[7px] text-destructive hover:text-destructive/80 mt-0.5"
+                              className="text-[7px] text-destructive hover:text-destructive/80 mt-0.5 min-w-[24px] min-h-[24px] flex items-center justify-center"
                             >
                               ✕
                             </button>
@@ -1080,27 +1084,28 @@ const Index = () => {
                       localStorage.setItem('hunt-speed', String(nextSpeed));
                       setGameState(prev => (prev ? { ...prev, speed: nextSpeed } : prev));
                     }}
-                    className="font-pixel text-[8px] px-2 py-1.5 rounded transition-all bg-primary text-primary-foreground shadow-md min-w-[38px]"
+                    className="font-pixel text-[8px] sm:text-[7px] px-3 py-2.5 sm:py-1.5 rounded transition-all bg-primary text-primary-foreground shadow-md min-w-[44px] sm:min-w-[38px] min-h-[44px] sm:min-h-[auto]"
                     title="Vitesse de chasse"
                   >
                     x{gameState.speed}
                   </button>
-                  <div className="w-px h-5 bg-border mx-0.5" />
+                  <div className="w-px h-5 bg-border mx-0.5 hidden sm:block" />
                   <button
                     onClick={() => setGameState(prev => prev ? { ...prev, isPaused: !prev.isPaused } : prev)}
-                    className="font-pixel text-[8px] px-2 py-1.5 rounded bg-secondary text-secondary-foreground hover:bg-secondary/80 flex items-center gap-1"
+                    className="font-pixel text-[8px] px-3 py-2.5 sm:py-1.5 rounded bg-secondary text-secondary-foreground hover:bg-secondary/80 flex items-center gap-1 min-h-[44px] sm:min-h-[auto]"
                   >
-                    {gameState.isPaused ? <Play size={10} /> : <Pause size={10} />}
+                    {gameState.isPaused ? <Play size={14} className="sm:size-[10px]" /> : <Pause size={14} className="sm:size-[10px]" />}
+                    <span className="hidden sm:inline">{gameState.isPaused ? 'Play' : 'Pause'}</span>
                   </button>
                   <button
                     onClick={gameState.isStoryMode ? endStoryBattle : endTreasureHunt}
-                    className={`font-pixel text-[8px] px-2.5 py-1.5 rounded flex items-center gap-1 ${
+                    className={`font-pixel text-[8px] px-3 py-2.5 sm:py-1.5 rounded flex items-center gap-1 min-h-[44px] sm:min-h-[auto] ${
                       gameState.mapCompleted 
                         ? 'bg-game-gold text-background font-bold animate-pulse' 
                         : 'bg-destructive/80 text-destructive-foreground hover:bg-destructive'
                     }`}
                   >
-                    {gameState.mapCompleted ? <><Check size={10} /> Récupérer!</> : <><DoorOpen size={10} /> Quitter</>}
+                    {gameState.mapCompleted ? <><Check size={14} className="sm:size-[10px]" /> <span className="hidden sm:inline">Récupérer!</span></> : <><DoorOpen size={14} className="sm:size-[10px]" /> <span className="hidden sm:inline">Quitter</span></>}
                   </button>
                 </div>
               </div>
