@@ -14,6 +14,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: '2026-03-10',
     title: 'Mises à jour récentes',
     changes: [
+      { type: 'ui', description: 'Amélioration de l\'UI pour mobile (#10)' },
       { type: 'feature', description: 'fix: bouton vitesse unique cyclique x1/x2/x3 (#23)' },
     ],
   },
