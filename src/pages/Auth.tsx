@@ -215,6 +215,19 @@ const Auth: React.FC = () => {
               {mode === 'login' ? "Pas de compte ? Inscris-toi !" : "Déjà un compte ? Connecte-toi !"}
             </button>
           </p>
+
+          <div className="flex items-center gap-3 my-4">
+            <div className="flex-1 h-px bg-border" />
+            <span className="font-pixel text-[7px] text-muted-foreground">OU</span>
+            <div className="flex-1 h-px bg-border" />
+          </div>
+
+          <button
+            onClick={() => navigate('/game')}
+            className="w-full font-pixel text-[7px] text-muted-foreground hover:text-foreground transition-colors py-2"
+          >
+            CONTINUER EN INVITÉ (sans sauvegarde cloud)
+          </button>
         </div>
       </motion.div>
     </div>

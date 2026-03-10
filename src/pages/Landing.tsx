@@ -365,6 +365,10 @@ const Landing: React.FC = () => {
                   className="pixel-btn pixel-btn-secondary font-pixel text-[10px] sm:text-xs px-6 py-4 flex items-center gap-2">
                   <Shield size={16} /> SE CONNECTER
                 </motion.button>
+                <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => navigate('/game')}
+                  className="pixel-btn font-pixel text-[10px] sm:text-xs px-6 py-4 flex items-center gap-2 border-muted-foreground/40 text-muted-foreground hover:text-foreground">
+                  JOUER EN INVITÉ
+                </motion.button>
               </>
             )}
           </div>
@@ -556,10 +560,18 @@ const Landing: React.FC = () => {
           <p className="text-sm text-muted-foreground mb-8">
             Crée ton compte gratuitement et commence à collectionner des héros dès maintenant !
           </p>
-          <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => navigate(user ? '/game' : '/auth')}
-            className="pixel-btn pixel-btn-gold font-pixel text-xs px-10 py-4 flex items-center gap-2 mx-auto">
-            <Zap size={18} /> {user ? 'JOUER' : 'CRÉER MON COMPTE'}
-          </motion.button>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => navigate(user ? '/game' : '/auth')}
+              className="pixel-btn pixel-btn-gold font-pixel text-xs px-10 py-4 flex items-center gap-2 mx-auto">
+              <Zap size={18} /> {user ? 'JOUER' : 'CRÉER MON COMPTE'}
+            </motion.button>
+            {!user && (
+              <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => navigate('/game')}
+                className="pixel-btn font-pixel text-[10px] px-8 py-4 flex items-center gap-2 mx-auto border-muted-foreground/40 text-muted-foreground hover:text-foreground">
+                JOUER EN INVITÉ
+              </motion.button>
+            )}
+          </div>
         </motion.div>
       </section>
 
