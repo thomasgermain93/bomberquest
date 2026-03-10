@@ -1,0 +1,178 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 230 30% 10%;
+    --foreground: 0 0% 95%;
+
+    --card: 230 25% 14%;
+    --card-foreground: 0 0% 95%;
+
+    --popover: 230 25% 14%;
+    --popover-foreground: 0 0% 95%;
+
+    --primary: 348 80% 58%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 215 60% 22%;
+    --secondary-foreground: 0 0% 95%;
+
+    --muted: 230 20% 18%;
+    --muted-foreground: 230 10% 55%;
+
+    --accent: 45 100% 50%;
+    --accent-foreground: 230 30% 10%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 230 20% 22%;
+    --input: 230 20% 22%;
+    --ring: 348 80% 58%;
+
+    --radius: 0.25rem;
+
+    /* Game-specific tokens */
+    --game-bg-deep: 235 35% 8%;
+    --game-bg: 230 30% 10%;
+    --game-grid-floor: 230 25% 14%;
+    --game-grid-wall: 220 15% 25%;
+    --game-grid-block: 25 40% 30%;
+    --game-neon-red: 348 80% 58%;
+    --game-neon-blue: 210 90% 55%;
+    --game-gold: 45 100% 50%;
+    --game-energy-green: 150 100% 50%;
+    --game-energy-low: 30 100% 50%;
+    --game-rarity-common: 0 0% 60%;
+    --game-rarity-rare: 210 80% 55%;
+    --game-rarity-super-rare: 280 70% 55%;
+    --game-rarity-epic: 30 90% 55%;
+    --game-rarity-legend: 15 90% 55%;
+    --game-rarity-super-legend: 300 100% 70%;
+    --game-explosion: 25 100% 55%;
+
+    --sidebar-background: 230 25% 12%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 348 80% 58%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 230 20% 18%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 230 20% 22%;
+    --sidebar-ring: 348 80% 58%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
+  }
+  .font-pixel {
+    font-family: 'Press Start 2P', cursive;
+  }
+}
+
+@layer components {
+  .pixel-border {
+    border: 3px solid hsl(var(--border));
+    box-shadow: 
+      inset 0 0 0 1px hsl(var(--border)),
+      0 0 0 1px hsl(var(--game-bg-deep)),
+      4px 4px 0 0 hsl(var(--game-bg-deep));
+    image-rendering: pixelated;
+  }
+
+  .pixel-btn {
+    @apply font-pixel text-xs px-4 py-3 transition-all duration-100;
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    border: 3px solid hsl(var(--primary));
+    box-shadow: 4px 4px 0 0 hsl(var(--game-bg-deep));
+    cursor: pointer;
+  }
+  .pixel-btn:hover {
+    transform: translate(1px, 1px);
+    box-shadow: 3px 3px 0 0 hsl(var(--game-bg-deep));
+  }
+  .pixel-btn:active {
+    transform: translate(4px, 4px);
+    box-shadow: 0px 0px 0 0 hsl(var(--game-bg-deep));
+  }
+  .pixel-btn-gold {
+    background: hsl(var(--game-gold));
+    color: hsl(var(--game-bg-deep));
+    border-color: hsl(var(--game-gold));
+  }
+  .pixel-btn-secondary {
+    background: hsl(var(--secondary));
+    color: hsl(var(--secondary-foreground));
+    border-color: hsl(var(--secondary));
+  }
+
+  .glow-red {
+    box-shadow: 0 0 15px hsl(var(--game-neon-red) / 0.4), 0 0 30px hsl(var(--game-neon-red) / 0.2);
+  }
+  .glow-gold {
+    box-shadow: 0 0 15px hsl(var(--game-gold) / 0.4), 0 0 30px hsl(var(--game-gold) / 0.2);
+  }
+  .glow-blue {
+    box-shadow: 0 0 15px hsl(var(--game-neon-blue) / 0.4), 0 0 30px hsl(var(--game-neon-blue) / 0.2);
+  }
+
+  .text-glow-red {
+    text-shadow: 0 0 10px hsl(var(--game-neon-red) / 0.6), 0 0 20px hsl(var(--game-neon-red) / 0.3);
+  }
+  .text-glow-gold {
+    text-shadow: 0 0 10px hsl(var(--game-gold) / 0.6), 0 0 20px hsl(var(--game-gold) / 0.3);
+  }
+
+  .rarity-common { border-color: hsl(var(--game-rarity-common)); }
+  .rarity-rare { border-color: hsl(var(--game-rarity-rare)); }
+  .rarity-super-rare { border-color: hsl(var(--game-rarity-super-rare)); }
+  .rarity-epic { border-color: hsl(var(--game-rarity-epic)); }
+  .rarity-legend { border-color: hsl(var(--game-rarity-legend)); }
+  .rarity-super-legend { 
+    border-color: hsl(var(--game-rarity-super-legend));
+    animation: rainbow-border 2s linear infinite;
+  }
+
+  @keyframes rainbow-border {
+    0% { border-color: hsl(0, 100%, 60%); }
+    16% { border-color: hsl(60, 100%, 50%); }
+    33% { border-color: hsl(120, 100%, 50%); }
+    50% { border-color: hsl(180, 100%, 50%); }
+    66% { border-color: hsl(240, 100%, 60%); }
+    83% { border-color: hsl(300, 100%, 60%); }
+    100% { border-color: hsl(360, 100%, 60%); }
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
+
+  @keyframes bomb-tick {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+  }
+
+  @keyframes coin-float {
+    0% { transform: translateY(0) scale(1); opacity: 1; }
+    100% { transform: translateY(-30px) scale(0.5); opacity: 0; }
+  }
+
+  .animate-bomb-tick {
+    animation: bomb-tick 0.5s ease-in-out infinite;
+  }
+
+  .animate-coin-float {
+    animation: coin-float 0.8s ease-out forwards;
+  }
+}
