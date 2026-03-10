@@ -1,0 +1,79 @@
+name: Update changelog on PR merge
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: read
+  issues: read
+
+jobs:
+  changelog:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Extract PR/Issue metadata
+        id: meta
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const body = pr.body || '';
+
+            // Look for linked issue patterns: "Fixes #123", "Closes #123", etc.
+            const issueRegex = /(close[sd]?|fix(e[sd])?|resolve[sd]?)\s+#(\d+)/ig;
+            const all = [...body.matchAll(issueRegex)];
+            const issueNumber = all.length ? Number(all[0][3]) : null;
+
+            let issueTitle = '';
+            let labels = [];
+
+            if (issueNumber) {
+              const issue = await github.rest.issues.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+              });
+              issueTitle = issue.data.title || '';
+              labels = (issue.data.labels || []).map((l) => typeof l === 'string' ? l : l.name).filter(Boolean);
+            }
+
+            core.setOutput('pr_number', String(pr.number));
+            core.setOutput('pr_title', pr.title || '');
+            core.setOutput('issue_number', issueNumber ? String(issueNumber) : '');
+            core.setOutput('issue_title', issueTitle);
+            core.setOutput('labels_json', JSON.stringify(labels));
+
+      - name: Update changelog file
+        env:
+          PR_NUMBER: ${{ steps.meta.outputs.pr_number }}
+          PR_TITLE: ${{ steps.meta.outputs.pr_title }}
+          ISSUE_NUMBER: ${{ steps.meta.outputs.issue_number }}
+          ISSUE_TITLE: ${{ steps.meta.outputs.issue_title }}
+          LABELS_JSON: ${{ steps.meta.outputs.labels_json }}
+        run: node scripts/update-changelog-from-pr.mjs
+
+      - name: Commit and push
+        run: |
+          if git diff --quiet; then
+            echo "No changelog changes to commit"
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/data/changelog.ts
+          git commit -m "chore(changelog): update from merged PR #${{ steps.meta.outputs.pr_number }}"
+          git push
