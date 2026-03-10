@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { GUIDE_ARTICLES } from '@/data/guides';
-import { ArrowLeft, Clock, BookOpen, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Clock, BookOpen, ChevronRight, Library } from 'lucide-react';
 import PixelIcon from '@/components/PixelIcon';
 
 const GuidesIndex: React.FC = () => {
@@ -24,13 +24,28 @@ const GuidesIndex: React.FC = () => {
 
       <main className="max-w-3xl mx-auto px-4 py-10">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-          <div className="text-center mb-10">
+          <div className="text-center mb-8">
             <h1 className="font-pixel text-sm sm:text-lg text-foreground text-glow-red flex items-center justify-center gap-2">
               <BookOpen size={22} /> GUIDES & ASTUCES
             </h1>
             <p className="text-sm text-muted-foreground mt-2">
               Tout ce que tu dois savoir pour devenir un maître bombardier !
             </p>
+          </div>
+
+          {/* Link to Wiki */}
+          <div className="flex justify-center mb-8">
+            <Link
+              to="/wiki"
+              className="pixel-border bg-card px-5 py-3 flex items-center gap-3 hover:bg-muted hover:glow-blue transition-all group"
+            >
+              <Library size={16} className="text-primary" />
+              <div>
+                <p className="font-pixel text-[7px] text-foreground group-hover:text-primary transition-colors">WIKI — RÉFÉRENCE COMPLÈTE</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">Héros, cartes, ressources, glossaire…</p>
+              </div>
+              <ChevronRight size={14} className="text-muted-foreground group-hover:text-primary transition-colors" />
+            </Link>
           </div>
 
           <div className="space-y-4">
