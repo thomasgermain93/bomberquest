@@ -1,73 +1,120 @@
-# Welcome to your Lovable project
+# BomberQuest — Idle Bomber RPG
 
-## Project info
+Un jeu RPG idle en pixel art où tu collectes des héros, poses des bombes, explores des donjons et affrontes des boss épiques.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Stack technique
 
-## How can I edit this code?
+- **React 18** + **TypeScript**
+- **Vite** (bundler, SWC)
+- **Tailwind CSS** + **shadcn/ui** (Radix UI)
+- **Supabase** — authentification & persistance des données
+- **TanStack Query** — gestion des données serveur
+- **Framer Motion** — animations
+- **React Router DOM** — navigation
+- **Vitest** + **Testing Library** — tests
 
-There are several ways of editing your application.
+## Prérequis
 
-**Use Lovable**
+- Node.js ≥ 18
+- npm ou bun
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+## Installation & lancement
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
+# Cloner le dépôt
 git clone <YOUR_GIT_URL>
+cd bomberquest
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+# Installer les dépendances
+npm install
 
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Lancer le serveur de développement (port 8080)
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## Scripts disponibles
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+| Commande | Description |
+|---|---|
+| `npm run dev` | Serveur de développement avec HMR |
+| `npm run build` | Build de production |
+| `npm run build:dev` | Build en mode développement |
+| `npm run preview` | Prévisualiser le build de production |
+| `npm run lint` | Linter ESLint |
+| `npm run test` | Lancer les tests (Vitest) |
+| `npm run test:watch` | Tests en mode watch |
 
-**Use GitHub Codespaces**
+## Variables d'environnement
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Crée un fichier `.env.local` à la racine avec les clés Supabase :
 
-## What technologies are used for this project?
+```env
+VITE_SUPABASE_URL=...
+VITE_SUPABASE_ANON_KEY=...
+```
 
-This project is built with:
+## Structure du projet
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+```
+src/
+├── pages/          # Pages principales (Landing, Auth, Game, Guides…)
+├── components/     # Composants UI réutilisables
+├── game/           # Moteur de jeu (engine, IA, rendu, systèmes)
+├── contexts/       # Contextes React (AuthContext)
+├── hooks/          # Hooks personnalisés
+├── integrations/   # Clients externes (Supabase)
+├── data/           # Données statiques (guides, cartes…)
+└── lib/            # Utilitaires
+```
 
-## How can I deploy this project?
+## Routes
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+| Route | Description |
+|---|---|
+| `/` | Page d'accueil |
+| `/auth` | Connexion / Inscription (email + Google OAuth) |
+| `/game` | Jeu principal |
+| `/guides` | Liste des guides |
+| `/guides/:slug` | Article de guide |
+| `/reset-password` | Réinitialisation du mot de passe |
 
-## Can I connect a custom domain to my Lovable project?
+## Gameplay
 
-Yes, you can!
+### Héros & raretés
+Invoque des héros via le système de gacha. Chaque héros a des statistiques (puissance, vitesse, portée, bombes, endurance, chance) et des compétences uniques selon sa rareté :
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+| Rareté | Taux |
+|---|---|
+| Common | 60 % |
+| Rare | 25 % |
+| Super Rare | 10 % |
+| Epic | 4 % |
+| Legend | 0.9 % |
+| Super Legend | 0.1 % |
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+### Cartes
+Six cartes de difficulté croissante à débloquer en progressant :
+Prairie → Forêt → Mines → Château → Volcan → Citadelle
+
+### Mode Histoire
+5 régions avec 5 étapes chacune (25 étapes au total), dont un boss de fin de région :
+Forêt Enchantée → Cavernes Maudites → Ruines Anciennes → Forteresse Orc → Enfer Ardent
+
+### Coffres
+Cinq niveaux de coffres à détruire : Bois, Argent, Or, Cristal, Légendaire.
+
+## Authentification
+
+L'authentification est gérée par Supabase avec support de :
+- Email + mot de passe
+- Google OAuth
+- Réinitialisation de mot de passe par email
+
+## Déploiement
+
+Le projet est configuré pour Cloudflare Pages (fichier `public/_redirects` inclus pour le routage SPA).
+
+```sh
+npm run build
+# Déployer le dossier dist/
+```
