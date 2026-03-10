@@ -14,6 +14,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: '2026-03-10',
     title: 'Mises à jour récentes',
     changes: [
+      { type: 'feature', description: 'fix: rendre le menu de landing responsive sur mobile (issue #24) (#33)' },
       { type: 'feature', description: 'fix: afficher les BC disponibles dans la popup d\'invocation (issue #32) (#35)' },
       { type: 'feature', description: 'fix: supprimer la barre de progression coffre superposée (issue #27) (#34)' },
       { type: 'feature', description: 'Fusion de Bombers (#25)' },
