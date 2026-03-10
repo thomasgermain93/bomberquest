@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { StoryRegion, StoryStage, StoryProgress } from '@/game/storyTypes';
 import { STORY_REGIONS } from '@/game/storyData';
-import { Hero, PlayerData } from '@/game/types';
+import { PlayerData, RARITY_CONFIG } from '@/game/types';
 import { ChevronLeft, ChevronRight, Lock, Star, Swords, Trophy, Coins, Shield, Skull, Crown, Users, Check } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import HeroCard from '@/components/HeroCard';
@@ -13,6 +13,8 @@ interface StoryModeProps {
   storyProgress: StoryProgress;
   selectedHeroes: Set<string>;
   onToggleHero: (id: string) => void;
+  onAutoSelectHeroes: () => void;
+  onClearSelectedHeroes: () => void;
   onStartStage: (stage: StoryStage) => void;
   selectedRegionIdx: number;
   onRegionChange: (idx: number) => void;
@@ -23,6 +25,8 @@ const StoryMode: React.FC<StoryModeProps> = ({
   storyProgress,
   selectedHeroes,
   onToggleHero,
+  onAutoSelectHeroes,
+  onClearSelectedHeroes,
   onStartStage,
   selectedRegionIdx,
   onRegionChange,
@@ -31,6 +35,16 @@ const StoryMode: React.FC<StoryModeProps> = ({
 
   const region = STORY_REGIONS[selectedRegionIdx];
   const prevRegion = selectedRegionIdx > 0 ? STORY_REGIONS[selectedRegionIdx - 1] : null;
+
+  const sortedHeroes = [...player.heroes].sort((a, b) => {
+    const rarityOrder = ['super-legend', 'legend', 'epic', 'super-rare', 'rare', 'common'];
+    const rDiff = rarityOrder.indexOf(a.rarity) - rarityOrder.indexOf(b.rarity);
+    if (rDiff !== 0) return rDiff;
+    const totalA = a.stats.pwr + a.stats.spd + a.stats.rng + a.stats.bnb + a.stats.lck;
+    const totalB = b.stats.pwr + b.stats.spd + b.stats.rng + b.stats.bnb + b.stats.lck;
+    return totalB - totalA;
+  });
+  const manualPickList = sortedHeroes.slice(0, 12);
   const prevRegionBossStage = prevRegion?.stages.find(s => s.isBoss);
   const prevRegionBossComplete = !prevRegionBossStage || storyProgress.completedStages.includes(prevRegionBossStage.id);
   const isRegionLocked = !prevRegionBossComplete || player.accountLevel < region.unlockLevel;
@@ -223,20 +237,63 @@ const StoryMode: React.FC<StoryModeProps> = ({
             )}
 
             {/* Hero selection */}
-            <p className="font-pixel text-[8px] text-muted-foreground mb-2 flex items-center gap-1.5">
-              <Users size={12} /> Sélectionne tes héros ({selectedHeroes.size}/6) :
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
-              {player.heroes.map(hero => (
-                <HeroCard
-                  key={hero.id}
-                  hero={hero}
-                  compact
-                  selected={selectedHeroes.has(hero.id)}
-                  onClick={() => onToggleHero(hero.id)}
-                />
-              ))}
+            <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
+              <p className="font-pixel text-[8px] text-muted-foreground flex items-center gap-1.5">
+                <Users size={12} /> Équipe story ({selectedHeroes.size}/6)
+              </p>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={onAutoSelectHeroes}
+                  className="font-pixel text-[7px] px-2.5 py-1.5 rounded bg-primary/15 text-primary hover:bg-primary/25 transition-colors flex items-center gap-1"
+                >
+                  Auto-sélection
+                </button>
+                {selectedHeroes.size > 0 && (
+                  <button
+                    onClick={onClearSelectedHeroes}
+                    className="font-pixel text-[7px] px-2.5 py-1.5 rounded bg-muted text-muted-foreground hover:bg-muted/80 transition-colors"
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
             </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
+              {Array.from(selectedHeroes).slice(0, 6).map(heroId => {
+                const hero = player.heroes.find(h => h.id === heroId);
+                if (!hero) return null;
+                return (
+                  <div key={hero.id} className="pixel-border p-2 bg-card flex items-center gap-2">
+                    <PixelIcon icon={hero.icon} size={18} rarity={hero.rarity} />
+                    <div className="min-w-0">
+                      <p className="font-pixel text-[7px] text-foreground truncate">{hero.name}</p>
+                      <p className="text-[7px]" style={{ color: `hsl(var(--game-rarity-${hero.rarity}))` }}>{RARITY_CONFIG[hero.rarity].label}</p>
+                    </div>
+                  </div>
+                );
+              })}
+              {selectedHeroes.size === 0 && (
+                <p className="text-[8px] text-muted-foreground col-span-full">Aucun héros sélectionné.</p>
+              )}
+            </div>
+
+            <details className="pixel-border bg-muted/20 rounded mb-4">
+              <summary className="font-pixel text-[8px] text-muted-foreground cursor-pointer px-3 py-2 hover:text-foreground transition-colors">
+                Choisir manuellement (top 12)
+              </summary>
+              <div className="p-2 grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-56 overflow-y-auto">
+                {manualPickList.map(hero => (
+                  <HeroCard
+                    key={hero.id}
+                    hero={hero}
+                    compact
+                    selected={selectedHeroes.has(hero.id)}
+                    onClick={() => onToggleHero(hero.id)}
+                  />
+                ))}
+              </div>
+            </details>
 
             <button
               onClick={() => onStartStage(selectedStage)}

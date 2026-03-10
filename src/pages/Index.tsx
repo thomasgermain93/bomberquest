@@ -680,6 +680,20 @@ const Index = () => {
     });
   };
 
+  const autoSelectHeroes = () => {
+    const sorted = [...player.heroes]
+      .filter(h => h.currentStamina > 0)
+      .sort((a, b) => {
+        const rarityOrder = ['super-legend', 'legend', 'epic', 'super-rare', 'rare', 'common'];
+        const rDiff = rarityOrder.indexOf(a.rarity) - rarityOrder.indexOf(b.rarity);
+        if (rDiff !== 0) return rDiff;
+        const totalA = a.stats.pwr + a.stats.spd + a.stats.rng + a.stats.bnb + a.stats.lck;
+        const totalB = b.stats.pwr + b.stats.spd + b.stats.rng + b.stats.bnb + b.stats.lck;
+        return totalB - totalA;
+      });
+    setSelectedHeroes(new Set(sorted.slice(0, 6).map(h => h.id)));
+  };
+
   const handleUpgrade = (heroId: string) => {
     const hero = player.heroes.find(h => h.id === heroId);
     if (!hero || hero.level >= 10) return;
@@ -982,19 +996,7 @@ const Index = () => {
                   </p>
                   <div className="flex gap-1.5">
                     <button
-                      onClick={() => {
-                        const sorted = [...player.heroes]
-                          .filter(h => h.currentStamina > 0)
-                          .sort((a, b) => {
-                            const rarityOrder = ['super-legend', 'legend', 'epic', 'super-rare', 'rare', 'common'];
-                            const rDiff = rarityOrder.indexOf(a.rarity) - rarityOrder.indexOf(b.rarity);
-                            if (rDiff !== 0) return rDiff;
-                            const totalA = a.stats.pwr + a.stats.spd + a.stats.rng + a.stats.bnb + a.stats.lck;
-                            const totalB = b.stats.pwr + b.stats.spd + b.stats.rng + b.stats.bnb + b.stats.lck;
-                            return totalB - totalA;
-                          });
-                        setSelectedHeroes(new Set(sorted.slice(0, 6).map(h => h.id)));
-                      }}
+                      onClick={autoSelectHeroes}
                       className="font-pixel text-[7px] px-2.5 py-1.5 rounded bg-primary/15 text-primary hover:bg-primary/25 transition-colors flex items-center gap-1"
                     >
                       <Sparkles size={10} /> Auto-sélection
@@ -1094,6 +1096,8 @@ const Index = () => {
             storyProgress={storyProgress}
             selectedHeroes={selectedHeroes}
             onToggleHero={toggleHeroSelection}
+            onAutoSelectHeroes={autoSelectHeroes}
+            onClearSelectedHeroes={() => setSelectedHeroes(new Set())}
             onStartStage={startStoryStage}
             selectedRegionIdx={storyRegionIdx}
             onRegionChange={setStoryRegionIdx}
