@@ -49,6 +49,7 @@ const Landing: React.FC = () => {
         <div className="flex items-center gap-3">
           <Link to="/wiki" className="font-pixel text-[7px] text-muted-foreground hover:text-foreground transition-colors">WIKI</Link>
           <Link to="/guides" className="font-pixel text-[7px] text-muted-foreground hover:text-foreground transition-colors">GUIDES</Link>
+          <Link to="/changelog" className="font-pixel text-[7px] text-muted-foreground hover:text-foreground transition-colors">CHANGELOG</Link>
           {user ? (
             <button onClick={() => navigate('/game')} className="pixel-btn pixel-btn-gold font-pixel text-[7px] px-3 py-1.5">
               JOUER
@@ -282,6 +283,7 @@ const Landing: React.FC = () => {
             <Link to="/wiki" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Wiki</Link>
             <Link to="/wiki/glossaire" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Glossaire</Link>
             <Link to="/guides" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Guides</Link>
+            <Link to="/changelog" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Changelog</Link>
             <Link to="/auth" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Connexion</Link>
           </div>
           <p className="text-[10px] text-muted-foreground">© 2026 BomberQuest — Idle Bomber RPG</p>
