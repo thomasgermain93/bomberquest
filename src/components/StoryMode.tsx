@@ -14,6 +14,8 @@ interface StoryModeProps {
   selectedHeroes: Set<string>;
   onToggleHero: (id: string) => void;
   onStartStage: (stage: StoryStage) => void;
+  selectedRegionIdx: number;
+  onRegionChange: (idx: number) => void;
 }
 
 const StoryMode: React.FC<StoryModeProps> = ({
@@ -22,12 +24,16 @@ const StoryMode: React.FC<StoryModeProps> = ({
   selectedHeroes,
   onToggleHero,
   onStartStage,
+  selectedRegionIdx,
+  onRegionChange,
 }) => {
-  const [selectedRegionIdx, setSelectedRegionIdx] = useState(0);
   const [selectedStage, setSelectedStage] = useState<StoryStage | null>(null);
 
   const region = STORY_REGIONS[selectedRegionIdx];
-  const isRegionLocked = player.accountLevel < region.unlockLevel;
+  const prevRegion = selectedRegionIdx > 0 ? STORY_REGIONS[selectedRegionIdx - 1] : null;
+  const prevRegionBossStage = prevRegion?.stages.find(s => s.isBoss);
+  const prevRegionBossComplete = !prevRegionBossStage || storyProgress.completedStages.includes(prevRegionBossStage.id);
+  const isRegionLocked = !prevRegionBossComplete || player.accountLevel < region.unlockLevel;
 
   const completedInRegion = region.stages.filter(s => storyProgress.completedStages.includes(s.id)).length;
   const regionProgress = (completedInRegion / region.stages.length) * 100;
@@ -45,7 +51,7 @@ const StoryMode: React.FC<StoryModeProps> = ({
       {/* Region Navigator */}
       <div className="flex items-center gap-2">
         <button
-          onClick={() => setSelectedRegionIdx(Math.max(0, selectedRegionIdx - 1))}
+          onClick={() => onRegionChange(Math.max(0, selectedRegionIdx - 1))}
           disabled={selectedRegionIdx === 0}
           className="pixel-btn pixel-btn-secondary font-pixel text-[8px] p-2 disabled:opacity-30"
         >
@@ -60,7 +66,10 @@ const StoryMode: React.FC<StoryModeProps> = ({
             <div className="absolute inset-0 bg-background/70 flex items-center justify-center z-10">
               <div className="text-center">
                 <Lock size={24} className="mx-auto mb-1 text-muted-foreground" />
-                <p className="font-pixel text-[8px] text-muted-foreground">Niveau {region.unlockLevel} requis</p>
+                {!prevRegionBossComplete
+                  ? <p className="font-pixel text-[8px] text-muted-foreground">Vaincre le boss de {prevRegion?.name}</p>
+                  : <p className="font-pixel text-[8px] text-muted-foreground">Niveau {region.unlockLevel} requis</p>
+                }
               </div>
             </div>
           )}
@@ -76,7 +85,7 @@ const StoryMode: React.FC<StoryModeProps> = ({
         </div>
 
         <button
-          onClick={() => setSelectedRegionIdx(Math.min(STORY_REGIONS.length - 1, selectedRegionIdx + 1))}
+          onClick={() => onRegionChange(Math.min(STORY_REGIONS.length - 1, selectedRegionIdx + 1))}
           disabled={selectedRegionIdx === STORY_REGIONS.length - 1}
           className="pixel-btn pixel-btn-secondary font-pixel text-[8px] p-2 disabled:opacity-30"
         >
@@ -89,7 +98,7 @@ const StoryMode: React.FC<StoryModeProps> = ({
         {STORY_REGIONS.map((r, i) => (
           <button
             key={r.id}
-            onClick={() => setSelectedRegionIdx(i)}
+            onClick={() => onRegionChange(i)}
             className={`w-3 h-3 rounded-full transition-all ${
               i === selectedRegionIdx ? 'bg-primary scale-125' : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
             }`}

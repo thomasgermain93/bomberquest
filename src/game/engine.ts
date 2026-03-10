@@ -498,8 +498,11 @@ export function tickGame(state: GameState, deltaMs: number): GameState {
             hero.state = 'idle';
             hero.stuckTimer = 0;
           } else {
-            // Check if adjacent to a target - should bomb
-            if (isAdjacentToTarget(hero, map, state.enemies)) {
+            // Check if adjacent to a target - should bomb (include boss)
+            const adjacentTargets = state.isStoryMode && state.boss && (state.boss as any).hp > 0
+              ? [...(state.enemies || []), state.boss as any]
+              : state.enemies;
+            if (isAdjacentToTarget(hero, map, adjacentTargets)) {
               hero.state = 'bombing';
             } else {
               hero.state = 'idle';
@@ -573,11 +576,14 @@ export function tickGame(state: GameState, deltaMs: number): GameState {
       hero.position.y = Math.round(hero.position.y);
 
       // In story mode with enemies alive, re-target faster (0.15s vs 0.3s)
-      const hasAliveEnemies = state.enemies?.some(e => e.hp > 0);
+      const hasAliveEnemies = state.enemies?.some(e => e.hp > 0) || (state.isStoryMode && state.boss && (state.boss as any).hp > 0);
       const retargetDelay = (state.isStoryMode && hasAliveEnemies) ? 0.15 : 0.3;
+      const storyTargets = state.isStoryMode && state.boss && (state.boss as any).hp > 0
+        ? [...(state.enemies || []), state.boss as any]
+        : state.enemies;
 
       if (hero.stuckTimer >= retargetDelay) {
-        const target = findNearestTarget(map, hero, bombs, map.chests, state.enemies, state.isStoryMode);
+        const target = findNearestTarget(map, hero, bombs, map.chests, storyTargets, state.isStoryMode);
         if (target) {
           const path = findPath(map, { x: hx, y: hy }, target, bombs);
           if (path && path.length > 1) {
@@ -595,12 +601,16 @@ export function tickGame(state: GameState, deltaMs: number): GameState {
     }
 
     // In story mode, interrupt current movement to retarget enemies that moved
-    if (state.isStoryMode && hero.state === 'moving' && state.enemies?.some(e => e.hp > 0)) {
+    const hasStoryTargets = state.isStoryMode && (state.enemies?.some(e => e.hp > 0) || (state.boss && (state.boss as any).hp > 0));
+    if (hasStoryTargets && hero.state === 'moving') {
       hero.stuckTimer += dt;
       // Every 0.8s, re-evaluate if there's a closer enemy
       if (hero.stuckTimer >= 0.8) {
         hero.stuckTimer = 0;
-        const betterTarget = findNearestTarget(map, hero, bombs, map.chests, state.enemies, true);
+        const retargets = state.boss && (state.boss as any).hp > 0
+          ? [...(state.enemies || []), state.boss as any]
+          : state.enemies;
+        const betterTarget = findNearestTarget(map, hero, bombs, map.chests, retargets, true);
         if (betterTarget && hero.targetPosition) {
           const currentDist = Math.abs(hero.targetPosition.x - hx) + Math.abs(hero.targetPosition.y - hy);
           const newDist = Math.abs(betterTarget.x - hx) + Math.abs(betterTarget.y - hy);

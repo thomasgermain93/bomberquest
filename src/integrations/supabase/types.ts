@@ -14,6 +14,60 @@ export type Database = {
   }
   public: {
     Tables: {
+      player_heroes: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          rarity: string
+          level: number
+          stars: number
+          stats: Json
+          skills: Json
+          current_stamina: number
+          max_stamina: number
+          is_active: boolean
+          house_level: number
+          icon: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id: string
+          user_id: string
+          name: string
+          rarity: string
+          level?: number
+          stars?: number
+          stats?: Json
+          skills?: Json
+          current_stamina?: number
+          max_stamina?: number
+          is_active?: boolean
+          house_level?: number
+          icon?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          name?: string
+          rarity?: string
+          level?: number
+          stars?: number
+          stats?: Json
+          skills?: Json
+          current_stamina?: number
+          max_stamina?: number
+          is_active?: boolean
+          house_level?: number
+          icon?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       player_saves: {
         Row: {
           created_at: string

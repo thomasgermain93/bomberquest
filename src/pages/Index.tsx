@@ -11,9 +11,9 @@ import StoryMode from '@/components/StoryMode';
 import { GameState, Hero, MAP_CONFIGS, PlayerData, RARITY_CONFIG, Rarity } from '@/game/types';
 import { generateMap, tickGame } from '@/game/engine';
 import { summonHero, generateHero } from '@/game/summoning';
-import { loadPlayerData, savePlayerData } from '@/game/saveSystem';
+import { loadPlayerData, savePlayerData, getDefaultPlayerData, saveStoryProgress, loadStoryProgress } from '@/game/saveSystem';
 import { getUpgradeCost, upgradeHero, ascendHero, getAscensionCost, countDuplicates } from '@/game/upgradeSystem';
-import { DailyQuestData, loadDailyQuests, saveDailyQuests, updateQuestProgress, ALL_CLAIMED_BONUS, ALL_CLAIMED_XP_BONUS } from '@/game/questSystem';
+import { DailyQuestData, loadDailyQuests, saveDailyQuests, generateDailyQuests, updateQuestProgress, ALL_CLAIMED_BONUS, ALL_CLAIMED_XP_BONUS } from '@/game/questSystem';
 import { StoryProgress, StoryStage } from '@/game/storyTypes';
 import { spawnEnemy, spawnBoss, tickEnemies, tickBoss, damageEnemiesFromExplosion, damageBossFromExplosion, checkEnemyHeroCollision, checkBossHeroCollision } from '@/game/enemyAI';
 import { STORY_REGIONS } from '@/game/storyData';
@@ -25,41 +25,40 @@ import { SFX, isMuted, setMuted } from '@/game/sfx';
 
 type Screen = 'hub' | 'treasure-hunt' | 'heroes' | 'summon' | 'story' | 'story-battle';
 
-function loadStoryProgress(): StoryProgress {
-  try {
-    const raw = localStorage.getItem('bq_story');
-    if (raw) return JSON.parse(raw);
-  } catch {}
-  return { completedStages: [], currentRegion: 'forest', bossesDefeated: [], highestStage: 0 };
-}
-
-function saveStoryProgress(sp: StoryProgress) {
-  localStorage.setItem('bq_story', JSON.stringify(sp));
-}
 
 const Index = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [screen, setScreen] = useState<Screen>('hub');
-  const [player, setPlayer] = useState<PlayerData>(loadPlayerData);
+  const [player, setPlayer] = useState<PlayerData>(() =>
+    user ? getDefaultPlayerData() : loadPlayerData()
+  );
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [summonOpen, setSummonOpen] = useState(false);
   const [lastSummoned, setLastSummoned] = useState<Hero | null>(null);
   const [selectedMap, setSelectedMap] = useState(0);
   const [selectedHeroes, setSelectedHeroes] = useState<Set<string>>(new Set());
   const [upgradeHeroId, setUpgradeHeroId] = useState<string | null>(null);
-  const [dailyQuests, setDailyQuests] = useState<DailyQuestData>(loadDailyQuests);
-  const [storyProgress, setStoryProgress] = useState<StoryProgress>(loadStoryProgress);
+  const [dailyQuests, setDailyQuests] = useState<DailyQuestData>(() =>
+    user ? generateDailyQuests() : loadDailyQuests()
+  );
+  const [storyProgress, setStoryProgress] = useState<StoryProgress>(() =>
+    user
+      ? { completedStages: [], currentRegion: 'forest', bossesDefeated: [], highestStage: 0 }
+      : loadStoryProgress()
+  );
   const [currentStoryStage, setCurrentStoryStage] = useState<StoryStage | null>(null);
   const [muted, setMutedState] = useState(isMuted());
-  const [cloudLoaded, setCloudLoaded] = useState(false);
+  const [isCloudLoading, setIsCloudLoading] = useState(!!user);
   const [autoFarm, setAutoFarm] = useState(false);
   const [farmStats, setFarmStats] = useState({ runs: 0, totalCoins: 0 });
+  const [storyRegionIdx, setStoryRegionIdx] = useState(0);
+  const huntSpeedRef = useRef(1);
   const gameLoopRef = useRef<number>();
   const lastTickRef = useRef<number>(Date.now());
   const processedExplosionsRef = useRef<Set<string>>(new Set());
 
-  const { loadFromCloud, saveToCloud } = useCloudSave(user?.id);
+  const { loadFromCloud, saveHeroesToCloud, removeHeroesFromCloud, saveStatsToCloud } = useCloudSave(user?.id);
 
   const toggleMute = () => {
     const newVal = !muted;
@@ -67,18 +66,20 @@ const Index = () => {
     setMuted(newVal);
   };
 
-  // Load from cloud on mount
+  // Load from cloud on mount (connected users only)
   useEffect(() => {
-    if (!user || cloudLoaded) return;
+    if (!user) return;
     loadFromCloud().then(data => {
       if (data) {
         setPlayer(data.playerData);
         setStoryProgress(data.storyProgress);
-        setDailyQuests(data.dailyQuests);
+        // Regenerate quests if they are from a previous day
+        const today = new Date().toISOString().split('T')[0];
+        setDailyQuests(data.dailyQuests?.date === today ? data.dailyQuests : generateDailyQuests());
       }
-      setCloudLoaded(true);
+      setIsCloudLoading(false);
     });
-  }, [user, cloudLoaded, loadFromCloud]);
+  }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Calculate account level from XP
   const getAccountLevel = (xp: number) => {
@@ -105,11 +106,14 @@ const Index = () => {
   // Save periodically + passive stamina regen
   useEffect(() => {
     const interval = setInterval(() => {
-      savePlayerData(player);
-      saveDailyQuests(dailyQuests);
-      saveStoryProgress(storyProgress);
-      saveToCloud(player, storyProgress, dailyQuests);
-      
+      if (user) {
+        saveStatsToCloud(player, storyProgress, dailyQuests);
+      } else {
+        savePlayerData(player);
+        saveDailyQuests(dailyQuests);
+        saveStoryProgress(storyProgress);
+      }
+
       // Passive stamina regen when not in battle
       if (!gameState?.isRunning) {
         setPlayer(prev => {
@@ -126,13 +130,14 @@ const Index = () => {
       }
     }, 5000);
     return () => clearInterval(interval);
-  }, [player, dailyQuests, storyProgress, gameState?.isRunning]);
+  }, [user, player, dailyQuests, storyProgress, gameState?.isRunning]);
 
   useEffect(() => {
+    if (user) return;
     const save = () => { savePlayerData(player); saveStoryProgress(storyProgress); };
     window.addEventListener('beforeunload', save);
     return () => window.removeEventListener('beforeunload', save);
-  }, [player, storyProgress]);
+  }, [user, player, storyProgress]);
 
   // Game loop
   const gameLoop = useCallback(() => {
@@ -334,7 +339,7 @@ const Index = () => {
       chestsOpened: 0,
       isRunning: true,
       isPaused: false,
-      speed: 1,
+      speed: huntSpeedRef.current,
       mapCompleted: false,
       eventLog: ['🎮 Chasse au Trésor lancée!'],
     });
@@ -347,16 +352,18 @@ const Index = () => {
     const earned = gameState.coinsEarned;
     const completed = gameState.mapCompleted;
     
+    const updatedHeroes = player.heroes.map(h => {
+      const deployed = gameState.heroes.find(dh => dh.id === h.id);
+      return deployed ? { ...h, currentStamina: deployed.currentStamina } : h;
+    });
     setPlayer(prev => ({
       ...prev,
       bomberCoins: prev.bomberCoins + earned,
       mapsCompleted: prev.mapsCompleted + (completed ? 1 : 0),
       xp: prev.xp + earned,
-      heroes: prev.heroes.map(h => {
-        const deployed = gameState.heroes.find(dh => dh.id === h.id);
-        return deployed ? { ...h, currentStamina: deployed.currentStamina } : h;
-      }),
+      heroes: updatedHeroes,
     }));
+    saveHeroesToCloud(updatedHeroes.filter(h => gameState.heroes.some(dh => dh.id === h.id)));
 
     setDailyQuests(prev => {
       let q = prev;
@@ -512,19 +519,20 @@ const Index = () => {
 
   const endStoryBattle = () => {
     if (gameState && currentStoryStage) {
+      const storyUpdatedHeroes = player.heroes.map(h => {
+        const deployed = gameState.heroes.find(dh => dh.id === h.id);
+        if (!deployed) return h;
+        return gameState.mapCompleted
+          ? { ...h, currentStamina: h.maxStamina }
+          : { ...h, currentStamina: deployed.currentStamina };
+      });
       setPlayer(prev => ({
         ...prev,
         bomberCoins: prev.bomberCoins + gameState.coinsEarned + (gameState.mapCompleted ? currentStoryStage.reward : 0),
         xp: prev.xp + (gameState.mapCompleted ? currentStoryStage.xpReward : 0),
-        heroes: prev.heroes.map(h => {
-          const deployed = gameState.heroes.find(dh => dh.id === h.id);
-          if (!deployed) return h;
-          // Heal fully on victory, keep damage on defeat
-          return gameState.mapCompleted
-            ? { ...h, currentStamina: h.maxStamina }
-            : { ...h, currentStamina: deployed.currentStamina };
-        }),
+        heroes: storyUpdatedHeroes,
       }));
+      saveHeroesToCloud(storyUpdatedHeroes.filter(h => gameState.heroes.some(dh => dh.id === h.id)));
 
       if (gameState.mapCompleted) {
         setStoryProgress(prev => ({
@@ -550,6 +558,10 @@ const Index = () => {
     }
     setGameState(null);
     setCurrentStoryStage(null);
+    if (currentStoryStage) {
+      const regionIdx = STORY_REGIONS.findIndex(r => r.id === currentStoryStage.regionId);
+      if (regionIdx >= 0) setStoryRegionIdx(regionIdx);
+    }
     setScreen('story');
   };
 
@@ -581,6 +593,7 @@ const Index = () => {
       pityCounters: currentPity,
       totalHeroesOwned: newHeroes.length,
     }));
+    saveHeroesToCloud(batch);
     setDailyQuests(prev => updateQuestProgress(prev, 'summon_heroes', count));
   };
 
@@ -598,11 +611,13 @@ const Index = () => {
     if (!hero || hero.level >= 10) return;
     const cost = getUpgradeCost(hero.level);
     if (player.bomberCoins < cost) return;
+    const upgraded = upgradeHero(hero);
     setPlayer(prev => ({
       ...prev,
       bomberCoins: prev.bomberCoins - cost,
-      heroes: prev.heroes.map(h => h.id === heroId ? upgradeHero(h) : h),
+      heroes: prev.heroes.map(h => h.id === heroId ? upgraded : h),
     }));
+    saveHeroesToCloud([upgraded]);
     setDailyQuests(prev => updateQuestProgress(prev, 'upgrade_hero', 1));
   };
 
@@ -615,20 +630,25 @@ const Index = () => {
     if (player.bomberCoins < info.cost || dupes < info.duplicates) return;
 
     let removedCount = 0;
+    const removedIds: string[] = [];
     const remainingHeroes = player.heroes.filter(h => {
       if (h.id === heroId) return true;
       if (h.rarity === hero.rarity && h.id !== heroId && removedCount < info.duplicates) {
         removedCount++;
+        removedIds.push(h.id);
         return false;
       }
       return true;
     });
 
+    const ascended = ascendHero(hero);
     setPlayer(prev => ({
       ...prev,
       bomberCoins: prev.bomberCoins - info.cost,
-      heroes: remainingHeroes.map(h => h.id === heroId ? ascendHero(h) : h),
+      heroes: remainingHeroes.map(h => h.id === heroId ? ascended : h),
     }));
+    removeHeroesFromCloud(removedIds);
+    saveHeroesToCloud([ascended]);
   };
 
   const upgradeHeroData = upgradeHeroId ? player.heroes.find(h => h.id === upgradeHeroId) ?? null : null;
@@ -659,6 +679,15 @@ const Index = () => {
   };
 
   const isInBattle = screen === 'treasure-hunt' || screen === 'story-battle';
+
+  if (isCloudLoading) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
+        <div className="font-pixel text-primary text-xs animate-pulse tracking-widest">CHARGEMENT...</div>
+        <div className="font-pixel text-muted-foreground text-[10px]">Synchronisation du cloud</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -988,6 +1017,8 @@ const Index = () => {
             selectedHeroes={selectedHeroes}
             onToggleHero={toggleHeroSelection}
             onStartStage={startStoryStage}
+            selectedRegionIdx={storyRegionIdx}
+            onRegionChange={setStoryRegionIdx}
           />
         )}
 
@@ -1039,7 +1070,7 @@ const Index = () => {
                   {[1, 2, 3].map(speed => (
                     <button
                       key={speed}
-                      onClick={() => setGameState(prev => prev ? { ...prev, speed } : prev)}
+                      onClick={() => { huntSpeedRef.current = speed; setGameState(prev => prev ? { ...prev, speed } : prev); }}
                       className={`font-pixel text-[8px] px-2 py-1.5 rounded transition-all ${
                         gameState.speed === speed
                           ? 'bg-primary text-primary-foreground shadow-md'

@@ -1,5 +1,6 @@
 import { PlayerData, Rarity } from './types';
 import { generateHero } from './summoning';
+import { StoryProgress } from './storyTypes';
 
 const SAVE_KEY = 'bomberquest_save';
 
@@ -49,4 +50,18 @@ export function loadPlayerData(): PlayerData {
 
 export function clearSaveData(): void {
   localStorage.removeItem(SAVE_KEY);
+}
+
+const STORY_KEY = 'bq_story';
+
+export function saveStoryProgress(sp: StoryProgress): void {
+  localStorage.setItem(STORY_KEY, JSON.stringify(sp));
+}
+
+export function loadStoryProgress(): StoryProgress {
+  try {
+    const raw = localStorage.getItem(STORY_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return { completedStages: [], currentRegion: 'forest', bossesDefeated: [], highestStage: 0 };
 }
