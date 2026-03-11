@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { AlertTriangle, ArrowLeft, BookOpen, ChevronRight, Image as ImageIcon, PawPrint } from 'lucide-react';
 import PixelIcon from '@/components/PixelIcon';
 import { BESTIARY_BY_FAMILY, BESTIARY_STATUS_LABELS, AssetStatus, BestiaryBomber } from '@/data/bestiary';
-import { drawHeroSprite } from '@/game/heroRenderer';
+import { drawHeroPortrait, drawHeroSprite } from '@/game/heroRenderer';
 import { RARITY_CONFIG } from '@/game/types';
 
 const statusClasses: Record<AssetStatus, string> = {
@@ -12,7 +12,7 @@ const statusClasses: Record<AssetStatus, string> = {
   ready: 'bg-green-500/10 text-green-400 border-green-500/30',
 };
 
-const AssetPreview: React.FC<{ label: string; src?: string; status: AssetStatus; rarity?: BestiaryBomber['rarity'] }> = ({ label, src, status, rarity }) => {
+const AssetPreview: React.FC<{ label: string; src?: string; status: AssetStatus; rarity?: BestiaryBomber['rarity']; mode?: 'sprite' | 'portrait' }> = ({ label, src, status, rarity, mode = 'sprite' }) => {
   const [hasLoadError, setHasLoadError] = useState(false);
 
   const generatedSprite = useMemo(() => {
@@ -28,11 +28,15 @@ const AssetPreview: React.FC<{ label: string; src?: string; status: AssetStatus;
     ctx.imageSmoothingEnabled = false;
     ctx.save();
     ctx.scale(2, 2);
-    drawHeroSprite(ctx, 0, 0, rarity, 'idle', 0, 'bestiary-preview', 100, 100);
+    if (mode === 'portrait') {
+      drawHeroPortrait(ctx, rarity, 0);
+    } else {
+      drawHeroSprite(ctx, 0, 0, rarity, 'idle', 0, 'bestiary-preview', 100, 100);
+    }
     ctx.restore();
 
     return canvas.toDataURL('image/png');
-  }, [rarity]);
+  }, [mode, rarity]);
 
   const resolvedSrc = !hasLoadError && src ? src : generatedSprite;
 
@@ -43,7 +47,7 @@ const AssetPreview: React.FC<{ label: string; src?: string; status: AssetStatus;
         {resolvedSrc ? (
           <img
             src={resolvedSrc}
-            alt={`${label} preview`}
+            alt={`Aperçu ${label.toLowerCase()}`}
             loading="lazy"
             onError={() => setHasLoadError(true)}
             className="h-full w-full object-contain"
@@ -103,8 +107,8 @@ const BomberCard: React.FC<{ bomber: BestiaryBomber }> = ({ bomber }) => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-        <AssetPreview label="Sprite" src={bomber.assets.spriteSheet} status={bomber.assetStatus} rarity={bomber.rarity} />
-        <AssetPreview label="Portrait" src={bomber.assets.portrait} status={bomber.assetStatus} rarity={bomber.rarity} />
+        <AssetPreview label="Sprite" src={bomber.assets.spriteSheet} status={bomber.assetStatus} rarity={bomber.rarity} mode="sprite" />
+        <AssetPreview label="Portrait" src={bomber.assets.portrait} status={bomber.assetStatus} rarity={bomber.rarity} mode="portrait" />
       </div>
     </article>
   );
@@ -145,7 +149,7 @@ const Bestiary: React.FC = () => {
                   <p className="text-xs text-muted-foreground mt-1">{family.description}</p>
                 </div>
                 <span className="font-pixel text-[7px] px-2 py-1 rounded bg-primary/15 text-primary w-fit">
-                  {bombers.length} BOMBERS
+                  {bombers.length} HÉROS
                 </span>
               </div>
 

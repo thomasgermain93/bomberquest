@@ -81,6 +81,85 @@ const RARITY_SPRITES: Record<string, HeroSpriteConfig> = {
   },
 };
 
+
+function getHeroSpriteConfig(rarity: string): HeroSpriteConfig {
+  return RARITY_SPRITES[rarity] || RARITY_SPRITES.common;
+}
+
+export function drawHeroPortrait(ctx: CanvasRenderingContext2D, rarity: string, time: number = 0) {
+  const config = getHeroSpriteConfig(rarity);
+  const shouldBlink = Math.sin(time / 2000) > 0.93;
+
+  ctx.imageSmoothingEnabled = false;
+
+  // Aura légère pour les raretés élevées
+  if (config.aura) {
+    const grad = ctx.createRadialGradient(20, 20, 6, 20, 20, 18);
+    grad.addColorStop(0, config.aura);
+    grad.addColorStop(1, 'transparent');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 40, 40);
+  }
+
+  // Casque
+  ctx.fillStyle = config.outlineColor;
+  ctx.fillRect(10, 8, 20, 16);
+  ctx.fillStyle = config.helmetColor;
+  ctx.fillRect(11, 9, 18, 14);
+
+  // Crête du casque
+  ctx.fillStyle = config.outlineColor;
+  ctx.fillRect(19, 6, 2, 3);
+
+  // Visière / visage
+  ctx.fillStyle = config.visorColor;
+  ctx.fillRect(13, 13, 14, 7);
+
+  if (!shouldBlink) {
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(14, 14, 4, 4);
+    ctx.fillRect(22, 14, 4, 4);
+
+    ctx.fillStyle = '#00FFCC';
+    if (rarity === 'legend' || rarity === 'super-legend') {
+      ctx.fillStyle = '#FF4444';
+    } else if (rarity === 'epic') {
+      ctx.fillStyle = '#FFAA00';
+    }
+    ctx.fillRect(15, 15, 2, 2);
+    ctx.fillRect(23, 15, 2, 2);
+  } else {
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.fillRect(14, 16, 4, 1);
+    ctx.fillRect(22, 16, 4, 1);
+  }
+
+  // Cornes
+  if (config.hasHorns) {
+    ctx.fillStyle = config.beltColor;
+    ctx.beginPath();
+    ctx.moveTo(11, 10);
+    ctx.lineTo(7, 3);
+    ctx.lineTo(13, 10);
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(29, 10);
+    ctx.lineTo(33, 3);
+    ctx.lineTo(27, 10);
+    ctx.fill();
+  }
+
+  // Couronne
+  if (config.hasCrown) {
+    ctx.fillStyle = '#FFD700';
+    ctx.fillRect(12, 6, 16, 3);
+    ctx.fillRect(12, 3, 2, 3);
+    ctx.fillRect(19, 2, 2, 4);
+    ctx.fillRect(26, 3, 2, 3);
+  }
+}
+
 export function drawHeroSprite(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -95,7 +174,7 @@ export function drawHeroSprite(
   const px = x * TILE;
   const py = y * TILE;
   const cx = px + TILE / 2;
-  const config = RARITY_SPRITES[rarity] || RARITY_SPRITES.common;
+  const config = getHeroSpriteConfig(rarity);
 
   // Bob animation
   const isMoving = state === 'moving' || state === 'retreating';

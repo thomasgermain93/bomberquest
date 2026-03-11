@@ -25,12 +25,12 @@ export interface BestiaryBomber {
 }
 
 export const BOMBER_FAMILIES: BestiaryFamily[] = [
-  { id: 'ember-clan', name: 'Ember Clan', description: 'Bombers orientés feu/explosion.' },
-  { id: 'storm-riders', name: 'Storm Riders', description: 'Bombers rapides avec affinité électrique.' },
-  { id: 'forge-guard', name: 'Forge Guard', description: 'Bombers tank et défense.' },
-  { id: 'shadow-core', name: 'Shadow Core', description: 'Bombers infiltration et contrôle.' },
-  { id: 'arcane-circuit', name: 'Arcane Circuit', description: 'Bombers techno-magiques et utilitaires.' },
-  { id: 'wild-pack', name: 'Wild Pack', description: 'Bombers agiles orientés rush/chasse.' },
+  { id: 'ember-clan', name: 'Clan Braise', description: 'Héros orientés feu et explosion.' },
+  { id: 'storm-riders', name: "Cavaliers de l'Orage", description: 'Héros rapides avec affinité électrique.' },
+  { id: 'forge-guard', name: 'Garde de Forge', description: 'Héros robustes axés tank et défense.' },
+  { id: 'shadow-core', name: "Noyau d'Ombre", description: "Héros d'infiltration et de contrôle." },
+  { id: 'arcane-circuit', name: 'Circuit Arcanique', description: 'Héros techno-magiques et utilitaires.' },
+  { id: 'wild-pack', name: 'Meute Sauvage', description: 'Héros agiles orientés rush et chasse.' },
 ];
 
 const HERO_ICON_BY_NAME = Object.fromEntries(
@@ -84,7 +84,7 @@ export const BESTIARY_BY_FAMILY = BOMBER_FAMILIES.map((family) => ({
 }));
 
 export const BESTIARY_STATUS_LABELS: Record<AssetStatus, string> = {
-  missing: 'Missing',
-  wip: 'WIP',
-  ready: 'Ready',
+  missing: 'Manquant',
+  wip: 'En cours',
+  ready: 'Prêt',
 };
