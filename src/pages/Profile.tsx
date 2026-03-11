@@ -11,6 +11,8 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { User, Loader2, AlertTriangle, LogOut, Trash2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
+const USERNAME_RE = /^[A-Za-z0-9_]{3,20}$/;
+
 export default function Profile() {
   const { user, signOut } = useAuth();
   const { profile, loading: profileLoading, setDisplayName, refreshProfile } = useProfile();
@@ -20,6 +22,7 @@ export default function Profile() {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmUsername, setConfirmUsername] = useState('');
+  const [localError, setLocalError] = useState<string | null>(null);
   
   useEffect(() => {
     if (!user) {
@@ -35,7 +38,17 @@ export default function Profile() {
   }, [profile?.display_name]);
   
   const handleSaveUsername = async () => {
-    if (!displayName.trim()) return;
+    const trimmed = displayName.trim();
+    if (!trimmed) {
+      setLocalError('Le pseudo est requis.');
+      return;
+    }
+    if (!USERNAME_RE.test(trimmed)) {
+      setLocalError('Pseudo invalide (3-20 caractères, lettres/chiffres/underscore).');
+      return;
+    }
+    
+    setLocalError(null);
     setSaving(true);
     const { error } = await setDisplayName(displayName);
     setSaving(false);
@@ -131,7 +144,10 @@ export default function Profile() {
                 <div className="flex gap-2">
                   <Input
                     value={displayName}
-                    onChange={(e) => setDisplayNameState(e.target.value)}
+                    onChange={(e) => {
+                      setDisplayNameState(e.target.value);
+                      setLocalError(null);
+                    }}
                     placeholder="Ton pseudo"
                     maxLength={20}
                     disabled={saving}
@@ -140,6 +156,9 @@ export default function Profile() {
                     {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Enregistrer'}
                   </Button>
                 </div>
+                {localError && (
+                  <p className="text-xs text-destructive">{localError}</p>
+                )}
                 <p className="text-xs text-muted-foreground">
                   3-20 caractères, lettres, chiffres et underscore uniquement
                 </p>

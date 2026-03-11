@@ -84,12 +84,17 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
       return { error: 'Pseudo invalide (3-20 caractères, lettres/chiffres/underscore).' };
     }
 
-    const { data: conflict } = await supabase
+    const { data: conflict, error: conflictError } = await supabase
       .from('profiles')
       .select('id,user_id')
       .ilike('display_name', normalized)
       .neq('user_id', user.id)
+      .not('display_name', 'is', null)
       .limit(1);
+
+    if (conflictError) {
+      return { error: 'Erreur de connexion. Veuillez réessayer.' };
+    }
 
     if (conflict && conflict.length > 0) {
       return { error: 'Ce pseudo est déjà utilisé.' };
@@ -101,7 +106,12 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
       .select('*')
       .single();
 
-    if (error) return { error: 'Impossible d’enregistrer le pseudo.' };
+    if (error) {
+      if (error.code === '23505' || error.message.includes('unique') || error.message.includes('duplicate')) {
+        return { error: 'Ce pseudo est déjà utilisé par un autre joueur.' };
+      }
+      return { error: 'Erreur technique. Veuillez réessayer plus tard.' };
+    }
 
     setProfile(data as ProfileData);
     return { error: null };
