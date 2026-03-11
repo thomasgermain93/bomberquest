@@ -292,6 +292,17 @@ interface LandingKpis {
   lastSuperLegend: string | null;
 }
 
+const KPI_TIMEOUT_MS = 4500;
+
+const withTimeout = <T,>(promise: Promise<T>, ms: number): Promise<T> => {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('KPI timeout')), ms)
+    ),
+  ]);
+};
+
 const KPI_FALLBACK: LandingKpis = {
   players: null,
   totalInvocations: null,
@@ -314,43 +325,65 @@ const Landing: React.FC = () => {
 
   useEffect(() => {
     let isMounted = true;
+    let timeoutId: ReturnType<typeof setTimeout>;
 
     const loadKpis = async () => {
       setKpisLoading(true);
       try {
-        const [playersResult, invocationsResult, lastSuperLegendResult] = await Promise.all([
-          supabase.from('profiles').select('id', { count: 'exact', head: true }),
-          supabase.from('player_heroes').select('id', { count: 'exact', head: true }),
-          supabase
-            .from('player_heroes')
-            .select('user_id, created_at')
-            .eq('rarity', 'super-legend')
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle(),
-        ]);
+        const kpiRequest = async () => {
+          const [playersResult, invocationsResult, lastSuperLegendResult] = await Promise.all([
+            supabase.from('profiles').select('id', { count: 'exact', head: true }),
+            supabase.from('player_heroes').select('id', { count: 'exact', head: true }),
+            supabase
+              .from('player_heroes')
+              .select('user_id, created_at')
+              .eq('rarity', 'super-legend')
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .maybeSingle(),
+          ]);
 
-        let lastSuperLegendName: string | null = null;
-        if (lastSuperLegendResult.data?.user_id) {
-          const profileResult = await supabase
-            .from('profiles')
-            .select('display_name')
-            .eq('user_id', lastSuperLegendResult.data.user_id)
-            .maybeSingle();
-          lastSuperLegendName = profileResult.data?.display_name ?? null;
-        }
+          let lastSuperLegendName: string | null = null;
+          if (lastSuperLegendResult.data?.user_id) {
+            const profileResult = await supabase
+              .from('profiles')
+              .select('display_name')
+              .eq('user_id', lastSuperLegendResult.data.user_id)
+              .maybeSingle();
+            lastSuperLegendName = profileResult.data?.display_name ?? null;
+          }
+
+          if (!isMounted) return null;
+
+          return {
+            players: playersResult.error ? null : (playersResult.count ?? null),
+            totalInvocations: invocationsResult.error ? null : (invocationsResult.count ?? null),
+            lastSuperLegend: lastSuperLegendName,
+          };
+        };
+
+        timeoutId = setTimeout(() => {
+          if (isMounted) {
+            setKpis(KPI_FALLBACK);
+            setKpisLoading(false);
+          }
+        }, KPI_TIMEOUT_MS);
+
+        const result = await withTimeout(kpiRequest(), KPI_TIMEOUT_MS);
+        clearTimeout(timeoutId);
 
         if (!isMounted) return;
 
-        setKpis({
-          players: playersResult.error ? null : (playersResult.count ?? null),
-          totalInvocations: invocationsResult.error ? null : (invocationsResult.count ?? null),
-          lastSuperLegend: lastSuperLegendName,
-        });
+        if (result) {
+          setKpis(result);
+        } else {
+          setKpis(KPI_FALLBACK);
+        }
       } catch {
         if (!isMounted) return;
         setKpis(KPI_FALLBACK);
       } finally {
+        clearTimeout(timeoutId);
         if (isMounted) setKpisLoading(false);
       }
     };
@@ -359,6 +392,7 @@ const Landing: React.FC = () => {
 
     return () => {
       isMounted = false;
+      clearTimeout(timeoutId);
     };
   }, []);
 
