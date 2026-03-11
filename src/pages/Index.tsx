@@ -1240,7 +1240,7 @@ const Index = () => {
                       <span className="font-pixel text-[7px] text-foreground truncate max-w-[60px]">{hero.name}</span>
                       <div className="w-16 h-1.5 bg-background rounded-full overflow-hidden">
                         <div
-                          className={`h-full transition-all duration-300 ${
+                          className={`h-full ${
                             isLow ? 'bg-game-energy-low' : 'bg-game-energy-green'
                           }`}
                           style={{ width: `${staminaPct}%` }}
