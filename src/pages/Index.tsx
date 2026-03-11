@@ -59,6 +59,10 @@ const Index = () => {
   const [storyRegionIdx, setStoryRegionIdx] = useState(0);
   const huntSpeedRef = useRef(1);
   const gameLoopRef = useRef<number>();
+  const cloudLoadedRef = useRef(false);
+  const lastLocalSaveRef = useRef<number>(Date.now());
+  const isInitialMountRef = useRef(true);
+  const localHeroCountRef = useRef(0);
 
   useEffect(() => {
     // For guests: restore speed from localStorage. For auth users: cloud load handles it.
@@ -78,9 +82,29 @@ const Index = () => {
     setMuted(newVal);
   };
 
-  // Load from cloud on mount (connected users only)
+  // Save to localStorage when player data changes (for offline users or as backup)
+  useEffect(() => {
+    if (user || isCloudLoading) return;
+    if (!isInitialMountRef.current) {
+      savePlayerData(player);
+      saveDailyQuests(dailyQuests);
+      saveStoryProgress(storyProgress);
+      lastLocalSaveRef.current = Date.now();
+    }
+  }, [player, dailyQuests, storyProgress, user, isCloudLoading]);
+
+  // Track initial mount completion
+  useEffect(() => {
+    isInitialMountRef.current = false;
+  }, []);
+
+  // Load from cloud on mount (connected users only) - prevents rollback on navigation
   useEffect(() => {
     if (!user) return;
+    if (cloudLoadedRef.current) {
+      console.log('CLOUD_LOAD_SKIP', { reason: 'already_loaded', heroCount: player.heroes.length });
+      return;
+    }
 
     const CLOUD_LOAD_TIMEOUT = 10000;
     const RETRY_DELAY_MS = 500;
@@ -108,6 +132,26 @@ const Index = () => {
 
     loadWithRetry().then(data => {
       if (data) {
+        const cloudHeroCount = data.playerData?.heroes?.length || 0;
+        const localHeroCount = localHeroCountRef.current;
+        
+        // Detect potential rollback: cloud has fewer heroes than local state
+        // This happens when user summoned heroes but cloud hasn't synced yet
+        const isPotentialRollback = localHeroCount > cloudHeroCount && localHeroCount > 1;
+        
+        if (isPotentialRollback) {
+          console.warn('CLOUD_ROLLBACK_DETECTED', {
+            localHeroCount,
+            cloudHeroCount,
+            localHeroIds: player.heroes.map(h => h.id).slice(-5),
+            action: 'keeping_local_data'
+          });
+          // Keep local data - it's more recent
+          setCloudValidated(true);
+          cloudLoadedRef.current = true;
+          return;
+        }
+        
         setPlayer(data.playerData);
         setStoryProgress(data.storyProgress ?? { completedStages: [], currentRegion: 'forest', bossesDefeated: [], highestStage: 0 });
         const today = new Date().toISOString().split('T')[0];
@@ -117,10 +161,12 @@ const Index = () => {
           huntSpeedRef.current = cloudSpeed;
         }
         setCloudValidated(true);
+        cloudLoadedRef.current = true;
         console.log('CLOUD_LOAD_SUCCESS', { 
           hasPlayerData: !!data.playerData, 
           heroCount: data.playerData?.heroes?.length || 0,
-          hasStoryProgress: !!data.storyProgress 
+          hasStoryProgress: !!data.storyProgress,
+          timestamp: Date.now()
         });
       } else {
         const localData = loadPlayerData();
@@ -140,6 +186,7 @@ const Index = () => {
           message: 'Cloud load failed, using local data in read-only mode',
           localHeroCount: localData.heroes?.length || 0 
         });
+        cloudLoadedRef.current = true;
         toast({ title: 'Cloud indisponible', description: 'Données locales chargées. Mode lecture seule.', duration: 4000 });
       }
     }).catch((err) => {
@@ -152,11 +199,12 @@ const Index = () => {
       setStoryProgress(localStory);
       const today = new Date().toISOString().split('T')[0];
       setDailyQuests(localQuests?.date === today ? localQuests : generateDailyQuests());
+      cloudLoadedRef.current = true;
       toast({ title: 'Cloud indisponible', description: 'Données locales chargées. Mode lecture seule.', duration: 4000 });
     }).finally(() => {
       setIsCloudLoading(false);
     });
-  }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user?.id, loadFromCloud]);
 
   // Calculate account level from XP
   const getAccountLevel = (xp: number) => {
@@ -179,6 +227,11 @@ const Index = () => {
       setPlayer(prev => ({ ...prev, accountLevel: getAccountLevel(prev.xp) }));
     }
   }, [player.xp, player.accountLevel]);
+
+  // Track local hero count for rollback detection
+  useEffect(() => {
+    localHeroCountRef.current = player.heroes.length;
+  }, [player.heroes]);
 
   // Save periodically + passive stamina regen
   useEffect(() => {
