@@ -14,6 +14,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: '2026-03-10',
     title: 'Mises à jour récentes',
     changes: [
+      { type: 'feature', description: 'feat: bestiaire familles + bombers (MVP) (#47)' },
       { type: 'feature', description: 'Landing: section Chiffres clés + contraste bouton invité (#40)' },
       { type: 'feature', description: 'feat: brancher profiles Supabase côté runtime (issue #37) (#38)' },
       { type: 'feature', description: 'fix: simplifier la sélection de héros en mode story (issue #28) (#36)' },
