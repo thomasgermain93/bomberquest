@@ -14,6 +14,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: '2026-03-10',
     title: 'Mises à jour récentes',
     changes: [
+      { type: 'feature', description: 'feat(landing): add real user metrics with compact formatting (#57) (#60)' },
       { type: 'feature', description: 'Add profile page with account deletion (Fixes #30) (#59)' },
       { type: 'feature', description: 'Sync hunt speed preference to cloud for authenticated users (#54)' },
       { type: 'ui', description: 'Taille de la carte de jeu à adapter (#17)' },
