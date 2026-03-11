@@ -76,6 +76,9 @@ src/
 | `/game` | Jeu principal |
 | `/guides` | Liste des guides |
 | `/guides/:slug` | Article de guide |
+| `/wiki` | Index de la wiki |
+| `/wiki/glossaire` | Glossaire |
+| `/wiki/bestiaire` | Bestiaire familles + bombers (source de vérité art) |
 | `/reset-password` | Réinitialisation du mot de passe |
 
 ## Gameplay
@@ -102,6 +105,26 @@ Forêt Enchantée → Cavernes Maudites → Ruines Anciennes → Forteresse Orc 
 
 ### Coffres
 Cinq niveaux de coffres à détruire : Bois, Argent, Or, Cristal, Légendaire.
+
+## Bestiaire (MVP issue #42)
+
+- Dataset centralisé : `src/data/bestiary.ts`
+- UI minimale : `/wiki/bestiaire`
+- Objectif : référencer familles + bombers + statut des assets pour le suivi art.
+
+### Ajouter un nouveau bomber
+
+1. Ajouter/valider la famille dans `BOMBER_FAMILIES`.
+2. Ajouter le bomber dans `BESTIARY_BOMBERS` avec:
+   - `id` (kebab-case)
+   - `name`
+   - `familyId`
+   - `rarity` (optionnelle)
+   - `assetStatus` (`missing` | `wip` | `ready`)
+   - `assets.spriteSheet` / `assets.portrait` (si disponible)
+3. Mettre à jour les refs assets quand les fichiers sont livrés.
+
+> TODO: brancher automatiquement ce dataset aux assets réels lors de l’intégration pipeline art.
 
 ## Authentification
 

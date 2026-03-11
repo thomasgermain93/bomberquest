@@ -56,6 +56,14 @@ const WikiIndex: React.FC = () => {
               <ChevronRight size={12} className="text-muted-foreground group-hover:text-primary transition-colors" />
             </Link>
             <Link
+              to="/wiki/bestiaire"
+              className="pixel-border bg-card px-4 py-2 flex items-center gap-2 hover:bg-muted hover:glow-blue transition-all group"
+            >
+              <BookOpen size={14} className="text-primary" />
+              <span className="font-pixel text-[7px] text-foreground group-hover:text-primary transition-colors">BESTIAIRE</span>
+              <ChevronRight size={12} className="text-muted-foreground group-hover:text-primary transition-colors" />
+            </Link>
+            <Link
               to="/guides"
               className="pixel-border bg-card px-4 py-2 flex items-center gap-2 hover:bg-muted hover:glow-blue transition-all group"
             >
