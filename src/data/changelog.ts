@@ -14,6 +14,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: '2026-03-10',
     title: 'Mises à jour récentes',
     changes: [
+      { type: 'feature', description: 'Sync hunt speed preference to cloud for authenticated users (#54)' },
       { type: 'ui', description: 'Taille de la carte de jeu à adapter (#17)' },
       { type: 'feature', description: 'Bug gameplay: supprimer les dégâts alliés des bombes + coût stamina à la pose (#50)' },
       { type: 'feature', description: 'feat: bestiaire visuel avec previews sprite/portrait (#49)' },
