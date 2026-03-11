@@ -51,6 +51,7 @@ const Index = () => {
   const [currentStoryStage, setCurrentStoryStage] = useState<StoryStage | null>(null);
   const [muted, setMutedState] = useState(isMuted());
   const [isCloudLoading, setIsCloudLoading] = useState(!!user);
+  const [cloudValidated, setCloudValidated] = useState(false);
   const [autoFarm, setAutoFarm] = useState(false);
   const [autoMerge, setAutoMerge] = useState(false);
   const [isMerging, setIsMerging] = useState(false);
@@ -115,6 +116,12 @@ const Index = () => {
         if (cloudSpeed === 2 || cloudSpeed === 3) {
           huntSpeedRef.current = cloudSpeed;
         }
+        setCloudValidated(true);
+        console.log('CLOUD_LOAD_SUCCESS', { 
+          hasPlayerData: !!data.playerData, 
+          heroCount: data.playerData?.heroes?.length || 0,
+          hasStoryProgress: !!data.storyProgress 
+        });
       } else {
         const localData = loadPlayerData();
         const localStory = loadStoryProgress();
@@ -123,16 +130,17 @@ const Index = () => {
         setStoryProgress(localStory);
         const today = new Date().toISOString().split('T')[0];
         setDailyQuests(localQuests?.date === today ? localQuests : generateDailyQuests());
-        saveStatsToCloud(localData, localStory, localQuests?.date === today ? localQuests : generateDailyQuests());
-        saveHeroesToCloud(localData.heroes);
         const localSpeed = Number(localStorage.getItem('hunt-speed') || '1');
         if (localSpeed === 2 || localSpeed === 3) {
           huntSpeedRef.current = localSpeed;
           setPlayer(prev => ({ ...prev, huntSpeed: localSpeed }));
         }
-        if (!data) {
-          toast({ title: 'Cloud indisponible', description: 'Données chargées depuis le stockage local.', duration: 4000 });
-        }
+        console.warn('CLOUD_LOAD_FAILED', { 
+          code: 'CLOUD_UNAVAILABLE', 
+          message: 'Cloud load failed, using local data in read-only mode',
+          localHeroCount: localData.heroes?.length || 0 
+        });
+        toast({ title: 'Cloud indisponible', description: 'Données locales chargées. Mode lecture seule.', duration: 4000 });
       }
     }).catch((err) => {
       const error = err as Error & { code?: string };
@@ -144,7 +152,7 @@ const Index = () => {
       setStoryProgress(localStory);
       const today = new Date().toISOString().split('T')[0];
       setDailyQuests(localQuests?.date === today ? localQuests : generateDailyQuests());
-      toast({ title: 'Cloud indisponible', description: 'Données chargées depuis le stockage local.', duration: 4000 });
+      toast({ title: 'Cloud indisponible', description: 'Données locales chargées. Mode lecture seule.', duration: 4000 });
     }).finally(() => {
       setIsCloudLoading(false);
     });
@@ -175,9 +183,9 @@ const Index = () => {
   // Save periodically + passive stamina regen
   useEffect(() => {
     const interval = setInterval(() => {
-      if (user) {
+      if (user && cloudValidated) {
         saveStatsToCloud(player, storyProgress, dailyQuests);
-      } else {
+      } else if (!user) {
         savePlayerData(player);
         saveDailyQuests(dailyQuests);
         saveStoryProgress(storyProgress);
@@ -199,7 +207,7 @@ const Index = () => {
       }
     }, 5000);
     return () => clearInterval(interval);
-  }, [user, player, dailyQuests, storyProgress, gameState?.isRunning]);
+  }, [user, cloudValidated, player, dailyQuests, storyProgress, gameState?.isRunning]);
 
   useEffect(() => {
     if (user) return;
@@ -435,7 +443,9 @@ const Index = () => {
       xp: prev.xp + earned,
       heroes: updatedHeroes,
     }));
-    saveHeroesToCloud(updatedHeroes.filter(h => gameState.heroes.some(dh => dh.id === h.id)));
+    if (cloudValidated) {
+      saveHeroesToCloud(updatedHeroes.filter(h => gameState.heroes.some(dh => dh.id === h.id)));
+    }
 
     setDailyQuests(prev => {
       let q = prev;
@@ -643,7 +653,9 @@ const Index = () => {
         xp: prev.xp + (gameState.mapCompleted ? currentStoryStage.xpReward : 0),
         heroes: storyUpdatedHeroes,
       }));
-      saveHeroesToCloud(storyUpdatedHeroes.filter(h => gameState.heroes.some(dh => dh.id === h.id)));
+      if (cloudValidated) {
+        saveHeroesToCloud(storyUpdatedHeroes.filter(h => gameState.heroes.some(dh => dh.id === h.id)));
+      }
 
       if (gameState.mapCompleted) {
         setStoryProgress(prev => ({
@@ -730,10 +742,11 @@ const Index = () => {
       pityCounters: currentPity,
       totalHeroesOwned: mergedHeroes.length,
     }));
-    // Save all new heroes; if autoMerge removed some, delete them from Supabase too
-    saveHeroesToCloud(mergedHeroes.filter(h => !player.heroes.some(existing => existing.id === h.id)));
-    const removedByMerge = newHeroes.filter(h => !mergedHeroes.some(m => m.id === h.id)).map(h => h.id);
-    if (removedByMerge.length > 0) removeHeroesFromCloud(removedByMerge);
+    if (cloudValidated) {
+      saveHeroesToCloud(mergedHeroes.filter(h => !player.heroes.some(existing => existing.id === h.id)));
+      const removedByMerge = newHeroes.filter(h => !mergedHeroes.some(m => m.id === h.id)).map(h => h.id);
+      if (removedByMerge.length > 0) removeHeroesFromCloud(removedByMerge);
+    }
     setDailyQuests(prev => updateQuestProgress(prev, 'summon_heroes', count));
   };
 
@@ -771,7 +784,9 @@ const Index = () => {
       bomberCoins: prev.bomberCoins - cost,
       heroes: prev.heroes.map(h => h.id === heroId ? upgraded : h),
     }));
-    saveHeroesToCloud([upgraded]);
+    if (cloudValidated) {
+      saveHeroesToCloud([upgraded]);
+    }
     setDailyQuests(prev => updateQuestProgress(prev, 'upgrade_hero', 1));
   };
 
@@ -801,8 +816,10 @@ const Index = () => {
       bomberCoins: prev.bomberCoins - info.cost,
       heroes: remainingHeroes.map(h => h.id === heroId ? ascended : h),
     }));
-    removeHeroesFromCloud(removedIds);
-    saveHeroesToCloud([ascended]);
+    if (cloudValidated) {
+      removeHeroesFromCloud(removedIds);
+      saveHeroesToCloud([ascended]);
+    }
   };
 
   const upgradeHeroData = upgradeHeroId ? player.heroes.find(h => h.id === upgradeHeroId) ?? null : null;
