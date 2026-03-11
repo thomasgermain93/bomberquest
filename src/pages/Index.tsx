@@ -82,8 +82,10 @@ const Index = () => {
     if (!user) return;
 
     const CLOUD_LOAD_TIMEOUT = 10000;
+    const RETRY_DELAY_MS = 500;
+    const MAX_RETRIES = 1;
 
-    const loadWithTimeout = async () => {
+    const loadWithRetry = async (retryCount = 0): Promise<any> => {
       const timeoutPromise = new Promise<null>((resolve) => {
         setTimeout(() => resolve(null), CLOUD_LOAD_TIMEOUT);
       });
@@ -91,12 +93,19 @@ const Index = () => {
       try {
         const data = await Promise.race([loadFromCloud(), timeoutPromise]);
         return data;
-      } catch {
+      } catch (err) {
+        const error = err as Error & { code?: string };
+        console.error('CLOUD_LOAD_ERROR', { code: error.code || 'UNKNOWN', message: error.message, retryCount });
+        
+        if (retryCount < MAX_RETRIES) {
+          await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+          return loadWithRetry(retryCount + 1);
+        }
         return null;
       }
     };
 
-    loadWithTimeout().then(data => {
+    loadWithRetry().then(data => {
       if (data) {
         setPlayer(data.playerData);
         setStoryProgress(data.storyProgress ?? { completedStages: [], currentRegion: 'forest', bossesDefeated: [], highestStage: 0 });
@@ -125,8 +134,9 @@ const Index = () => {
           toast({ title: 'Cloud indisponible', description: 'Données chargées depuis le stockage local.', duration: 4000 });
         }
       }
-      setIsCloudLoading(false);
-    }).catch(() => {
+    }).catch((err) => {
+      const error = err as Error & { code?: string };
+      console.error('CLOUD_LOAD_UNEXPECTED_ERROR', { code: error.code || 'UNKNOWN', message: error.message });
       const localData = loadPlayerData();
       const localStory = loadStoryProgress();
       const localQuests = loadDailyQuests();
@@ -135,6 +145,7 @@ const Index = () => {
       const today = new Date().toISOString().split('T')[0];
       setDailyQuests(localQuests?.date === today ? localQuests : generateDailyQuests());
       toast({ title: 'Cloud indisponible', description: 'Données chargées depuis le stockage local.', duration: 4000 });
+    }).finally(() => {
       setIsCloudLoading(false);
     });
   }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps

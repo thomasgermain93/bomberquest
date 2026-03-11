@@ -62,8 +62,8 @@ export default function Profile() {
   };
   
   const handleDeleteAccount = async () => {
-    if (!user || !profile?.display_name) return;
-    if (confirmUsername !== profile.display_name) {
+    if (!user || !profileDisplayName) return;
+    if (confirmUsername !== profileDisplayName) {
       toast({ 
         title: 'Confirmation incorrecte', 
         description: 'Le pseudo doit correspondre exactement pour supprimer le compte.', 
@@ -114,6 +114,9 @@ export default function Profile() {
   };
   
   if (!user) return null;
+  
+  const profileDisplayName = profile?.display_name ?? '';
+  const canDeleteAccount = confirmUsername === profileDisplayName && profileDisplayName.length > 0;
   
   return (
     <div className="min-h-screen bg-background p-4">
@@ -213,7 +216,7 @@ export default function Profile() {
               
               <div className="space-y-2">
                 <label className="text-sm font-medium">
-                  Tape "{profile?.display_name || 'ton pseudo'}" pour confirmer
+                  Tape "{profileDisplayName || 'ton pseudo'}" pour confirmer
                 </label>
                 <Input
                   value={confirmUsername}
@@ -226,7 +229,7 @@ export default function Profile() {
               <Button 
                 variant="destructive" 
                 onClick={handleDeleteAccount}
-                disabled={deleting || confirmUsername !== profile?.display_name}
+                disabled={deleting || !canDeleteAccount}
                 className="w-full"
               >
                 {deleting ? (
