@@ -80,21 +80,33 @@ const Index = () => {
   // Load from cloud on mount (connected users only)
   useEffect(() => {
     if (!user) return;
-    loadFromCloud().then(data => {
+
+    const CLOUD_LOAD_TIMEOUT = 10000;
+
+    const loadWithTimeout = async () => {
+      const timeoutPromise = new Promise<null>((resolve) => {
+        setTimeout(() => resolve(null), CLOUD_LOAD_TIMEOUT);
+      });
+
+      try {
+        const data = await Promise.race([loadFromCloud(), timeoutPromise]);
+        return data;
+      } catch {
+        return null;
+      }
+    };
+
+    loadWithTimeout().then(data => {
       if (data) {
-        // Cloud data is the single source of truth for authenticated users
         setPlayer(data.playerData);
         setStoryProgress(data.storyProgress ?? { completedStages: [], currentRegion: 'forest', bossesDefeated: [], highestStage: 0 });
-        // Regenerate quests if they are from a previous day
         const today = new Date().toISOString().split('T')[0];
         setDailyQuests(data.dailyQuests?.date === today ? data.dailyQuests : generateDailyQuests());
-        // Restore hunt speed preference from cloud
         const cloudSpeed = data.playerData.huntSpeed;
         if (cloudSpeed === 2 || cloudSpeed === 3) {
           huntSpeedRef.current = cloudSpeed;
         }
       } else {
-        // No cloud save yet — migrate localStorage data to Supabase (first login after playing as guest)
         const localData = loadPlayerData();
         const localStory = loadStoryProgress();
         const localQuests = loadDailyQuests();
@@ -102,7 +114,6 @@ const Index = () => {
         setStoryProgress(localStory);
         const today = new Date().toISOString().split('T')[0];
         setDailyQuests(localQuests?.date === today ? localQuests : generateDailyQuests());
-        // Upload to cloud immediately so Supabase becomes the source of truth
         saveStatsToCloud(localData, localStory, localQuests?.date === today ? localQuests : generateDailyQuests());
         saveHeroesToCloud(localData.heroes);
         const localSpeed = Number(localStorage.getItem('hunt-speed') || '1');
@@ -110,7 +121,20 @@ const Index = () => {
           huntSpeedRef.current = localSpeed;
           setPlayer(prev => ({ ...prev, huntSpeed: localSpeed }));
         }
+        if (!data) {
+          toast({ title: 'Cloud indisponible', description: 'Données chargées depuis le stockage local.', duration: 4000 });
+        }
       }
+      setIsCloudLoading(false);
+    }).catch(() => {
+      const localData = loadPlayerData();
+      const localStory = loadStoryProgress();
+      const localQuests = loadDailyQuests();
+      setPlayer(localData);
+      setStoryProgress(localStory);
+      const today = new Date().toISOString().split('T')[0];
+      setDailyQuests(localQuests?.date === today ? localQuests : generateDailyQuests());
+      toast({ title: 'Cloud indisponible', description: 'Données chargées depuis le stockage local.', duration: 4000 });
       setIsCloudLoading(false);
     });
   }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
