@@ -1,14 +1,117 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, BookOpen, ChevronRight, PawPrint } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, BookOpen, ChevronRight, Image as ImageIcon, PawPrint } from 'lucide-react';
 import PixelIcon from '@/components/PixelIcon';
-import { BESTIARY_BY_FAMILY, BESTIARY_STATUS_LABELS, AssetStatus } from '@/data/bestiary';
+import { BESTIARY_BY_FAMILY, BESTIARY_STATUS_LABELS, AssetStatus, BestiaryBomber } from '@/data/bestiary';
+import { drawHeroPortrait, drawHeroSprite } from '@/game/heroRenderer';
 import { RARITY_CONFIG } from '@/game/types';
 
 const statusClasses: Record<AssetStatus, string> = {
   missing: 'bg-red-500/10 text-red-400 border-red-500/30',
   wip: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
   ready: 'bg-green-500/10 text-green-400 border-green-500/30',
+};
+
+const AssetPreview: React.FC<{ label: string; src?: string; status: AssetStatus; rarity?: BestiaryBomber['rarity']; mode?: 'sprite' | 'portrait' }> = ({ label, src, status, rarity, mode = 'sprite' }) => {
+  const [hasLoadError, setHasLoadError] = useState(false);
+
+  const generatedSprite = useMemo(() => {
+    if (!rarity || typeof document === 'undefined') return undefined;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = 80;
+    canvas.height = 80;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return undefined;
+
+    ctx.imageSmoothingEnabled = false;
+    ctx.save();
+    ctx.scale(2, 2);
+    if (mode === 'portrait') {
+      drawHeroPortrait(ctx, rarity, 0);
+    } else {
+      drawHeroSprite(ctx, 0, 0, rarity, 'idle', 0, 'bestiary-preview', 100, 100);
+    }
+    ctx.restore();
+
+    return canvas.toDataURL('image/png');
+  }, [mode, rarity]);
+
+  const resolvedSrc = !hasLoadError && src ? src : generatedSprite;
+
+  return (
+    <div className="rounded border border-border bg-background/70 p-2">
+      <p className="font-pixel text-[6px] text-muted-foreground mb-1.5 uppercase">{label}</p>
+      <div className="h-20 rounded bg-card border border-border/60 flex items-center justify-center overflow-hidden">
+        {resolvedSrc ? (
+          <img
+            src={resolvedSrc}
+            alt={`Aperçu ${label.toLowerCase()}`}
+            loading="lazy"
+            onError={() => setHasLoadError(true)}
+            className="h-full w-full object-contain"
+          />
+        ) : (
+          <div className="text-center px-2">
+            <ImageIcon size={14} className="mx-auto mb-1 text-muted-foreground" />
+            <p className="text-[10px] text-muted-foreground leading-tight">
+              {src ? 'Asset introuvable' : 'Asset manquant'}
+            </p>
+            <p className="text-[9px] text-muted-foreground/80">Statut: {BESTIARY_STATUS_LABELS[status]}</p>
+          </div>
+        )}
+      </div>
+      {src && (
+        <p className="mt-1 text-[9px] text-muted-foreground/80 truncate" title={src}>
+          {src}
+        </p>
+      )}
+      {!src && generatedSprite && (
+        <p className="mt-1 text-[9px] text-muted-foreground/70">Preview générée depuis le skin en jeu</p>
+      )}
+    </div>
+  );
+};
+
+const BomberCard: React.FC<{ bomber: BestiaryBomber }> = ({ bomber }) => {
+  return (
+    <article className="pixel-border bg-card p-3 sm:p-4">
+      <div className="flex items-start justify-between gap-2 mb-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-9 h-9 rounded bg-muted border border-border flex items-center justify-center shrink-0">
+            {bomber.assets.iconKey ? (
+              <PixelIcon icon={bomber.assets.iconKey} size={18} color="hsl(var(--primary))" />
+            ) : (
+              <AlertTriangle size={14} className="text-muted-foreground" />
+            )}
+          </div>
+          <div className="min-w-0">
+            <p className="font-pixel text-[8px] text-foreground truncate">{bomber.name}</p>
+            <p className="text-[10px] text-muted-foreground font-mono">#{bomber.id}</p>
+          </div>
+        </div>
+
+        <div className="text-right shrink-0">
+          {bomber.rarity ? (
+            <p className="font-medium text-[11px]" style={{ color: `hsl(var(--${RARITY_CONFIG[bomber.rarity].color}))` }}>
+              {RARITY_CONFIG[bomber.rarity].label}
+            </p>
+          ) : (
+            <p className="text-[11px] text-muted-foreground">—</p>
+          )}
+          <span className={`inline-flex mt-1 px-2 py-0.5 border rounded text-[10px] ${statusClasses[bomber.assetStatus]}`}>
+            {BESTIARY_STATUS_LABELS[bomber.assetStatus]}
+          </span>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+        <AssetPreview label="Sprite" src={bomber.assets.spriteSheet} status={bomber.assetStatus} rarity={bomber.rarity} mode="sprite" />
+        <AssetPreview label="Portrait" src={bomber.assets.portrait} status={bomber.assetStatus} rarity={bomber.rarity} mode="portrait" />
+      </div>
+    </article>
+  );
 };
 
 const Bestiary: React.FC = () => {
@@ -27,78 +130,33 @@ const Bestiary: React.FC = () => {
         </Link>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 py-10">
+      <main className="max-w-6xl mx-auto px-4 py-10">
         <div className="text-center mb-8">
           <h1 className="font-pixel text-sm sm:text-lg text-foreground text-glow-red flex items-center justify-center gap-2">
             <PawPrint size={20} /> BESTIAIRE
           </h1>
           <p className="text-sm text-muted-foreground mt-2">
-            Source de vérité des familles et bombers pour la production skins/sprites.
+            Vue visuelle des assets héros (icône + sprite + portrait), avec fallback propre si un fichier manque.
           </p>
         </div>
 
-        <section className="pixel-border bg-card p-5 mb-8">
-          <h2 className="font-pixel text-[8px] text-foreground mb-3">Comment ajouter un bomber</h2>
-          <ol className="list-decimal list-inside text-xs text-muted-foreground space-y-1">
-            <li>Ajouter la famille dans <code>src/data/bestiary.ts</code> si elle n&apos;existe pas.</li>
-            <li>Ajouter l&apos;entrée bomber (id unique, name, familyId, rarity, assetStatus, assets).</li>
-            <li>Mettre à jour <code>assets.spriteSheet</code> / <code>assets.portrait</code> dès que les fichiers existent.</li>
-            <li>Conserver les IDs en kebab-case pour faciliter les refs d&apos;issues art.</li>
-          </ol>
-        </section>
-
         <div className="space-y-6">
           {BESTIARY_BY_FAMILY.map(({ family, bombers }) => (
-            <section key={family.id} className="pixel-border bg-card p-4">
-              <div className="flex items-center justify-between gap-3 mb-4">
+            <section key={family.id} className="pixel-border bg-card p-4 sm:p-5">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
                 <div>
                   <h2 className="font-pixel text-[9px] text-foreground">{family.name}</h2>
                   <p className="text-xs text-muted-foreground mt-1">{family.description}</p>
                 </div>
-                <span className="font-pixel text-[7px] px-2 py-1 rounded bg-primary/15 text-primary">
-                  {bombers.length} BOMBERS
+                <span className="font-pixel text-[7px] px-2 py-1 rounded bg-primary/15 text-primary w-fit">
+                  {bombers.length} HÉROS
                 </span>
               </div>
 
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs min-w-[700px]">
-                  <thead>
-                    <tr className="text-left border-b border-border">
-                      <th className="py-2 pr-3">ID</th>
-                      <th className="py-2 pr-3">Nom</th>
-                      <th className="py-2 pr-3">Rareté</th>
-                      <th className="py-2 pr-3">Statut assets</th>
-                      <th className="py-2 pr-3">SpriteSheet</th>
-                      <th className="py-2">Portrait</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {bombers.map((bomber) => (
-                      <tr key={bomber.id} className="border-b border-border/40">
-                        <td className="py-2 pr-3 font-mono text-[11px] text-muted-foreground">{bomber.id}</td>
-                        <td className="py-2 pr-3 text-foreground">{bomber.name}</td>
-                        <td className="py-2 pr-3">
-                          {bomber.rarity ? (
-                            <span className="font-medium" style={{ color: `hsl(var(--${RARITY_CONFIG[bomber.rarity].color}))` }}>
-                              {RARITY_CONFIG[bomber.rarity].label}
-                            </span>
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
-                          )}
-                        </td>
-                        <td className="py-2 pr-3">
-                          <span className={`inline-flex px-2 py-0.5 border rounded ${statusClasses[bomber.assetStatus]}`}>
-                            {BESTIARY_STATUS_LABELS[bomber.assetStatus]}
-                          </span>
-                        </td>
-                        <td className="py-2 pr-3 text-muted-foreground font-mono text-[11px]">
-                          {bomber.assets.spriteSheet ?? '—'}
-                        </td>
-                        <td className="py-2 text-muted-foreground font-mono text-[11px]">{bomber.assets.portrait ?? '—'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                {bombers.map((bomber) => (
+                  <BomberCard key={bomber.id} bomber={bomber} />
+                ))}
               </div>
             </section>
           ))}
