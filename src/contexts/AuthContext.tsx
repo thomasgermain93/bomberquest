@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { getProfile, createProfileIfNotExists, updateProfileDisplayName, Profile } from '@/hooks/useProfile';
@@ -24,20 +24,36 @@ export const useAuth = () => {
   return ctx;
 };
 
+const RETRY_DELAY_MS = 500;
+const MAX_RETRIES = 1;
+
+async function fetchProfileWithRetry(userId: string, retryCount = 0): Promise<Profile | null> {
+  try {
+    const profileData = await getProfile(userId);
+    return profileData;
+  } catch (err) {
+    const error = err as Error & { code?: string };
+    console.error('AUTH_PROFILE_FETCH_ERROR', { code: error.code || 'UNKNOWN', message: error.message });
+    
+    if (retryCount < MAX_RETRIES) {
+      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+      return fetchProfileWithRetry(userId, retryCount + 1);
+    }
+    return null;
+  }
+}
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const initializedRef = useRef(false);
 
   const fetchProfile = useCallback(async (userId: string) => {
-    try {
-      const profileData = await getProfile(userId);
-      if (profileData) {
-        setProfile(profileData);
-      }
-    } catch (err) {
-      console.error('Error fetching profile:', err);
+    const profileData = await fetchProfileWithRetry(userId);
+    if (profileData) {
+      setProfile(profileData);
     }
   }, []);
 
@@ -46,11 +62,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const profileData = await createProfileIfNotExists(userId, displayName);
       setProfile(profileData);
     } catch (err) {
-      console.error('Error initializing profile:', err);
+      const error = err as Error & { code?: string };
+      console.error('AUTH_PROFILE_INIT_ERROR', { code: error.code || 'UNKNOWN', message: error.message });
     }
   }, []);
 
   useEffect(() => {
+    if (initializedRef.current) return;
+    initializedRef.current = true;
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       const currentUser = session?.user ?? null;
@@ -65,13 +85,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session);
-      const currentUser = session?.user ?? null;
-      setUser(currentUser);
+      if (initializedRef.current === false) {
+        initializedRef.current = true;
+        setSession(session);
+        const currentUser = session?.user ?? null;
+        setUser(currentUser);
 
-      if (currentUser) {
-        await fetchProfile(currentUser.id);
+        if (currentUser) {
+          await fetchProfile(currentUser.id);
+        }
+        setLoading(false);
       }
+    }).catch((err) => {
+      console.error('AUTH_SESSION_GET_ERROR', { code: 'SESSION_GET_FAILED', message: err.message });
       setLoading(false);
     });
 
