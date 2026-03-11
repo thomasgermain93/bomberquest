@@ -14,6 +14,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: '2026-03-10',
     title: 'Mises à jour récentes',
     changes: [
+      { type: 'feature', description: 'Bug gameplay: supprimer les dégâts alliés des bombes + coût stamina à la pose (#50)' },
       { type: 'feature', description: 'feat: bestiaire visuel avec previews sprite/portrait (#49)' },
       { type: 'feature', description: 'feat: bestiaire familles + bombers (MVP) (#47)' },
       { type: 'feature', description: 'Landing: section Chiffres clés + contraste bouton invité (#40)' },
