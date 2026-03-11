@@ -13,6 +13,7 @@ import GuidePage from "./pages/GuidePage";
 import WikiIndex from "./pages/WikiIndex";
 import WikiPage from "./pages/WikiPage";
 import Glossary from "./pages/Glossary";
+import Bestiary from "./pages/Bestiary";
 import Changelog from "./pages/Changelog";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
@@ -37,6 +38,7 @@ const App = () => (
             <Route path="/guides/:slug" element={<GuidePage />} />
             <Route path="/wiki" element={<WikiIndex />} />
             <Route path="/wiki/glossaire" element={<Glossary />} />
+            <Route path="/wiki/bestiaire" element={<Bestiary />} />
             <Route path="/wiki/:slug" element={<WikiPage />} />
             <Route path="/changelog" element={<Changelog />} />
             <Route path="/reset-password" element={<ResetPassword />} />

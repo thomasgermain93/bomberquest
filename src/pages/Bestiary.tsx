@@ -1,0 +1,149 @@
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { AlertTriangle, ArrowLeft, BookOpen, ChevronRight, Image as ImageIcon, PawPrint } from 'lucide-react';
+import PixelIcon from '@/components/PixelIcon';
+import { BESTIARY_BY_FAMILY, BESTIARY_STATUS_LABELS, AssetStatus, BestiaryBomber } from '@/data/bestiary';
+import { RARITY_CONFIG } from '@/game/types';
+
+const statusClasses: Record<AssetStatus, string> = {
+  missing: 'bg-red-500/10 text-red-400 border-red-500/30',
+  wip: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
+  ready: 'bg-green-500/10 text-green-400 border-green-500/30',
+};
+
+const AssetPreview: React.FC<{ label: string; src?: string; status: AssetStatus }> = ({ label, src, status }) => {
+  const [hasLoadError, setHasLoadError] = useState(false);
+  const hasAsset = !!src && !hasLoadError;
+
+  return (
+    <div className="rounded border border-border bg-background/70 p-2">
+      <p className="font-pixel text-[6px] text-muted-foreground mb-1.5 uppercase">{label}</p>
+      <div className="h-20 rounded bg-card border border-border/60 flex items-center justify-center overflow-hidden">
+        {hasAsset ? (
+          <img
+            src={src}
+            alt={`${label} preview`}
+            loading="lazy"
+            onError={() => setHasLoadError(true)}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <div className="text-center px-2">
+            <ImageIcon size={14} className="mx-auto mb-1 text-muted-foreground" />
+            <p className="text-[10px] text-muted-foreground leading-tight">
+              {src ? 'Asset introuvable' : 'Asset manquant'}
+            </p>
+            <p className="text-[9px] text-muted-foreground/80">Statut: {BESTIARY_STATUS_LABELS[status]}</p>
+          </div>
+        )}
+      </div>
+      {src && (
+        <p className="mt-1 text-[9px] text-muted-foreground/80 truncate" title={src}>
+          {src}
+        </p>
+      )}
+    </div>
+  );
+};
+
+const BomberCard: React.FC<{ bomber: BestiaryBomber }> = ({ bomber }) => {
+  return (
+    <article className="pixel-border bg-card p-3 sm:p-4">
+      <div className="flex items-start justify-between gap-2 mb-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-9 h-9 rounded bg-muted border border-border flex items-center justify-center shrink-0">
+            {bomber.assets.iconKey ? (
+              <PixelIcon icon={bomber.assets.iconKey} size={18} color="hsl(var(--primary))" />
+            ) : (
+              <AlertTriangle size={14} className="text-muted-foreground" />
+            )}
+          </div>
+          <div className="min-w-0">
+            <p className="font-pixel text-[8px] text-foreground truncate">{bomber.name}</p>
+            <p className="text-[10px] text-muted-foreground font-mono">#{bomber.id}</p>
+          </div>
+        </div>
+
+        <div className="text-right shrink-0">
+          {bomber.rarity ? (
+            <p className="font-medium text-[11px]" style={{ color: `hsl(var(--${RARITY_CONFIG[bomber.rarity].color}))` }}>
+              {RARITY_CONFIG[bomber.rarity].label}
+            </p>
+          ) : (
+            <p className="text-[11px] text-muted-foreground">—</p>
+          )}
+          <span className={`inline-flex mt-1 px-2 py-0.5 border rounded text-[10px] ${statusClasses[bomber.assetStatus]}`}>
+            {BESTIARY_STATUS_LABELS[bomber.assetStatus]}
+          </span>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+        <AssetPreview label="Sprite" src={bomber.assets.spriteSheet} status={bomber.assetStatus} />
+        <AssetPreview label="Portrait" src={bomber.assets.portrait} status={bomber.assetStatus} />
+      </div>
+    </article>
+  );
+};
+
+const Bestiary: React.FC = () => {
+  const navigate = useNavigate();
+
+  return (
+    <div className="min-h-screen bg-background">
+      <header className="sticky top-0 z-40 bg-card/95 backdrop-blur border-b border-border px-4 py-3 flex items-center justify-between">
+        <button onClick={() => navigate('/wiki')} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+          <ArrowLeft size={16} />
+          <span className="text-sm">Wiki</span>
+        </button>
+        <Link to="/" className="flex items-center gap-2">
+          <PixelIcon icon="bomb" size={18} color="hsl(var(--primary))" />
+          <span className="font-pixel text-[9px] text-foreground">BOMBERQUEST</span>
+        </Link>
+      </header>
+
+      <main className="max-w-6xl mx-auto px-4 py-10">
+        <div className="text-center mb-8">
+          <h1 className="font-pixel text-sm sm:text-lg text-foreground text-glow-red flex items-center justify-center gap-2">
+            <PawPrint size={20} /> BESTIAIRE
+          </h1>
+          <p className="text-sm text-muted-foreground mt-2">
+            Vue visuelle des assets héros (icône + sprite + portrait), avec fallback propre si un fichier manque.
+          </p>
+        </div>
+
+        <div className="space-y-6">
+          {BESTIARY_BY_FAMILY.map(({ family, bombers }) => (
+            <section key={family.id} className="pixel-border bg-card p-4 sm:p-5">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+                <div>
+                  <h2 className="font-pixel text-[9px] text-foreground">{family.name}</h2>
+                  <p className="text-xs text-muted-foreground mt-1">{family.description}</p>
+                </div>
+                <span className="font-pixel text-[7px] px-2 py-1 rounded bg-primary/15 text-primary w-fit">
+                  {bombers.length} BOMBERS
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                {bombers.map((bomber) => (
+                  <BomberCard key={bomber.id} bomber={bomber} />
+                ))}
+              </div>
+            </section>
+          ))}
+        </div>
+
+        <div className="text-center mt-8">
+          <Link to="/wiki" className="pixel-border bg-card px-4 py-2 inline-flex items-center gap-2 hover:bg-muted transition-colors">
+            <BookOpen size={14} className="text-primary" />
+            <span className="font-pixel text-[7px]">Retour au Wiki</span>
+            <ChevronRight size={12} className="text-muted-foreground" />
+          </Link>
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default Bestiary;
