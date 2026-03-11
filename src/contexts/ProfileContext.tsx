@@ -84,19 +84,16 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
       return { error: 'Pseudo invalide (3-20 caractères, lettres/chiffres/underscore).' };
     }
 
-    const { data: conflict, error: conflictError } = await supabase
-      .from('profiles')
-      .select('id,user_id')
-      .ilike('display_name', normalized)
-      .neq('user_id', user.id)
-      .not('display_name', 'is', null)
-      .limit(1);
+    const { data: conflictExists, error: conflictError } = await supabase.rpc('is_display_name_taken', {
+      p_display_name: normalized,
+      p_current_user_id: user.id,
+    });
 
     if (conflictError) {
-      return { error: 'Erreur de connexion. Veuillez réessayer.' };
+      return { error: 'Erreur technique. Veuillez réessayer plus tard.' };
     }
 
-    if (conflict && conflict.length > 0) {
+    if (conflictExists) {
       return { error: 'Ce pseudo est déjà utilisé.' };
     }
 
