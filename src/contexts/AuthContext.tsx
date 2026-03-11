@@ -1,15 +1,19 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { getProfile, createProfileIfNotExists, updateProfileDisplayName, Profile } from '@/hooks/useProfile';
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
+  profile: Profile | null;
+  username: string | null;
   loading: boolean;
   signUp: (email: string, password: string, displayName?: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signInWithGoogle: () => Promise<{ error: any }>;
   signOut: () => Promise<void>;
+  updateUsername: (displayName: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -23,26 +27,59 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const fetchProfile = useCallback(async (userId: string) => {
+    try {
+      const profileData = await getProfile(userId);
+      if (profileData) {
+        setProfile(profileData);
+      }
+    } catch (err) {
+      console.error('Error fetching profile:', err);
+    }
+  }, []);
+
+  const initializeProfile = useCallback(async (userId: string, displayName?: string) => {
+    try {
+      const profileData = await createProfileIfNotExists(userId, displayName);
+      setProfile(profileData);
+    } catch (err) {
+      console.error('Error initializing profile:', err);
+    }
+  }, []);
+
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
-      setUser(session?.user ?? null);
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+
+      if (currentUser) {
+        await fetchProfile(currentUser.id);
+      } else {
+        setProfile(null);
+      }
       setLoading(false);
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
-      setUser(session?.user ?? null);
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+
+      if (currentUser) {
+        await fetchProfile(currentUser.id);
+      }
       setLoading(false);
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [fetchProfile]);
 
   const signUp = async (email: string, password: string, displayName?: string) => {
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -50,6 +87,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         data: { full_name: displayName },
       },
     });
+
+    if (!error && data.user) {
+      await initializeProfile(data.user.id, displayName);
+    }
+
     return { error };
   };
 
@@ -68,10 +110,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    setProfile(null);
   };
 
+  const updateUsername = async (displayName: string) => {
+    if (!user) return;
+    const updated = await updateProfileDisplayName(user.id, displayName);
+    setProfile(updated);
+  };
+
+  const username = profile?.display_name ?? null;
+
   return (
-    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signInWithGoogle, signOut }}>
+    <AuthContext.Provider value={{ user, session, profile, username, loading, signUp, signIn, signInWithGoogle, signOut, updateUsername }}>
       {children}
     </AuthContext.Provider>
   );
