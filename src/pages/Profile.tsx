@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { User, Loader2, AlertTriangle, LogOut, Trash2 } from 'lucide-react';
+import { User, Loader2, AlertTriangle, LogOut, Trash2, ArrowLeft } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 const USERNAME_RE = /^[A-Za-z0-9_]{3,20}$/;
@@ -112,6 +112,14 @@ export default function Profile() {
     await signOut();
     navigate('/');
   };
+
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate('/');
+    }
+  };
   
   if (!user) return null;
   
@@ -126,6 +134,13 @@ export default function Profile() {
           animate={{ opacity: 1, y: 0 }}
           className="space-y-6"
         >
+          <div className="flex items-center justify-between">
+            <Button variant="ghost" size="sm" onClick={handleBack} className="gap-2">
+              <ArrowLeft className="w-4 h-4" />
+              Retour
+            </Button>
+          </div>
+
           <div className="text-center py-4">
             <h1 className="font-pixel text-xl text-foreground">Profil</h1>
             <p className="text-sm text-muted-foreground">Gère ton compte</p>
