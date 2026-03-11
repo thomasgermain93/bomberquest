@@ -11,6 +11,7 @@ const TILE_SIZE = 40;
 
 const GameGrid: React.FC<GameGridProps> = ({ gameState }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const animFrameRef = useRef<number>(0);
 
   const draw = useCallback(() => {
@@ -208,12 +209,42 @@ const GameGrid: React.FC<GameGridProps> = ({ gameState }) => {
   }, [draw]);
 
   return (
-    <div className="relative overflow-auto rounded-lg bg-[hsl(var(--game-bg-deep))] p-1.5 shadow-[0_0_30px_rgba(0,0,0,0.5),inset_0_0_20px_rgba(0,0,0,0.3)]" style={{ border: '3px solid hsl(230, 20%, 22%)' }}>
-      <canvas
-        ref={canvasRef}
-        style={{ imageRendering: 'pixelated' }}
-        className="block rounded"
-      />
+    <div 
+      ref={containerRef}
+      className="relative w-full max-w-full overflow-hidden rounded-lg"
+      style={{ 
+        backgroundColor: 'hsl(var(--game-bg-deep))',
+        border: '3px solid hsl(230, 20%, 22%)',
+        boxShadow: '0 0 30px rgba(0,0,0,0.5),inset 0 0 20px rgba(0,0,0,0.3)',
+        aspectRatio: gameState ? `${gameState.map.width} / ${gameState.map.height}` : '13/9'
+      }}
+    >
+      {/* Background pattern for empty space */}
+      <div className="absolute inset-0 opacity-30 pointer-events-none" style={{
+        backgroundImage: `
+          linear-gradient(335deg, rgba(60,60,100,0.3) 23px, transparent 23px),
+          linear-gradient(155deg, rgba(80,80,120,0.3) 23px, transparent 23px),
+          linear-gradient(335deg, rgba(60,60,100,0.3) 23px, transparent 23px),
+          linear-gradient(155deg, rgba(80,80,120,0.3) 23px, transparent 23px)
+        `,
+        backgroundSize: '58px 58px',
+        backgroundPosition: '0 0, 4px 29px, 29px 4px, 33px 33px'
+      }} />
+      
+      {/* Canvas container with responsive scaling */}
+      <div className="absolute inset-0 flex items-center justify-center p-1.5">
+        <canvas
+          ref={canvasRef}
+          style={{ 
+            imageRendering: 'pixelated',
+            maxWidth: '100%',
+            maxHeight: '100%',
+            width: 'auto',
+            height: 'auto'
+          }}
+          className="block rounded"
+        />
+      </div>
     </div>
   );
 };
