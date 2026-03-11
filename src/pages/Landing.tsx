@@ -300,6 +300,8 @@ const KPI_FALLBACK: LandingKpis = {
 
 const formatKpi = (value: number | null) => {
   if (value === null) return '—';
+  if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
+  if (value >= 1000) return `${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}k`;
   return new Intl.NumberFormat('fr-FR').format(value);
 };
 
@@ -321,19 +323,29 @@ const Landing: React.FC = () => {
           supabase.from('player_heroes').select('id', { count: 'exact', head: true }),
           supabase
             .from('player_heroes')
-            .select('name, created_at')
+            .select('user_id, created_at')
             .eq('rarity', 'super-legend')
             .order('created_at', { ascending: false })
             .limit(1)
             .maybeSingle(),
         ]);
 
+        let lastSuperLegendName: string | null = null;
+        if (lastSuperLegendResult.data?.user_id) {
+          const profileResult = await supabase
+            .from('profiles')
+            .select('display_name')
+            .eq('user_id', lastSuperLegendResult.data.user_id)
+            .maybeSingle();
+          lastSuperLegendName = profileResult.data?.display_name ?? null;
+        }
+
         if (!isMounted) return;
 
         setKpis({
           players: playersResult.error ? null : (playersResult.count ?? null),
           totalInvocations: invocationsResult.error ? null : (invocationsResult.count ?? null),
-          lastSuperLegend: lastSuperLegendResult.error ? null : (lastSuperLegendResult.data?.name ?? null),
+          lastSuperLegend: lastSuperLegendName,
         });
       } catch {
         if (!isMounted) return;
