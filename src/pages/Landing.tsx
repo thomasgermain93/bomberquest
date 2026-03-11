@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Bomb, Swords, Trophy, Users, Sparkles, Shield, ChevronDown, Zap, Crown, Star, BookOpen, Clock, ChevronRight, History, Bug, Plus, Menu, X } from 'lucide-react';
 import PixelIcon from '@/components/PixelIcon';
 import { GUIDE_ARTICLES } from '@/data/guides';
+import { supabase } from '@/integrations/supabase/client';
 
 import gameCombat from '@/assets/game-combat.jpg';
 import gameHeroes from '@/assets/game-heroes.jpg';
@@ -285,10 +286,69 @@ const RARITIES = [
   { label: 'Super Legend', color: 'hsl(300,100%,70%)', glow: true },
 ];
 
+interface LandingKpis {
+  players: number | null;
+  totalInvocations: number | null;
+  lastSuperLegend: string | null;
+}
+
+const KPI_FALLBACK: LandingKpis = {
+  players: null,
+  totalInvocations: null,
+  lastSuperLegend: null,
+};
+
+const formatKpi = (value: number | null) => {
+  if (value === null) return '—';
+  return new Intl.NumberFormat('fr-FR').format(value);
+};
+
 const Landing: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [kpis, setKpis] = useState<LandingKpis>(KPI_FALLBACK);
+  const [kpisLoading, setKpisLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadKpis = async () => {
+      setKpisLoading(true);
+      try {
+        const [playersResult, invocationsResult, lastSuperLegendResult] = await Promise.all([
+          supabase.from('profiles').select('id', { count: 'exact', head: true }),
+          supabase.from('player_heroes').select('id', { count: 'exact', head: true }),
+          supabase
+            .from('player_heroes')
+            .select('name, created_at')
+            .eq('rarity', 'super-legend')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle(),
+        ]);
+
+        if (!isMounted) return;
+
+        setKpis({
+          players: playersResult.error ? null : (playersResult.count ?? null),
+          totalInvocations: invocationsResult.error ? null : (invocationsResult.count ?? null),
+          lastSuperLegend: lastSuperLegendResult.error ? null : (lastSuperLegendResult.data?.name ?? null),
+        });
+      } catch {
+        if (!isMounted) return;
+        setKpis(KPI_FALLBACK);
+      } finally {
+        if (isMounted) setKpisLoading(false);
+      }
+    };
+
+    loadKpis();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const closeMenuAndNavigate = (path: string) => {
     setMobileMenuOpen(false);
@@ -401,7 +461,7 @@ const Landing: React.FC = () => {
                   <Shield size={16} /> SE CONNECTER
                 </motion.button>
                 <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => navigate('/game')}
-                  className="pixel-btn font-pixel text-[10px] sm:text-xs px-6 py-4 flex items-center gap-2 border-muted-foreground/40 text-muted-foreground hover:text-foreground">
+                  className="pixel-btn pixel-btn-secondary font-pixel text-[10px] sm:text-xs px-6 py-4 flex items-center gap-2 text-foreground border-border">
                   JOUER EN INVITÉ
                 </motion.button>
               </>
@@ -412,6 +472,58 @@ const Landing: React.FC = () => {
         <motion.div animate={{ y: [0, 8, 0] }} transition={{ duration: 2, repeat: Infinity }} className="absolute bottom-8 z-10">
           <ChevronDown size={28} className="text-muted-foreground" />
         </motion.div>
+      </section>
+
+      {/* Chiffres clés */}
+      <section className="py-14 sm:py-16 px-4 bg-card/40 border-y border-border/40">
+        <div className="max-w-5xl mx-auto">
+          <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="text-center mb-8 sm:mb-10">
+            <h2 className="font-pixel text-sm sm:text-lg text-foreground text-glow-gold mb-3">CHIFFRES CLÉS</h2>
+            <p className="text-sm text-muted-foreground">Un aperçu en temps réel de l'activité sur BomberQuest.</p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[
+              {
+                label: 'Joueurs inscrits',
+                value: formatKpi(kpis.players),
+                loading: kpisLoading,
+                hint: 'Comptes créés',
+              },
+              {
+                label: 'Invocations totales',
+                value: formatKpi(kpis.totalInvocations),
+                loading: kpisLoading,
+                hint: 'Toutes raretés confondues',
+              },
+              {
+                label: 'Dernière Super-Légende',
+                value: kpis.lastSuperLegend ?? 'Aucune pour le moment',
+                loading: kpisLoading,
+                hint: 'Dernier héros super-légende obtenu',
+              },
+            ].map((item, i) => (
+              <motion.div
+                key={item.label}
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.08 }}
+                className="pixel-border bg-card p-5 min-h-[140px] flex flex-col justify-between"
+              >
+                <p className="font-pixel text-[8px] text-muted-foreground">{item.label}</p>
+                <div className="min-h-[44px] mt-3 flex items-center">
+                  {item.loading ? (
+                    <div className="h-6 w-3/4 rounded bg-muted animate-pulse" aria-hidden="true" />
+                  ) : (
+                    <p className="font-pixel text-sm sm:text-base text-foreground break-words">{item.value}</p>
+                  )}
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-2">{item.hint}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
       </section>
 
       {/* Game Screenshots Showcase */}
@@ -602,7 +714,7 @@ const Landing: React.FC = () => {
             </motion.button>
             {!user && (
               <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => navigate('/game')}
-                className="pixel-btn font-pixel text-[10px] px-8 py-4 flex items-center gap-2 mx-auto border-muted-foreground/40 text-muted-foreground hover:text-foreground">
+                className="pixel-btn pixel-btn-secondary font-pixel text-[10px] px-8 py-4 flex items-center gap-2 mx-auto text-foreground border-border">
                 JOUER EN INVITÉ
               </motion.button>
             )}
