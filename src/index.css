@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Press+Start+2P&family=Inter:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -22,7 +22,7 @@
     --secondary-foreground: 0 0% 95%;
 
     --muted: 230 20% 18%;
-    --muted-foreground: 230 10% 55%;
+    --muted-foreground: 230 12% 72%;
 
     --accent: 45 100% 50%;
     --accent-foreground: 230 30% 10%;
@@ -75,7 +75,8 @@
     font-family: 'Inter', sans-serif;
   }
   .font-pixel {
-    font-family: 'Press Start 2P', cursive;
+    font-family: 'Pixel Code', 'Silkscreen', 'Press Start 2P', 'Courier New', monospace;
+    letter-spacing: 0.02em;
   }
 }
 

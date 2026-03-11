@@ -858,7 +858,7 @@ const Index = () => {
               <h2 className="font-pixel text-sm sm:text-lg text-foreground text-glow-red mb-1">
                 💣 BOMBERQUEST
               </h2>
-              <p className="text-xs text-muted-foreground">Idle Bomber • Collect & Upgrade</p>
+              <p className="font-pixel text-[8px] text-muted-foreground">IDLE BOMBER • COLLECT & UPGRADE</p>
             </div>
 
             {/* Quick Stats + XP Bar */}
@@ -872,7 +872,7 @@ const Index = () => {
                 <div key={stat.label} className={`pixel-border bg-card p-3 text-center ${stat.glow}`}>
                   <div className="flex justify-center mb-1">{stat.icon}</div>
                   <p className="font-pixel text-[10px] text-foreground mt-1">{stat.value}</p>
-                  <p className="text-[9px] text-muted-foreground">{stat.label}</p>
+                  <p className="font-pixel text-[8px] text-muted-foreground">{stat.label}</p>
                 </div>
               ))}
             </div>
@@ -1240,7 +1240,7 @@ const Index = () => {
               <div className="pixel-border bg-primary/10 p-2.5 flex items-center justify-between">
                 <span className="font-pixel text-[8px] text-primary flex items-center gap-1.5">
                   <FastForward size={12} /> AUTO-FARM ACTIF
-                  <span className="text-muted-foreground">• Run #{farmStats.runs + 1} • Total: {farmStats.totalCoins} BC</span>
+                  <span className="font-pixel text-[7px] text-muted-foreground">• RUN #{farmStats.runs + 1} • TOTAL: {farmStats.totalCoins} BC</span>
                 </span>
                 <button
                   onClick={() => { setAutoFarm(false); endTreasureHunt(); }}

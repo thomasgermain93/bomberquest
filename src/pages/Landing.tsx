@@ -730,11 +730,11 @@ const Landing: React.FC = () => {
             <span className="font-pixel text-[8px] text-foreground">BOMBERQUEST</span>
           </div>
           <div className="flex items-center gap-4">
-            <Link to="/wiki" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Wiki</Link>
-            <Link to="/wiki/glossaire" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Glossaire</Link>
-            <Link to="/guides" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Guides</Link>
-            <Link to="/changelog" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Changelog</Link>
-            <Link to="/auth" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Connexion</Link>
+            <Link to="/wiki" className="font-pixel text-[8px] text-muted-foreground hover:text-foreground transition-colors">WIKI</Link>
+            <Link to="/wiki/glossaire" className="font-pixel text-[8px] text-muted-foreground hover:text-foreground transition-colors">GLOSSAIRE</Link>
+            <Link to="/guides" className="font-pixel text-[8px] text-muted-foreground hover:text-foreground transition-colors">GUIDES</Link>
+            <Link to="/changelog" className="font-pixel text-[8px] text-muted-foreground hover:text-foreground transition-colors">CHANGELOG</Link>
+            <Link to="/auth" className="font-pixel text-[8px] text-muted-foreground hover:text-foreground transition-colors">CONNEXION</Link>
           </div>
           <p className="text-[10px] text-muted-foreground">© 2026 BomberQuest — Idle Bomber RPG</p>
         </div>

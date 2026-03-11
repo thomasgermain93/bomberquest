@@ -90,10 +90,10 @@ const Auth: React.FC = () => {
       >
         <button
           onClick={() => navigate('/')}
-          className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors"
+          className="flex items-center gap-2 font-pixel text-[8px] text-muted-foreground hover:text-foreground mb-6 transition-colors"
         >
           <ArrowLeft size={16} />
-          <span className="text-sm">Retour</span>
+          <span className="text-[8px]">RETOUR</span>
         </button>
 
         <div className="pixel-border bg-card p-6 sm:p-8">
