@@ -134,25 +134,34 @@ const Index = () => {
     loadWithRetry().then(data => {
       if (data) {
         const cloudHeroCount = data.playerData?.heroes?.length || 0;
-        const localHeroCount = localHeroCountRef.current;
-        
-        // Detect potential rollback: cloud has fewer heroes than local state
-        // This happens when user summoned heroes but cloud hasn't synced yet
-        const isPotentialRollback = localHeroCount > cloudHeroCount && localHeroCount > 1;
-        
+        const localBackupData = loadPlayerData();
+        const localBackupHeroCount = localBackupData.heroes?.length || 0;
+        const runtimeLocalHeroCount = localHeroCountRef.current;
+        const trustedLocalHeroCount = Math.max(localBackupHeroCount, runtimeLocalHeroCount);
+
+        // Detect potential rollback: cloud has fewer heroes than trusted local backup/state.
+        // In that case we keep local data and block cloud writes until a healthy cloud read happens.
+        const isPotentialRollback = trustedLocalHeroCount > cloudHeroCount && trustedLocalHeroCount > 1;
+
         if (isPotentialRollback) {
-          console.warn('CLOUD_ROLLBACK_DETECTED', {
-            localHeroCount,
+          console.warn('CLOUD_ROLLBACK_GUARD', {
+            trustedLocalHeroCount,
+            localBackupHeroCount,
+            runtimeLocalHeroCount,
             cloudHeroCount,
-            localHeroIds: player.heroes.map(h => h.id).slice(-5),
-            action: 'keeping_local_data'
+            action: 'keep_local_read_only',
           });
-          // Keep local data - it's more recent
-          setCloudValidated(true);
+          setPlayer(localBackupData);
+          setStoryProgress(loadStoryProgress());
+          const localQuests = loadDailyQuests();
+          const today = new Date().toISOString().split('T')[0];
+          setDailyQuests(localQuests?.date === today ? localQuests : generateDailyQuests());
+          setCloudValidated(false);
           cloudLoadedRef.current = true;
+          toast({ title: 'Sync cloud en attente', description: 'Sauvegarde locale conservée. Écriture cloud bloquée temporairement.', duration: 4500 });
           return;
         }
-        
+
         setPlayer(data.playerData);
         setStoryProgress(data.storyProgress ?? { completedStages: [], currentRegion: 'forest', bossesDefeated: [], highestStage: 0 });
         const today = new Date().toISOString().split('T')[0];
@@ -163,8 +172,8 @@ const Index = () => {
         }
         setCloudValidated(true);
         cloudLoadedRef.current = true;
-        console.log('CLOUD_LOAD_SUCCESS', { 
-          hasPlayerData: !!data.playerData, 
+        console.log('CLOUD_LOAD_SUCCESS', {
+          hasPlayerData: !!data.playerData,
           heroCount: data.playerData?.heroes?.length || 0,
           hasStoryProgress: !!data.storyProgress,
           timestamp: Date.now()
@@ -182,10 +191,11 @@ const Index = () => {
           huntSpeedRef.current = localSpeed;
           setPlayer(prev => ({ ...prev, huntSpeed: localSpeed }));
         }
-        console.warn('CLOUD_LOAD_FAILED', { 
-          code: 'CLOUD_UNAVAILABLE', 
+        setCloudValidated(false);
+        console.warn('CLOUD_LOAD_FAILED', {
+          code: 'CLOUD_UNAVAILABLE',
           message: 'Cloud load failed, using local data in read-only mode',
-          localHeroCount: localData.heroes?.length || 0 
+          localHeroCount: localData.heroes?.length || 0
         });
         cloudLoadedRef.current = true;
         toast({ title: 'Cloud indisponible', description: 'Données locales chargées. Mode lecture seule.', duration: 4000 });
@@ -193,6 +203,7 @@ const Index = () => {
     }).catch((err) => {
       const error = err as Error & { code?: string };
       console.error('CLOUD_LOAD_UNEXPECTED_ERROR', { code: error.code || 'UNKNOWN', message: error.message });
+      setCloudValidated(false);
       const localData = loadPlayerData();
       const localStory = loadStoryProgress();
       const localQuests = loadDailyQuests();
