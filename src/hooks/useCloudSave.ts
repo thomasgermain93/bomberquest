@@ -64,10 +64,20 @@ export function useCloudSave(userId: string | undefined) {
       supabase.from('player_heroes').select('*').eq('user_id', userId),
     ]);
 
+    if (savesResult.error) {
+      throw new Error(`player_saves_load_failed:${savesResult.error.message}`);
+    }
+
+    if (heroesResult.error) {
+      throw new Error(`player_heroes_load_failed:${heroesResult.error.message}`);
+    }
+
     const saveData = savesResult.data;
+    if (!saveData) return null;
+
     let heroes: Hero[] = [];
 
-    if (!heroesResult.error && heroesResult.data) {
+    if (heroesResult.data) {
       if (heroesResult.data.length > 0) {
         // Normal case: heroes in dedicated table
         heroes = heroesResult.data.map(rowToHero);
@@ -82,8 +92,6 @@ export function useCloudSave(userId: string | undefined) {
       }
     }
 
-    if (!saveData) return null;
-
     const rawStats = saveData.save_data as any;
     const { heroes: _removedHeroes, ...statsOnly } = rawStats ?? {};
 
@@ -91,6 +99,12 @@ export function useCloudSave(userId: string | undefined) {
       ...(statsOnly as PlayerData),
       heroes,
     };
+
+    console.log('CLOUD_LOAD_ROWS', {
+      hasSave: !!saveData,
+      heroRows: heroes.length,
+      migratedFromLegacy: heroesResult.data?.length === 0 && heroes.length > 0,
+    });
 
     return {
       playerData,
