@@ -71,35 +71,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (initializedRef.current) return;
     initializedRef.current = true;
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session);
-      const currentUser = session?.user ?? null;
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession);
+      const currentUser = nextSession?.user ?? null;
       setUser(currentUser);
+      setLoading(false);
 
       if (currentUser) {
-        await fetchProfile(currentUser.id);
+        void fetchProfile(currentUser.id);
       } else {
         setProfile(null);
       }
-      setLoading(false);
     });
 
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (initializedRef.current === false) {
-        initializedRef.current = true;
-        setSession(session);
-        const currentUser = session?.user ?? null;
+    supabase.auth.getSession()
+      .then(({ data: { session: initialSession } }) => {
+        setSession(initialSession);
+        const currentUser = initialSession?.user ?? null;
         setUser(currentUser);
+        setLoading(false);
 
         if (currentUser) {
-          await fetchProfile(currentUser.id);
+          void fetchProfile(currentUser.id);
+        } else {
+          setProfile(null);
         }
+
+        console.log('AUTH_INIT_SESSION', {
+          hasSession: !!initialSession,
+          hasUser: !!currentUser,
+        });
+      })
+      .catch((err) => {
+        console.error('AUTH_SESSION_GET_ERROR', { code: 'SESSION_GET_FAILED', message: err.message });
         setLoading(false);
-      }
-    }).catch((err) => {
-      console.error('AUTH_SESSION_GET_ERROR', { code: 'SESSION_GET_FAILED', message: err.message });
-      setLoading(false);
-    });
+      });
 
     return () => subscription.unsubscribe();
   }, [fetchProfile]);
