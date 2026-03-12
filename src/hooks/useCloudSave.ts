@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Hero, PlayerData } from '@/game/types';
 import { StoryProgress } from '@/game/storyTypes';
@@ -48,8 +48,14 @@ function rowToHero(row: any): Hero {
   };
 }
 
-export function useCloudSave(userId: string | undefined) {
+export function useCloudSave(userId: string | undefined, canWriteCloud: boolean) {
   const saveTimerRef = useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => {
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
+  }, []);
 
   const loadFromCloud = useCallback(async (): Promise<{
     playerData: PlayerData;
@@ -114,22 +120,22 @@ export function useCloudSave(userId: string | undefined) {
   }, [userId]);
 
   const saveHeroesToCloud = useCallback(async (heroes: Hero[]) => {
-    if (!userId || heroes.length === 0) return;
+    if (!userId || !canWriteCloud || heroes.length === 0) return;
     const rows = heroes.map(h => heroToRow(h, userId));
     await supabase.from('player_heroes').upsert(rows, { onConflict: 'id,user_id' });
-  }, [userId]);
+  }, [userId, canWriteCloud]);
 
   const removeHeroesFromCloud = useCallback(async (ids: string[]) => {
-    if (!userId || ids.length === 0) return;
+    if (!userId || !canWriteCloud || ids.length === 0) return;
     await supabase.from('player_heroes').delete().eq('user_id', userId).in('id', ids);
-  }, [userId]);
+  }, [userId, canWriteCloud]);
 
   const saveStatsToCloud = useCallback((
     playerData: PlayerData,
     storyProgress: StoryProgress,
     dailyQuests: DailyQuestData,
   ) => {
-    if (!userId) return;
+    if (!userId || !canWriteCloud) return;
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(async () => {
       // Strip heroes from save_data — they live in player_heroes
@@ -143,7 +149,7 @@ export function useCloudSave(userId: string | undefined) {
           daily_quests: dailyQuests as any,
         }, { onConflict: 'user_id' });
     }, 3000);
-  }, [userId]);
+  }, [userId, canWriteCloud]);
 
   return { loadFromCloud, saveHeroesToCloud, removeHeroesFromCloud, saveStatsToCloud };
 }

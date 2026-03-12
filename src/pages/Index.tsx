@@ -74,13 +74,32 @@ const Index = () => {
   const lastTickRef = useRef<number>(Date.now());
   const processedExplosionsRef = useRef<Set<string>>(new Set());
 
-  const { loadFromCloud, saveHeroesToCloud, removeHeroesFromCloud, saveStatsToCloud } = useCloudSave(user?.id);
+  const cloudSessionReady = Boolean(user?.id && session?.access_token && !authLoading);
+  const canWriteCloud = cloudSessionReady && cloudValidated;
+  const { loadFromCloud, saveHeroesToCloud, removeHeroesFromCloud, saveStatsToCloud } = useCloudSave(user?.id, canWriteCloud);
 
   const toggleMute = () => {
     const newVal = !muted;
     setMutedState(newVal);
     setMuted(newVal);
   };
+
+  useEffect(() => {
+    cloudLoadedRef.current = false;
+    setCloudValidated(false);
+
+    if (!user) {
+      setIsCloudLoading(false);
+      return;
+    }
+
+    setIsCloudLoading(true);
+    console.log('CLOUD_LOAD_ARMED', {
+      userId: user.id,
+      authLoading,
+      hasAccessToken: !!session?.access_token,
+    });
+  }, [user?.id]);
 
   // Save to localStorage when player data changes (offline mode + authenticated safety backup)
   useEffect(() => {
@@ -101,15 +120,17 @@ const Index = () => {
   // Load from cloud on mount (connected users only) - prevents rollback on navigation
   useEffect(() => {
     if (!user) return;
-    if (authLoading || !session?.access_token) return;
+    if (!cloudSessionReady) return;
     if (cloudLoadedRef.current) {
       console.log('CLOUD_LOAD_SKIP', { reason: 'already_loaded', heroCount: player.heroes.length });
       return;
     }
 
-    const CLOUD_LOAD_TIMEOUT = 10000;
-    const RETRY_DELAY_MS = 500;
-    const MAX_RETRIES = 1;
+    setIsCloudLoading(true);
+
+    const CLOUD_LOAD_TIMEOUT = 3500;
+    const RETRY_DELAY_MS = 400;
+    const MAX_RETRIES = 0;
 
     const loadWithRetry = async (retryCount = 0): Promise<any> => {
       const timeoutPromise = new Promise<null>((resolve) => {
@@ -216,7 +237,7 @@ const Index = () => {
     }).finally(() => {
       setIsCloudLoading(false);
     });
-  }, [user?.id, authLoading, session?.access_token, loadFromCloud]);
+  }, [user?.id, cloudSessionReady, loadFromCloud]);
 
   // Calculate account level from XP
   const getAccountLevel = (xp: number) => {
@@ -248,7 +269,7 @@ const Index = () => {
   // Save periodically + passive stamina regen
   useEffect(() => {
     const interval = setInterval(() => {
-      if (user && cloudValidated) {
+      if (canWriteCloud) {
         saveStatsToCloud(player, storyProgress, dailyQuests);
       } else if (!user) {
         savePlayerData(player);
@@ -272,7 +293,7 @@ const Index = () => {
       }
     }, 5000);
     return () => clearInterval(interval);
-  }, [user, cloudValidated, player, dailyQuests, storyProgress, gameState?.isRunning]);
+  }, [user, canWriteCloud, player, dailyQuests, storyProgress, gameState?.isRunning]);
 
   useEffect(() => {
     if (user) return;
@@ -508,7 +529,7 @@ const Index = () => {
       xp: prev.xp + earned,
       heroes: updatedHeroes,
     }));
-    if (cloudValidated) {
+    if (canWriteCloud) {
       saveHeroesToCloud(updatedHeroes.filter(h => gameState.heroes.some(dh => dh.id === h.id)));
     }
 
@@ -718,7 +739,7 @@ const Index = () => {
         xp: prev.xp + (gameState.mapCompleted ? currentStoryStage.xpReward : 0),
         heroes: storyUpdatedHeroes,
       }));
-      if (cloudValidated) {
+      if (canWriteCloud) {
         saveHeroesToCloud(storyUpdatedHeroes.filter(h => gameState.heroes.some(dh => dh.id === h.id)));
       }
 
@@ -807,7 +828,7 @@ const Index = () => {
       pityCounters: currentPity,
       totalHeroesOwned: mergedHeroes.length,
     }));
-    if (cloudValidated) {
+    if (canWriteCloud) {
       saveHeroesToCloud(mergedHeroes.filter(h => !player.heroes.some(existing => existing.id === h.id)));
       const removedByMerge = newHeroes.filter(h => !mergedHeroes.some(m => m.id === h.id)).map(h => h.id);
       if (removedByMerge.length > 0) removeHeroesFromCloud(removedByMerge);
@@ -849,7 +870,7 @@ const Index = () => {
       bomberCoins: prev.bomberCoins - cost,
       heroes: prev.heroes.map(h => h.id === heroId ? upgraded : h),
     }));
-    if (cloudValidated) {
+    if (canWriteCloud) {
       saveHeroesToCloud([upgraded]);
     }
     setDailyQuests(prev => updateQuestProgress(prev, 'upgrade_hero', 1));
@@ -881,7 +902,7 @@ const Index = () => {
       bomberCoins: prev.bomberCoins - info.cost,
       heroes: remainingHeroes.map(h => h.id === heroId ? ascended : h),
     }));
-    if (cloudValidated) {
+    if (canWriteCloud) {
       removeHeroesFromCloud(removedIds);
       saveHeroesToCloud([ascended]);
     }
