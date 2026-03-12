@@ -149,7 +149,7 @@ export function useCloudSave(userId: string | undefined, canWriteCloud: boolean)
           daily_quests: dailyQuests as any,
         }, { onConflict: 'user_id' });
     }, 3000);
-  }, [userId]);
+  }, [userId, canWriteCloud]);
 
   return { loadFromCloud, saveHeroesToCloud, removeHeroesFromCloud, saveStatsToCloud };
 }
