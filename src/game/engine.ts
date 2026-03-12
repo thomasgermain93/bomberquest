@@ -177,7 +177,7 @@ export function findNearestTarget(
   hero: Hero,
   bombs: Bomb[],
   chests: Chest[],
-  enemies?: { position: { x: number; y: number }; hp: number }[],
+  enemies?: { position: { x: number; y: number }; hp: number; isBoss?: boolean }[],
   isStoryMode?: boolean
 ): { x: number; y: number } | null {
   const hx = Math.round(hero.position.x);
@@ -204,8 +204,9 @@ export function findNearestTarget(
         const ex = Math.round(enemy.position.x);
         const ey = Math.round(enemy.position.y);
         
-        // Priority -2 for closest enemy, -1 for others (always above chests/blocks)
-        const priority = ei === 0 ? -2 : -1;
+        // Priorité maximale au boss pour éviter les blocages de niveau.
+        // Puis ennemi le plus proche, puis les autres.
+        const priority = enemy.isBoss ? -3 : (ei === 0 ? -2 : -1);
         
         for (const [ox, oy] of [[0, -1], [0, 1], [-1, 0], [1, 0]]) {
           const tx = ex + ox;
@@ -582,7 +583,10 @@ export function tickGame(state: GameState, deltaMs: number): GameState {
       const hasAliveEnemies = state.enemies?.some(e => e.hp > 0) || (state.isStoryMode && state.boss && (state.boss as any).hp > 0);
       const retargetDelay = (state.isStoryMode && hasAliveEnemies) ? 0.15 : 0.3;
       const storyTargets = state.isStoryMode && state.boss && (state.boss as any).hp > 0
-        ? [...(state.enemies || []), state.boss as any]
+        ? [
+            ...(state.enemies || []).map(e => ({ ...e, isBoss: false })),
+            { ...(state.boss as any), isBoss: true },
+          ]
         : state.enemies;
 
       if (hero.stuckTimer >= retargetDelay) {
@@ -611,7 +615,10 @@ export function tickGame(state: GameState, deltaMs: number): GameState {
       if (hero.stuckTimer >= 0.8) {
         hero.stuckTimer = 0;
         const retargets = state.boss && (state.boss as any).hp > 0
-          ? [...(state.enemies || []), state.boss as any]
+          ? [
+              ...(state.enemies || []).map(e => ({ ...e, isBoss: false })),
+              { ...(state.boss as any), isBoss: true },
+            ]
           : state.enemies;
         const betterTarget = findNearestTarget(map, hero, bombs, map.chests, retargets, true);
         if (betterTarget && hero.targetPosition) {

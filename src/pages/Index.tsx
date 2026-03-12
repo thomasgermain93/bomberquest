@@ -724,55 +724,85 @@ const Index = () => {
     setScreen('story-battle');
   };
 
-  const endStoryBattle = () => {
-    if (gameState && currentStoryStage) {
+  const getNextStoryStage = (stage: StoryStage): StoryStage | null => {
+    const region = STORY_REGIONS.find(r => r.id === stage.regionId);
+    if (!region) return null;
+    const idx = region.stages.findIndex(s => s.id === stage.id);
+    if (idx < 0 || idx + 1 >= region.stages.length) return null;
+    return region.stages[idx + 1];
+  };
+
+  const finalizeStoryBattle = (goToNextStage: boolean = false) => {
+    if (!currentStoryStage) {
+      setGameState(null);
+      setScreen('story');
+      return;
+    }
+
+    const stageSnapshot = currentStoryStage;
+    const stateSnapshot = gameState;
+
+    if (stateSnapshot) {
       const storyUpdatedHeroes = player.heroes.map(h => {
-        const deployed = gameState.heroes.find(dh => dh.id === h.id);
+        const deployed = stateSnapshot.heroes.find(dh => dh.id === h.id);
         if (!deployed) return h;
-        return gameState.mapCompleted
+        return stateSnapshot.mapCompleted
           ? { ...h, currentStamina: h.maxStamina }
           : { ...h, currentStamina: deployed.currentStamina };
       });
+
       setPlayer(prev => ({
         ...prev,
-        bomberCoins: prev.bomberCoins + gameState.coinsEarned + (gameState.mapCompleted ? currentStoryStage.reward : 0),
-        xp: prev.xp + (gameState.mapCompleted ? currentStoryStage.xpReward : 0),
+        bomberCoins: prev.bomberCoins + stateSnapshot.coinsEarned + (stateSnapshot.mapCompleted ? stageSnapshot.reward : 0),
+        xp: prev.xp + (stateSnapshot.mapCompleted ? stageSnapshot.xpReward : 0),
         heroes: storyUpdatedHeroes,
       }));
+
       if (canWriteCloud) {
-        saveHeroesToCloud(storyUpdatedHeroes.filter(h => gameState.heroes.some(dh => dh.id === h.id)));
+        saveHeroesToCloud(storyUpdatedHeroes.filter(h => stateSnapshot.heroes.some(dh => dh.id === h.id)));
       }
 
-      if (gameState.mapCompleted) {
+      if (stateSnapshot.mapCompleted) {
         setStoryProgress(prev => ({
           ...prev,
-          completedStages: prev.completedStages.includes(currentStoryStage.id)
+          completedStages: prev.completedStages.includes(stageSnapshot.id)
             ? prev.completedStages
-            : [...prev.completedStages, currentStoryStage.id],
-          bossesDefeated: currentStoryStage.boss && !prev.bossesDefeated.includes(currentStoryStage.boss)
-            ? [...prev.bossesDefeated, currentStoryStage.boss]
+            : [...prev.completedStages, stageSnapshot.id],
+          bossesDefeated: stageSnapshot.boss && !prev.bossesDefeated.includes(stageSnapshot.boss)
+            ? [...prev.bossesDefeated, stageSnapshot.boss]
             : prev.bossesDefeated,
-          highestStage: Math.max(prev.highestStage, currentStoryStage.stageNumber),
+          highestStage: Math.max(prev.highestStage, stageSnapshot.stageNumber),
         }));
       }
 
       setDailyQuests(prev => {
         let q = prev;
-        if (gameState.mapCompleted) q = updateQuestProgress(q, 'complete_maps', 1);
-        if (gameState.coinsEarned > 0) q = updateQuestProgress(q, 'earn_coins', gameState.coinsEarned);
-        if (gameState.bombsPlaced > 0) q = updateQuestProgress(q, 'place_bombs', gameState.bombsPlaced);
-        if (gameState.chestsOpened > 0) q = updateQuestProgress(q, 'open_chests', gameState.chestsOpened);
+        if (stateSnapshot.mapCompleted) q = updateQuestProgress(q, 'complete_maps', 1);
+        if (stateSnapshot.coinsEarned > 0) q = updateQuestProgress(q, 'earn_coins', stateSnapshot.coinsEarned);
+        if (stateSnapshot.bombsPlaced > 0) q = updateQuestProgress(q, 'place_bombs', stateSnapshot.bombsPlaced);
+        if (stateSnapshot.chestsOpened > 0) q = updateQuestProgress(q, 'open_chests', stateSnapshot.chestsOpened);
         return q;
       });
     }
+
+    const nextStage = goToNextStage && stateSnapshot?.mapCompleted && !stageSnapshot.boss
+      ? getNextStoryStage(stageSnapshot)
+      : null;
+
     setGameState(null);
     setCurrentStoryStage(null);
-    if (currentStoryStage) {
-      const regionIdx = STORY_REGIONS.findIndex(r => r.id === currentStoryStage.regionId);
-      if (regionIdx >= 0) setStoryRegionIdx(regionIdx);
+
+    if (nextStage) {
+      setTimeout(() => startStoryStage(nextStage), 100);
+      return;
     }
+
+    const regionIdx = STORY_REGIONS.findIndex(r => r.id === stageSnapshot.regionId);
+    if (regionIdx >= 0) setStoryRegionIdx(regionIdx);
     setScreen('story');
   };
+
+  const endStoryBattle = () => finalizeStoryBattle(false);
 
   const [summonedBatch, setSummonedBatch] = useState<Hero[]>([]);
 
@@ -1469,6 +1499,14 @@ const Index = () => {
                     >
                       <Check size={14} /> Récupérer
                     </button>
+                    {gameState.isStoryMode && currentStoryStage && !currentStoryStage.boss && (
+                      <button
+                        onClick={() => finalizeStoryBattle(true)}
+                        className="pixel-btn font-pixel text-xs flex items-center gap-2"
+                      >
+                        <Play size={14} /> Étape suivante
+                      </button>
+                    )}
                     {!gameState.isStoryMode && (
                       <>
                         <button
