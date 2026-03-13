@@ -27,6 +27,19 @@ import { toast } from '@/hooks/use-toast';
 type Screen = 'hub' | 'treasure-hunt' | 'heroes' | 'summon' | 'story' | 'story-battle';
 
 
+const LOCAL_SAVE_TS_KEY = 'bq_last_local_save_ts';
+const LOCAL_HERO_MUTATION_TS_KEY = 'bq_last_hero_mutation_ts';
+
+const markLocalSave = () => {
+  localStorage.setItem(LOCAL_SAVE_TS_KEY, String(Date.now()));
+};
+
+const markHeroMutation = () => {
+  const now = Date.now();
+  localStorage.setItem(LOCAL_HERO_MUTATION_TS_KEY, String(now));
+  localStorage.setItem(LOCAL_SAVE_TS_KEY, String(now));
+};
+
 const Index = () => {
   const { user, session, loading: authLoading, signOut } = useAuth();
   const navigate = useNavigate();
@@ -76,7 +89,7 @@ const Index = () => {
 
   const cloudSessionReady = Boolean(user?.id && session?.access_token && !authLoading);
   const canWriteCloud = cloudSessionReady && cloudValidated;
-  const { loadFromCloud, saveHeroesToCloud, removeHeroesFromCloud, saveStatsToCloud } = useCloudSave(user?.id, canWriteCloud);
+  const { loadFromCloud, saveHeroesToCloud, removeHeroesFromCloud, saveStatsToCloud, syncHeroesSnapshotToCloud } = useCloudSave(user?.id, canWriteCloud);
 
   const toggleMute = () => {
     const newVal = !muted;
@@ -108,6 +121,7 @@ const Index = () => {
       savePlayerData(player);
       saveDailyQuests(dailyQuests);
       saveStoryProgress(storyProgress);
+      markLocalSave();
       lastLocalSaveRef.current = Date.now();
     }
   }, [player, dailyQuests, storyProgress, user, isCloudLoading]);
@@ -154,15 +168,32 @@ const Index = () => {
 
     loadWithRetry().then(data => {
       if (data) {
-        const cloudHeroCount = data.playerData?.heroes?.length || 0;
+        const cloudHeroes = data.playerData?.heroes || [];
+        const cloudHeroCount = cloudHeroes.length;
         const localBackupData = loadPlayerData();
-        const localBackupHeroCount = localBackupData.heroes?.length || 0;
+        const localBackupHeroes = localBackupData.heroes || [];
+        const localBackupHeroCount = localBackupHeroes.length;
         const runtimeLocalHeroCount = localHeroCountRef.current;
         const trustedLocalHeroCount = Math.max(localBackupHeroCount, runtimeLocalHeroCount);
 
-        // Detect potential rollback: cloud has fewer heroes than trusted local backup/state.
-        // In that case we keep local data and block cloud writes until a healthy cloud read happens.
-        const isPotentialRollback = trustedLocalHeroCount > cloudHeroCount && trustedLocalHeroCount > 1;
+        const cloudHeroIds = new Set(cloudHeroes.map(h => h.id));
+        const localHeroIds = new Set(localBackupHeroes.map(h => h.id));
+        const heroesDiverged = cloudHeroCount !== localBackupHeroCount
+          || localBackupHeroes.some(h => !cloudHeroIds.has(h.id))
+          || cloudHeroes.some(h => !localHeroIds.has(h.id));
+
+        const lastHeroMutationTs = Number(localStorage.getItem(LOCAL_HERO_MUTATION_TS_KEY) || '0');
+        const lastLocalSaveTs = Number(localStorage.getItem(LOCAL_SAVE_TS_KEY) || '0');
+        const freshestLocalTs = Math.max(lastHeroMutationTs, lastLocalSaveTs, lastLocalSaveRef.current || 0);
+        const LOCAL_FRESH_WINDOW_MS = 10 * 60 * 1000; // 10 min
+        const hasFreshLocalState = freshestLocalTs > 0 && (Date.now() - freshestLocalTs) <= LOCAL_FRESH_WINDOW_MS;
+
+        // Detect potential rollback both directions:
+        // - cloud has fewer heroes than trusted local
+        // - OR cloud/local hero sets diverge right after a recent local hero mutation (typical profile round-trip race)
+        const isPotentialRollback =
+          (trustedLocalHeroCount > cloudHeroCount && trustedLocalHeroCount > 1)
+          || (hasFreshLocalState && heroesDiverged && localBackupHeroCount > 1);
 
         if (isPotentialRollback) {
           console.warn('CLOUD_ROLLBACK_GUARD', {
@@ -170,6 +201,9 @@ const Index = () => {
             localBackupHeroCount,
             runtimeLocalHeroCount,
             cloudHeroCount,
+            heroesDiverged,
+            hasFreshLocalState,
+            freshestLocalTs,
             action: 'keep_local_read_only',
           });
           setPlayer(localBackupData);
@@ -271,6 +305,7 @@ const Index = () => {
     const interval = setInterval(() => {
       if (canWriteCloud) {
         saveStatsToCloud(player, storyProgress, dailyQuests);
+        syncHeroesSnapshotToCloud(player.heroes);
       } else if (!user) {
         savePlayerData(player);
         saveDailyQuests(dailyQuests);
@@ -293,7 +328,7 @@ const Index = () => {
       }
     }, 5000);
     return () => clearInterval(interval);
-  }, [user, canWriteCloud, player, dailyQuests, storyProgress, gameState?.isRunning]);
+  }, [user, canWriteCloud, player, dailyQuests, storyProgress, gameState?.isRunning, saveStatsToCloud, syncHeroesSnapshotToCloud]);
 
   useEffect(() => {
     if (user) return;
@@ -586,6 +621,7 @@ const Index = () => {
       heroes: mergedHeroes,
       totalHeroesOwned: mergedHeroes.length,
     }));
+    markHeroMutation();
 
     if (canWriteCloud) {
       saveHeroesToCloud([newHero]);
@@ -618,6 +654,7 @@ const Index = () => {
     
     if (mergeCount > 0) {
       setPlayer(prev => ({ ...prev, heroes: currentHeroes, totalHeroesOwned: currentHeroes.length }));
+      markHeroMutation();
 
       if (canWriteCloud) {
         const addedHeroes = currentHeroes.filter(h => !player.heroes.some(existing => existing.id === h.id));
@@ -877,10 +914,15 @@ const Index = () => {
       pityCounters: currentPity,
       totalHeroesOwned: mergedHeroes.length,
     }));
+    markHeroMutation();
     if (canWriteCloud) {
-      saveHeroesToCloud(mergedHeroes.filter(h => !player.heroes.some(existing => existing.id === h.id)));
-      const removedByMerge = newHeroes.filter(h => !mergedHeroes.some(m => m.id === h.id)).map(h => h.id);
-      if (removedByMerge.length > 0) removeHeroesFromCloud(removedByMerge);
+      const addedHeroes = mergedHeroes.filter(h => !player.heroes.some(existing => existing.id === h.id));
+      const removedExistingHeroIds = player.heroes
+        .filter(h => !mergedHeroes.some(m => m.id === h.id))
+        .map(h => h.id);
+
+      if (addedHeroes.length > 0) saveHeroesToCloud(addedHeroes);
+      if (removedExistingHeroIds.length > 0) removeHeroesFromCloud(removedExistingHeroIds);
     }
     setDailyQuests(prev => updateQuestProgress(prev, 'summon_heroes', count));
   };
