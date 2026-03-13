@@ -58,7 +58,7 @@ const Index = () => {
   );
   const [storyProgress, setStoryProgress] = useState<StoryProgress>(() =>
     user
-      ? { completedStages: [], currentRegion: 'forest', bossesDefeated: [], highestStage: 0 }
+      ? { completedStages: [], currentRegion: 'forest', bossesDefeated: [], highestStage: 0, bossFirstClearRewards: [] }
       : loadStoryProgress()
   );
   const [currentStoryStage, setCurrentStoryStage] = useState<StoryStage | null>(null);
@@ -429,7 +429,7 @@ const Index = () => {
 
               // Friendly fire en mode histoire: bombes alliées blessent les autres héros
               if (state.isStoryMode) {
-                for (const h of heroes) {
+                for (const h of state.heroes) {
                   // Ne pas blesser le héros qui a posé la bombe
                   if (h.id === exp.heroId) continue;
                   if (h.state === 'resting') continue;
