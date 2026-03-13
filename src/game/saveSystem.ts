@@ -62,7 +62,13 @@ export function saveStoryProgress(sp: StoryProgress): void {
 export function loadStoryProgress(): StoryProgress {
   try {
     const raw = localStorage.getItem(STORY_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return {
+        ...{ completedStages: [], currentRegion: 'forest', bossesDefeated: [], highestStage: 0, bossFirstClearRewards: [] },
+        ...parsed,
+      };
+    }
   } catch {}
-  return { completedStages: [], currentRegion: 'forest', bossesDefeated: [], highestStage: 0 };
+  return { completedStages: [], currentRegion: 'forest', bossesDefeated: [], highestStage: 0, bossFirstClearRewards: [] };
 }

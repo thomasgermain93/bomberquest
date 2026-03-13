@@ -1,6 +1,24 @@
 export type EnemyType = 'slime' | 'goblin' | 'skeleton' | 'orc' | 'demon';
 export type BossType = 'king-slime' | 'goblin-chief' | 'lich' | 'orc-warlord' | 'demon-lord';
 
+import { Rarity } from './types';
+
+export const BOSS_LEVEL_BY_TYPE: Record<BossType, number> = {
+  'king-slime': 1,
+  'goblin-chief': 2,
+  'lich': 3,
+  'orc-warlord': 4,
+  'demon-lord': 5,
+};
+
+export const BOSS_RARITY_REWARD: Record<number, Rarity> = {
+  1: 'rare',
+  2: 'super-rare',
+  3: 'epic',
+  4: 'legend',
+  5: 'super-legend',
+};
+
 export interface Enemy {
   id: string;
   type: EnemyType;
@@ -73,6 +91,7 @@ export interface StoryProgress {
   currentRegion: string;
   bossesDefeated: string[];
   highestStage: number;
+  bossFirstClearRewards: number[];
 }
 
 export const ENEMY_CONFIG: Record<EnemyType, {
