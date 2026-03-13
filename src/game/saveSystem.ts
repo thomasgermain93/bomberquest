@@ -33,7 +33,7 @@ export function savePlayerData(data: PlayerData): void {
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify(data));
   } catch {
-    console.warn('Failed to save game data');
+    console.warn('Échec de la sauvegarde');
   }
 }
 
@@ -44,7 +44,7 @@ export function loadPlayerData(): PlayerData {
       return JSON.parse(saved);
     }
   } catch {
-    console.warn('Failed to load save data');
+    console.warn('Échec du chargement de la sauvegarde');
   }
   return getDefaultPlayerData();
 }

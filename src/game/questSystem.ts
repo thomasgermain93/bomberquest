@@ -36,9 +36,9 @@ const QUEST_TEMPLATES: {
   {
     type: 'complete_maps', label: 'Explorateur', emoji: '🗺️',
     variants: [
-      { description: 'Complète 1 carte Treasure Hunt', target: 1, reward: 100, xp: 50 },
-      { description: 'Complète 3 cartes Treasure Hunt', target: 3, reward: 250, xp: 120 },
-      { description: 'Complète 5 cartes Treasure Hunt', target: 5, reward: 400, xp: 200 },
+      { description: 'Complète 1 carte Chasse au Trésor', target: 1, reward: 100, xp: 50 },
+      { description: 'Complète 3 cartes Chasse au Trésor', target: 3, reward: 250, xp: 120 },
+      { description: 'Complète 5 cartes Chasse au Trésor', target: 5, reward: 400, xp: 200 },
     ],
   },
   {

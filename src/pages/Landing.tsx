@@ -506,7 +506,7 @@ const Landing: React.FC = () => {
             BOMBER<span className="text-primary">QUEST</span>
           </h1>
           <p className="font-pixel text-[10px] sm:text-xs text-game-gold mt-4 text-glow-gold">
-            IDLE BOMBER • COLLECT & UPGRADE
+            IDLE BOMBER • COLLECTER & AMÉLIORER
           </p>
           <p className="text-sm sm:text-base text-muted-foreground mt-6 max-w-md mx-auto leading-relaxed">
             Collectionne des héros, pose des bombes, explore des donjons et vaincs des boss épiques dans ce RPG idle pixel art !
@@ -803,7 +803,7 @@ const Landing: React.FC = () => {
             <Link to="/changelog" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Changelog</Link>
             <Link to="/auth" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Connexion</Link>
           </div>
-          <p className="text-[10px] text-muted-foreground">© 2026 BomberQuest — Idle Bomber RPG</p>
+          <p className="text-[10px] text-muted-foreground">© 2026 BomberQuest — RPG Idle Bomber</p>
         </div>
       </footer>
     </div>

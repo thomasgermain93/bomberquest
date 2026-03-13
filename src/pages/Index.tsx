@@ -1156,7 +1156,7 @@ const Index = () => {
               <h2 className="font-pixel text-sm sm:text-lg text-foreground text-glow-red mb-1">
                 💣 BOMBERQUEST
               </h2>
-              <p className="text-xs text-muted-foreground">Idle Bomber • Collect & Upgrade</p>
+              <p className="text-xs text-muted-foreground">Idle Bomber • Collecter & Améliorer</p>
             </div>
 
             {/* Quick Stats + XP Bar */}
@@ -1470,7 +1470,7 @@ const Index = () => {
                     className="font-pixel text-[8px] px-3 py-2.5 sm:py-1.5 rounded bg-secondary text-secondary-foreground hover:bg-secondary/80 flex items-center gap-1 min-h-[44px] sm:min-h-[auto]"
                   >
                     {gameState.isPaused ? <Play size={14} className="sm:size-[10px]" /> : <Pause size={14} className="sm:size-[10px]" />}
-                    <span className="hidden sm:inline">{gameState.isPaused ? 'Play' : 'Pause'}</span>
+                    <span className="hidden sm:inline">{gameState.isPaused ? 'Reprendre' : 'Pause'}</span>
                   </button>
                   <button
                     onClick={gameState.isStoryMode ? endStoryBattle : endTreasureHunt}
