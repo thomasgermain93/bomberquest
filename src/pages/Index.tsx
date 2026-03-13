@@ -211,9 +211,11 @@ const Index = () => {
           const localQuests = loadDailyQuests();
           const today = new Date().toISOString().split('T')[0];
           setDailyQuests(localQuests?.date === today ? localQuests : generateDailyQuests());
-          setCloudValidated(false);
+          // Keep local state (newer than cloud) and allow a write-back to heal cloud drift.
+          // Blocking writes here caused users to stay in permanent "Sync cloud en attente" mode.
+          setCloudValidated(true);
           cloudLoadedRef.current = true;
-          toast({ title: 'Sync cloud en attente', description: 'Sauvegarde locale conservée. Écriture cloud bloquée temporairement.', duration: 4500 });
+          toast({ title: 'Sync cloud en cours', description: 'Sauvegarde locale conservée. Mise à jour cloud en arrière-plan.', duration: 4500 });
           return;
         }
 
