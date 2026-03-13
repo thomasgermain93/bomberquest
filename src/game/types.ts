@@ -97,6 +97,7 @@ export interface GameState {
   storyStageId?: string;
   enemiesKilled?: number;
   bossDefeated?: boolean;
+  storyFailed?: boolean;
 }
 
 export interface PlayerData {
