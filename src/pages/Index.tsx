@@ -456,12 +456,20 @@ const Index = () => {
         const bossDefeated = !boss || boss.hp <= 0;
         const storyComplete = allEnemiesDead && bossDefeated;
 
+        // Check story defeat: all heroes KO (stamina = 0)
+        const allHeroesKO = heroes.every(h => h.currentStamina <= 0);
+        const storyFailed = allHeroesKO && !storyComplete && !state.mapCompleted;
+
         if (storyComplete && !state.mapCompleted) {
           SFX.victory();
           eventLog.push(`🎉 Victoire! Tous les ennemis vaincus!`);
           if (boss && state.boss && state.boss.hp > 0) {
             eventLog.push(`👑 BOSS VAINCU: ${boss.name}!`);
           }
+        }
+
+        if (storyFailed) {
+          eventLog.push(`💀 DÉFAITE! Tous les héros sont KO!`);
         }
 
         state = {
@@ -475,6 +483,7 @@ const Index = () => {
           enemiesKilled,
           bossDefeated: bossDefeated && !!boss,
           mapCompleted: storyComplete,
+          storyFailed,
         };
       }
 
@@ -693,6 +702,7 @@ const Index = () => {
       .filter(h => heroIds.includes(h.id))
       .map((h, i) => ({
         ...h,
+        currentStamina: h.maxStamina,
         position: { ...spawnPoints[i % spawnPoints.length] },
         targetPosition: null,
         path: null,
@@ -703,6 +713,7 @@ const Index = () => {
 
     if (deployedHeroes.length === 0) {
       const firstHero = { ...player.heroes[0] };
+      firstHero.currentStamina = firstHero.maxStamina;
       firstHero.position = { x: 1, y: 1 };
       firstHero.state = 'idle';
       firstHero.targetPosition = null;
@@ -1586,6 +1597,39 @@ const Index = () => {
                     )}
                   </div>
                 )}
+              </motion.div>
+            )}
+
+            {/* Defeat banner for Story Mode */}
+            {gameState.isStoryMode && gameState.storyFailed && (
+              <motion.div
+                initial={{ scale: 0.5, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ type: 'spring', damping: 12 }}
+                className="pixel-border bg-card p-5 text-center border-destructive/50"
+              >
+                <p className="font-pixel text-sm sm:text-base text-destructive flex items-center justify-center gap-2">
+                  <Skull size={22} /> 💀 DÉFAITE!
+                </p>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Tous vos héros sont KO
+                </p>
+                <div className="flex gap-2 mt-4 justify-center">
+                  <button
+                    onClick={() => {
+                      if (currentStoryStage) startStoryStage(currentStoryStage);
+                    }}
+                    className="pixel-btn font-pixel text-xs flex items-center gap-2"
+                  >
+                    <Play size={14} /> Réessayer
+                  </button>
+                  <button
+                    onClick={endStoryBattle}
+                    className="pixel-btn pixel-btn-secondary font-pixel text-xs flex items-center gap-2"
+                  >
+                    <DoorOpen size={14} /> Quitter
+                  </button>
+                </div>
               </motion.div>
             )}
 
