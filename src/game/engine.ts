@@ -443,6 +443,15 @@ export function tickGame(state: GameState, deltaMs: number): GameState {
     const hero = heroes[i];
 
     if (hero.state === 'resting') {
+      if (state.isStoryMode) {
+        // Story mode: no respawn during a stage
+        hero.currentStamina = 0;
+        hero.isActive = false;
+        hero.targetPosition = null;
+        hero.path = null;
+        continue;
+      }
+
       const regenRates = [0.5, 0.67, 0.83, 1.25, 2.0];
       const regenRate = regenRates[Math.min(hero.houseLevel - 1, 4)];
       hero.currentStamina = Math.min(hero.maxStamina, hero.currentStamina + regenRate * dt);
@@ -456,6 +465,7 @@ export function tickGame(state: GameState, deltaMs: number): GameState {
     }
 
     if (hero.currentStamina <= 0) {
+      hero.currentStamina = 0;
       hero.state = 'resting';
       hero.isActive = false;
       hero.targetPosition = null;
