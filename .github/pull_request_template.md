@@ -18,6 +18,14 @@ Exemple : `Fixes #17`
 - [ ] Refactor
 - [ ] Docs
 
+## Evidence (obligatoire pour UI/UX)
+Pour les changements UI/UX, joins des captures avant/après :
+- Crée un dossier `docs/evidence/issue-<id>/` (ex: `docs/evidence/issue-85/`)
+- Nomme les fichiers : `before.png`, `after.png` ou `before.webp`, `after.webp`
+- Ajoute les chemins dans cette section :
+  **Before:** 
+  **After:** 
+
 ## Vérifications
 - [ ] J’ai testé localement
 - [ ] Le build passe
