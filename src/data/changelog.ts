@@ -14,6 +14,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: '2026-03-10',
     title: 'Mises à jour récentes',
     changes: [
+      { type: 'feature', description: 'Story Mode: désactiver le respawn et échouer le niveau si toute l\'équipe est KO (#95)' },
       { type: 'feature', description: 'feat(ci): add UI evidence requirement for PRs (closes #85) (#97)' },
       { type: 'feature', description: 'fix: empêcher rollback héros au retour Profil -> Jeu (#90)' },
       { type: 'fix', description: 'Bug/UX Story Mode: ciblage boss + bouton "Étape suivante" en fin de niveau (#46)' },
