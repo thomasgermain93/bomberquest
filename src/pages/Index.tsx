@@ -885,9 +885,13 @@ const Index = () => {
     }));
     markHeroMutation();
     if (canWriteCloud) {
-      saveHeroesToCloud(mergedHeroes.filter(h => !player.heroes.some(existing => existing.id === h.id)));
-      const removedByMerge = newHeroes.filter(h => !mergedHeroes.some(m => m.id === h.id)).map(h => h.id);
-      if (removedByMerge.length > 0) removeHeroesFromCloud(removedByMerge);
+      const addedHeroes = mergedHeroes.filter(h => !player.heroes.some(existing => existing.id === h.id));
+      const removedExistingHeroIds = player.heroes
+        .filter(h => !mergedHeroes.some(m => m.id === h.id))
+        .map(h => h.id);
+
+      if (addedHeroes.length > 0) saveHeroesToCloud(addedHeroes);
+      if (removedExistingHeroIds.length > 0) removeHeroesFromCloud(removedExistingHeroIds);
     }
     setDailyQuests(prev => updateQuestProgress(prev, 'summon_heroes', count));
   };
