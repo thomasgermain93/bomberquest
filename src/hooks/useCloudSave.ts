@@ -50,10 +50,12 @@ function rowToHero(row: any): Hero {
 
 export function useCloudSave(userId: string | undefined, canWriteCloud: boolean) {
   const saveTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const heroSyncTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      if (heroSyncTimerRef.current) clearTimeout(heroSyncTimerRef.current);
     };
   }, []);
 
@@ -151,5 +153,36 @@ export function useCloudSave(userId: string | undefined, canWriteCloud: boolean)
     }, 3000);
   }, [userId, canWriteCloud]);
 
-  return { loadFromCloud, saveHeroesToCloud, removeHeroesFromCloud, saveStatsToCloud };
+  const syncHeroesSnapshotToCloud = useCallback((heroes: Hero[]) => {
+    if (!userId || !canWriteCloud) return;
+    if (heroSyncTimerRef.current) clearTimeout(heroSyncTimerRef.current);
+
+    heroSyncTimerRef.current = setTimeout(async () => {
+      const rows = heroes.map(h => heroToRow(h, userId));
+
+      if (rows.length > 0) {
+        await supabase.from('player_heroes').upsert(rows, { onConflict: 'id,user_id' });
+      }
+
+      const { data: existingRows, error } = await supabase
+        .from('player_heroes')
+        .select('id')
+        .eq('user_id', userId);
+
+      if (error) {
+        throw new Error(`player_heroes_sync_failed:${error.message}`);
+      }
+
+      const keepIds = new Set(heroes.map(h => h.id));
+      const idsToDelete = (existingRows || [])
+        .map((row: any) => row.id as string)
+        .filter(id => !keepIds.has(id));
+
+      if (idsToDelete.length > 0) {
+        await supabase.from('player_heroes').delete().eq('user_id', userId).in('id', idsToDelete);
+      }
+    }, 1200);
+  }, [userId, canWriteCloud]);
+
+  return { loadFromCloud, saveHeroesToCloud, removeHeroesFromCloud, saveStatsToCloud, syncHeroesSnapshotToCloud };
 }

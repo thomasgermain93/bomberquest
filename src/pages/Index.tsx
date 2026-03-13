@@ -89,7 +89,7 @@ const Index = () => {
 
   const cloudSessionReady = Boolean(user?.id && session?.access_token && !authLoading);
   const canWriteCloud = cloudSessionReady && cloudValidated;
-  const { loadFromCloud, saveHeroesToCloud, removeHeroesFromCloud, saveStatsToCloud } = useCloudSave(user?.id, canWriteCloud);
+  const { loadFromCloud, saveHeroesToCloud, removeHeroesFromCloud, saveStatsToCloud, syncHeroesSnapshotToCloud } = useCloudSave(user?.id, canWriteCloud);
 
   const toggleMute = () => {
     const newVal = !muted;
@@ -305,6 +305,7 @@ const Index = () => {
     const interval = setInterval(() => {
       if (canWriteCloud) {
         saveStatsToCloud(player, storyProgress, dailyQuests);
+        syncHeroesSnapshotToCloud(player.heroes);
       } else if (!user) {
         savePlayerData(player);
         saveDailyQuests(dailyQuests);
@@ -327,7 +328,7 @@ const Index = () => {
       }
     }, 5000);
     return () => clearInterval(interval);
-  }, [user, canWriteCloud, player, dailyQuests, storyProgress, gameState?.isRunning]);
+  }, [user, canWriteCloud, player, dailyQuests, storyProgress, gameState?.isRunning, saveStatsToCloud, syncHeroesSnapshotToCloud]);
 
   useEffect(() => {
     if (user) return;
