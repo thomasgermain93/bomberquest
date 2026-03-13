@@ -14,6 +14,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: '2026-03-10',
     title: 'Mises à jour récentes',
     changes: [
+      { type: 'feature', description: 'fix: sauvegarder les fusions de héros en cloud (#89)' },
       { type: 'feature', description: 'UX mobile: texte tronqué + layout shift des compteurs/boutons (#79)' },
       { type: 'feature', description: 'Bug persistance héros: la liste régresse après merge (héros invoqués disparus) (#53)' },
       { type: 'feature', description: 'fix: avoid false cloud fallback when auth session is restoring (#76)' },
