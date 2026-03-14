@@ -7,6 +7,8 @@ import GameGrid from '@/components/GameGrid';
 import HeroCard from '@/components/HeroCard';
 import SummonModal from '@/components/SummonModal';
 import HeroUpgradeModal from '@/components/HeroUpgradeModal';
+import HeroPickerModal from '@/components/HeroPickerModal';
+import FusionSlot from '@/components/FusionSlot';
 import StoryMode from '@/components/StoryMode';
 import { GameState, Hero, MAP_CONFIGS, PlayerData, RARITY_CONFIG, Rarity } from '@/game/types';
 import { generateMap, tickGame } from '@/game/engine';
@@ -20,11 +22,11 @@ import { STORY_REGIONS } from '@/game/storyData';
 import { getExplosionTiles } from '@/game/engine';
 import DailyQuests from '@/components/DailyQuests';
 import PixelIcon from '@/components/PixelIcon';
-import { Home, Users, Sparkles, Swords, Map, Trophy, Coins, Star, ChevronLeft, Play, Pause, DoorOpen, Check, Scroll, FastForward, BookOpen, Shield, Skull, Bomb, Lock as LockIcon, Volume2, VolumeX, User } from 'lucide-react';
+import { Home, Users, Sparkles, Swords, Map, Trophy, Coins, Star, ChevronLeft, Play, Pause, DoorOpen, Check, Scroll, FastForward, BookOpen, Shield, Skull, Bomb, Lock as LockIcon, Volume2, VolumeX, User, Hammer, ArrowDown } from 'lucide-react';
 import { SFX, isMuted, setMuted } from '@/game/sfx';
 import { toast } from '@/hooks/use-toast';
 
-type Screen = 'hub' | 'treasure-hunt' | 'heroes' | 'summon' | 'story' | 'story-battle';
+type Screen = 'hub' | 'treasure-hunt' | 'heroes' | 'fusion' | 'summon' | 'story' | 'story-battle';
 
 
 const LOCAL_SAVE_TS_KEY = 'bq_last_local_save_ts';
@@ -70,6 +72,12 @@ const Index = () => {
   const [isMerging, setIsMerging] = useState(false);
   const [farmStats, setFarmStats] = useState({ runs: 0, totalCoins: 0 });
   const [storyRegionIdx, setStoryRegionIdx] = useState(0);
+  
+  // Fusion UI state
+  const [selectedRecipeIdx, setSelectedRecipeIdx] = useState<number>(0);
+  const [fusionSlots, setFusionSlots] = useState<(Hero | null)[]>([null, null, null, null, null, null]);
+  const [heroPickerOpen, setHeroPickerOpen] = useState(false);
+  const [activeSlotIdx, setActiveSlotIdx] = useState<number | null>(null);
   const huntSpeedRef = useRef(1);
   const gameLoopRef = useRef<number>();
   const cloudLoadedRef = useRef(false);
@@ -627,16 +635,43 @@ const Index = () => {
     }
   }, [autoFarm, gameState?.mapCompleted, collectAndContinue]);
 
-  // Merge system
+  // Merge system - ratios from issue #93
   const MERGE_RECIPES: { from: Rarity; to: Rarity; count: number }[] = [
-    { from: 'common', to: 'rare', count: 12 },
-    { from: 'rare', to: 'super-rare', count: 6 },
-    { from: 'super-rare', to: 'epic', count: 3 },
+    { from: 'common', to: 'rare', count: 2 },
+    { from: 'rare', to: 'super-rare', count: 3 },
+    { from: 'super-rare', to: 'epic', count: 4 },
+    { from: 'epic', to: 'legend', count: 5 },
+    { from: 'legend', to: 'super-legend', count: 6 },
   ];
 
+  const isHeroEligibleForMerge = (hero: Hero, rarity: Rarity, requiredCount: number): { eligible: boolean; reason: string } => {
+    const maxLevel = RARITY_CONFIG[rarity].maxLevel;
+    if (hero.rarity !== rarity) {
+      return { eligible: false, reason: `Rareté ${RARITY_CONFIG[rarity].label} requise` };
+    }
+    if (hero.level < maxLevel) {
+      return { eligible: false, reason: `Niveau ${maxLevel} requis (${hero.level}/${maxLevel})` };
+    }
+    return { eligible: true, reason: '' };
+  };
+
+  const getAvailableForMerge = (rarity: Rarity): { total: number; maxed: number } => {
+    const heroesOfRarity = player.heroes.filter(h => h.rarity === rarity);
+    const maxLevel = RARITY_CONFIG[rarity].maxLevel;
+    const maxed = heroesOfRarity.filter(h => h.level >= maxLevel).length;
+    return { total: heroesOfRarity.length, maxed };
+  };
+
   const handleMerge = (from: Rarity, to: Rarity, count: number) => {
-    const available = player.heroes.filter(h => h.rarity === from);
-    if (available.length < count) return;
+    const maxLevel = RARITY_CONFIG[from].maxLevel;
+    const available = player.heroes.filter(h => h.rarity === from && h.level >= maxLevel);
+    if (available.length < count) {
+      toast({
+        title: "Fusion impossible",
+        description: `Vous avez besoin de ${count} héros ${RARITY_CONFIG[from].label} niveau ${maxLevel}`,
+      });
+      return;
+    }
     
     const toRemove = new Set(available.slice(0, count).map(h => h.id));
     const removedIds = Array.from(toRemove);
@@ -654,6 +689,71 @@ const Index = () => {
       saveHeroesToCloud([newHero]);
       removeHeroesFromCloud(removedIds);
     }
+
+    toast({
+      title: "Fusion réussie!",
+      description: `${RARITY_CONFIG[from].label} → ${RARITY_CONFIG[to].label}`,
+    });
+  };
+
+  // Execute fusion from fusion slots UI
+  const executeFusionFromSlots = () => {
+    const recipe = MERGE_RECIPES[selectedRecipeIdx];
+    const filledSlots = fusionSlots.filter(s => s !== null) as Hero[];
+    
+    if (filledSlots.length !== recipe.count) {
+      toast({
+        title: "Slots incomplets",
+        description: `Vous devez remplir ${recipe.count} slots`,
+      });
+      return;
+    }
+
+    const toRemove = new Set(filledSlots.map(h => h.id));
+    const removedIds = Array.from(toRemove);
+    const newHero = generateHero(recipe.to);
+    const mergedHeroes = [...player.heroes.filter(h => !toRemove.has(h.id)), newHero];
+    
+    setPlayer(prev => ({
+      ...prev,
+      heroes: mergedHeroes,
+      totalHeroesOwned: mergedHeroes.length,
+    }));
+    markHeroMutation();
+
+    if (canWriteCloud) {
+      saveHeroesToCloud([newHero]);
+      removeHeroesFromCloud(removedIds);
+    }
+
+    toast({
+      title: "Fusion réussie!",
+      description: `${RARITY_CONFIG[recipe.from].label} → ${RARITY_CONFIG[recipe.to].label}`,
+    });
+
+    // Reset slots
+    setFusionSlots([null, null, null, null, null, null]);
+  };
+
+  const handleSlotClick = (index: number) => {
+    setActiveSlotIdx(index);
+    setHeroPickerOpen(true);
+  };
+
+  const handleHeroSelect = (hero: Hero) => {
+    if (activeSlotIdx !== null) {
+      const newSlots = [...fusionSlots];
+      newSlots[activeSlotIdx] = hero;
+      setFusionSlots(newSlots);
+    }
+    setHeroPickerOpen(false);
+    setActiveSlotIdx(null);
+  };
+
+  const handleSlotClear = (index: number) => {
+    const newSlots = [...fusionSlots];
+    newSlots[index] = null;
+    setFusionSlots(newSlots);
   };
 
   const mergeAll = useCallback(() => {
@@ -667,7 +767,8 @@ const Index = () => {
     while (madeProgress) {
       madeProgress = false;
       for (const recipe of MERGE_RECIPES) {
-        const available = currentHeroes.filter(h => h.rarity === recipe.from);
+        const maxLevel = RARITY_CONFIG[recipe.from].maxLevel;
+        const available = currentHeroes.filter(h => h.rarity === recipe.from && h.level >= maxLevel);
         if (available.length >= recipe.count) {
           const toRemove = new Set(available.slice(0, recipe.count).map(h => h.id));
           const newHero = generateHero(recipe.to);
@@ -915,7 +1016,8 @@ const Index = () => {
       while (madeProgress) {
         madeProgress = false;
         for (const recipe of MERGE_RECIPES) {
-          const available = mergedHeroes.filter(h => h.rarity === recipe.from);
+          const maxLevel = RARITY_CONFIG[recipe.from].maxLevel;
+          const available = mergedHeroes.filter(h => h.rarity === recipe.from && h.level >= maxLevel);
           if (available.length >= recipe.count) {
             const toRemove = new Set(available.slice(0, recipe.count).map(h => h.id));
             const newHero = generateHero(recipe.to);
@@ -1378,6 +1480,11 @@ const Index = () => {
               <Users size={12} /> Gérer tous les héros ({player.heroes.length})
             </button>
 
+            {/* Quick link to fusion */}
+            <button onClick={() => setScreen('fusion')} className="pixel-btn pixel-btn-secondary w-full font-pixel text-[8px] flex items-center justify-center gap-2">
+              <Hammer size={12} /> Forge de Fusion
+            </button>
+
             <button
               onClick={() => setSummonOpen(true)}
               className="pixel-btn pixel-btn-gold w-full font-pixel text-xs glow-gold flex items-center justify-center gap-2"
@@ -1754,6 +1861,163 @@ const Index = () => {
             </div>
           </motion.div>
         )}
+
+        {/* FUSION SCREEN - Forge UI */}
+        {screen === 'fusion' && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="font-pixel text-xs text-foreground flex items-center gap-2">
+                <Hammer size={16} /> FORGE DE FUSION
+              </h2>
+              <button onClick={() => setScreen('hub')} className="pixel-btn pixel-btn-secondary font-pixel text-[8px] flex items-center gap-1">
+                <ChevronLeft size={12} /> Retour
+              </button>
+            </div>
+
+            {/* Recipe selector */}
+            <div className="pixel-border bg-card p-4">
+              <h3 className="font-pixel text-[9px] text-foreground mb-3 flex items-center gap-2">
+                <Sparkles size={14} /> RECETTES DE FUSION
+              </h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+                {MERGE_RECIPES.map((recipe, idx) => {
+                  const { total, maxed } = getAvailableForMerge(recipe.from);
+                  const canMerge = maxed >= recipe.count;
+                  const isSelected = selectedRecipeIdx === idx;
+                  return (
+                    <button
+                      key={`${recipe.from}-${recipe.to}`}
+                      onClick={() => {
+                        setSelectedRecipeIdx(idx);
+                        setFusionSlots([null, null, null, null, null, null]);
+                      }}
+                      className={`pixel-border p-2 text-center transition-all ${
+                        isSelected 
+                          ? 'ring-2 ring-primary bg-primary/10' 
+                          : canMerge
+                            ? 'bg-game-energy-green/10 hover:bg-game-energy-green/20 cursor-pointer'
+                            : 'bg-muted/30 opacity-60'
+                      }`}
+                    >
+                      <div className="flex items-center justify-center gap-1 mb-1">
+                        <span className="font-pixel text-[7px]" style={{ color: `hsl(var(--game-rarity-${recipe.from}))` }}>
+                          {recipe.count}× {RARITY_CONFIG[recipe.from].label}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-center gap-1">
+                        <ArrowDown size={8} className="text-muted-foreground" />
+                        <span className="font-pixel text-[7px]" style={{ color: `hsl(var(--game-rarity-${recipe.to}))` }}>
+                          1× {RARITY_CONFIG[recipe.to].label}
+                        </span>
+                      </div>
+                      <p className="text-[7px] text-muted-foreground mt-1">
+                        Maxed: {maxed}/{recipe.count}
+                      </p>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Fusion Forge UI with Anvil */}
+            <div className="pixel-border bg-card p-6">
+              <div className="flex flex-col items-center">
+                {/* Anvil visual */}
+                <div className="relative mb-6">
+                  <div 
+                    className="w-24 h-16 sm:w-32 sm:h-20 rounded-lg flex items-center justify-center"
+                    style={{
+                      background: 'linear-gradient(180deg, #4a4a4a 0%, #2a2a2a 100%)',
+                      boxShadow: '0 8px 0 #1a1a1a, 0 12px 20px rgba(0,0,0,0.5)',
+                    }}
+                  >
+                    <Hammer size={40} className="text-amber-600" />
+                  </div>
+                  {/* Glow effect */}
+                  <div className="absolute inset-0 rounded-lg animate-pulse bg-amber-500/20 blur-xl" />
+                </div>
+
+                {/* Recipe info */}
+                <div className="text-center mb-4">
+                  <p className="font-pixel text-[10px] text-foreground">
+                    {MERGE_RECIPES[selectedRecipeIdx].count}× {RARITY_CONFIG[MERGE_RECIPES[selectedRecipeIdx].from].label} niv. {RARITY_CONFIG[MERGE_RECIPES[selectedRecipeIdx].from].maxLevel}
+                  </p>
+                  <p className="text-[8px] text-muted-foreground">→</p>
+                  <p className="font-pixel text-[10px]" style={{ color: `hsl(var(--game-rarity-${MERGE_RECIPES[selectedRecipeIdx].to}))` }}>
+                    1× {RARITY_CONFIG[MERGE_RECIPES[selectedRecipeIdx].to].label}
+                  </p>
+                </div>
+
+                {/* Slots - 6 slots around the anvil */}
+                <div className="grid grid-cols-3 gap-3 mb-6">
+                  {fusionSlots.map((hero, idx) => {
+                    const recipe = MERGE_RECIPES[selectedRecipeIdx];
+                    const eligibility = hero 
+                      ? isHeroEligibleForMerge(hero, recipe.from, recipe.count)
+                      : { eligible: true, reason: '' };
+                    return (
+                      <FusionSlot
+                        key={idx}
+                        hero={hero}
+                        index={idx}
+                        onClick={() => handleSlotClick(idx)}
+                        onClear={hero ? () => handleSlotClear(idx) : undefined}
+                        isEligible={eligibility.eligible}
+                        ineligibleReason={eligibility.reason}
+                      />
+                    );
+                  })}
+                </div>
+
+                {/* Fusion button */}
+                <button
+                  onClick={executeFusionFromSlots}
+                  disabled={fusionSlots.filter(s => s !== null).length !== MERGE_RECIPES[selectedRecipeIdx].count}
+                  className={`pixel-btn pixel-btn-primary font-pixel text-[10px] flex items-center justify-center gap-2 min-h-[48px] px-8 ${
+                    fusionSlots.filter(s => s !== null).length !== MERGE_RECIPES[selectedRecipeIdx].count 
+                      ? 'opacity-50 cursor-not-allowed' 
+                      : ''
+                  }`}
+                >
+                  <Sparkles size={16} /> FUSIONNER
+                </button>
+
+                {/* Slot progress */}
+                <p className="text-[8px] text-muted-foreground mt-3">
+                  {fusionSlots.filter(s => s !== null).length}/{MERGE_RECIPES[selectedRecipeIdx].count} slots remplis
+                </p>
+              </div>
+            </div>
+
+            {/* Quick fusion (legacy) */}
+            <div className="pixel-border bg-card p-4">
+              <h3 className="font-pixel text-[9px] text-foreground mb-3 flex items-center gap-2">
+                <Sparkles size={14} /> FUSION RAPIDE
+              </h3>
+              <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+                <button 
+                  onClick={mergeAll}
+                  disabled={isMerging}
+                  className={`pixel-btn pixel-btn-primary font-pixel text-[8px] flex items-center justify-center gap-2 min-h-[44px] ${isMerging ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  <Sparkles size={14} /> {isMerging ? 'Fusion en cours...' : 'Tout fusionner'}
+                </button>
+                
+                <label className="flex items-center gap-2 cursor-pointer min-h-[44px] px-3 pixel-border bg-muted/30 hover:bg-muted/50 transition-colors">
+                  <input 
+                    type="checkbox" 
+                    checked={autoMerge}
+                    onChange={(e) => setAutoMerge(e.target.checked)}
+                    className="w-4 h-4 accent-primary"
+                  />
+                  <span className="font-pixel text-[7px] sm:text-[8px] text-muted-foreground">
+                    Fusion auto après invocation x10/x100
+                  </span>
+                </label>
+              </div>
+            </div>
+          </motion.div>
+        )}
       </main>
 
       <HeroUpgradeModal
@@ -1773,6 +2037,16 @@ const Index = () => {
         lastSummoned={lastSummoned}
         summonedBatch={summonedBatch}
         pityCounters={player.pityCounters}
+      />
+
+      <HeroPickerModal
+        isOpen={heroPickerOpen}
+        onClose={() => setHeroPickerOpen(false)}
+        onSelect={handleHeroSelect}
+        heroes={player.heroes}
+        requiredRarity={MERGE_RECIPES[selectedRecipeIdx].from}
+        requiredCount={MERGE_RECIPES[selectedRecipeIdx].count}
+        alreadySelectedIds={fusionSlots.filter(s => s !== null).map(s => s!.id)}
       />
     </div>
   );
