@@ -72,6 +72,7 @@ export function generateHero(rarity: Rarity): Hero {
     name: `${name} #${id.split('_')[1]}`,
     rarity,
     level: 1,
+    xp: 0,
     stars: 0,
     stats,
     skills,

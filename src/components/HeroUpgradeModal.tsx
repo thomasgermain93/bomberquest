@@ -1,7 +1,7 @@
 import React from 'react';
 import PixelIcon from '@/components/PixelIcon';
-import { Hero, RARITY_CONFIG } from '@/game/types';
-import { getUpgradeCost, getStatsAtLevel, getAscensionCost, MAX_STARS, countDuplicates } from '@/game/upgradeSystem';
+import { Hero, RARITY_CONFIG, MAX_LEVEL_BY_RARITY } from '@/game/types';
+import { getStatsAtLevel, getAscensionCost, MAX_STARS, countDuplicates, getXpProgress, getMaxLevel } from '@/game/upgradeSystem';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -30,15 +30,15 @@ const HeroUpgradeModal: React.FC<HeroUpgradeModalProps> = ({ hero, coins, allHer
   if (!hero) return null;
 
   const config = RARITY_CONFIG[hero.rarity];
-  const isMaxLevel = hero.level >= 10;
+  const maxLevel = getMaxLevel(hero.rarity);
+  const isMaxLevel = hero.level >= maxLevel;
   const isMaxStars = hero.stars >= MAX_STARS;
-  const cost = isMaxLevel ? Infinity : getUpgradeCost(hero.level);
-  const canAfford = coins >= cost;
+  const xpProgress = getXpProgress(hero);
 
   // For level up: show next level stats
   const nextLevelStats = isMaxLevel ? null : getStatsAtLevel(hero.rarity, hero.level + 1, hero.stars);
 
-  // For ascension: show next star stats
+  // For ascension: show next star stats (only at max level)
   const ascensionInfo = isMaxLevel && !isMaxStars ? getAscensionCost(hero.stars) : null;
   const nextStarStats = ascensionInfo ? getStatsAtLevel(hero.rarity, hero.level, hero.stars + 1) : null;
   const duplicates = allHeroes ? countDuplicates(allHeroes, hero.id, hero.rarity) : 0;
@@ -148,30 +148,22 @@ const HeroUpgradeModal: React.FC<HeroUpgradeModalProps> = ({ hero, coins, allHer
 
           {/* Action buttons */}
           <div className="pt-2 border-t border-border space-y-2">
-            {/* Level Up */}
+            {/* XP Progress */}
             {!isMaxLevel && (
-              <Button
-                onClick={() => onUpgrade(hero.id)}
-                disabled={!canAfford}
-                className="w-full font-pixel text-[10px] gap-2"
-                variant={canAfford ? 'default' : 'secondary'}
-              >
-                {canAfford ? (
-                  <>
-                    <ArrowUp size={14} />
-                    AMÉLIORER AU NIV. {hero.level + 1}
-                    <span className="flex items-center gap-1 ml-1 opacity-80">
-                      <Coins size={12} /> {cost.toLocaleString()} BC
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <Lock size={14} />
-                    {cost.toLocaleString()} BC REQUIS
-                    <span className="text-destructive ml-1">(manque {(cost - coins).toLocaleString()})</span>
-                  </>
-                )}
-              </Button>
+              <div className="bg-muted/50 rounded p-3 space-y-2">
+                <p className="font-pixel text-[9px] text-game-xp-blue flex items-center gap-1">
+                  <Zap size={12} /> PROGRESSION XP
+                </p>
+                <div className="space-y-1">
+                  <Progress value={xpProgress.percentage} className="h-3" />
+                  <p className="text-[10px] text-muted-foreground text-center">
+                    {xpProgress.current.toLocaleString()} / {xpProgress.required.toLocaleString()} XP
+                  </p>
+                </div>
+                <p className="text-[9px] text-muted-foreground">
+                  Joue pour gagner de l'XP! Pose des bombes, détruis des blocs et ouvre des coffres.
+                </p>
+              </div>
             )}
 
             {/* Ascension */}
@@ -228,7 +220,7 @@ const HeroUpgradeModal: React.FC<HeroUpgradeModalProps> = ({ hero, coins, allHer
                   HÉROS MAXIMUM ★★★
                   <Sparkles size={14} className="fill-current" />
                 </p>
-                <p className="text-[9px] text-muted-foreground mt-1">Niveau 10 • Ascension complète</p>
+                <p className="text-[9px] text-muted-foreground mt-1">Niveau {maxLevel} • Ascension complète • Prêt pour fusion</p>
               </div>
             )}
           </div>

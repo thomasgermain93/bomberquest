@@ -1,7 +1,17 @@
 import { GameState, GameMap, Hero, Bomb, Explosion, Chest, TileType, CHEST_CONFIG, ChestTier } from './types';
+import { addXp, getMaxLevel } from './upgradeSystem';
 
 let nextId = 1;
 const genId = () => `id_${nextId++}`;
+
+const XP_REWARDS = {
+  bombPlaced: 5,
+  blockDestroyed: 10,
+  chestOpened: 25,
+  enemyKilled: 15,
+};
+
+export { XP_REWARDS };
 
 export function generateMap(width: number, height: number, blockDensity: number, numChests: number): GameMap {
   const tiles: TileType[][] = [];
@@ -398,6 +408,12 @@ export function tickGame(state: GameState, deltaMs: number): GameState {
           const coins = 1 + Math.floor(Math.random() * 5);
           coinsEarned += coins;
         }
+        if (bomb.heroId && bomb.team === 'heroes') {
+          const heroIdx = heroes.findIndex(h => h.id === bomb.heroId);
+          if (heroIdx >= 0 && heroes[heroIdx].level < getMaxLevel(heroes[heroIdx].rarity)) {
+            heroes[heroIdx] = addXp(heroes[heroIdx], XP_REWARDS.blockDestroyed);
+          }
+        }
       }
 
       const chestIdx = map.chests.findIndex(c => c.position.x === tile.x && c.position.y === tile.y && c.hp > 0);
@@ -408,6 +424,12 @@ export function tickGame(state: GameState, deltaMs: number): GameState {
           coinsEarned += chest.reward;
           chestsOpened++;
           eventLog.push(`Coffre ${chest.tier} ouvert! +${chest.reward} BC`);
+          if (bomb.heroId && bomb.team === 'heroes') {
+            const heroIdx = heroes.findIndex(h => h.id === bomb.heroId);
+            if (heroIdx >= 0 && heroes[heroIdx].level < getMaxLevel(heroes[heroIdx].rarity)) {
+              heroes[heroIdx] = addXp(heroes[heroIdx], XP_REWARDS.chestOpened);
+            }
+          }
         }
         map.chests[chestIdx] = chest;
       }
@@ -567,6 +589,10 @@ export function tickGame(state: GameState, deltaMs: number): GameState {
           hero.currentStamina = Math.max(0, hero.currentStamina - 1);
           hero.bombCooldown = 0.5;
           bombsPlaced++;
+          const heroIdx = heroes.findIndex(h => h.id === hero.id);
+          if (heroIdx >= 0) {
+            heroes[heroIdx] = addXp(heroes[heroIdx], XP_REWARDS.bombPlaced);
+          }
 
           // Retreat from own bomb
           const safe = findSafeSpot(map, hero, bombs);

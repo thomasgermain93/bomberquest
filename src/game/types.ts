@@ -25,6 +25,7 @@ export interface Hero {
   name: string;
   rarity: Rarity;
   level: number;
+  xp: number;
   stars: number;
   stats: HeroStats;
   skills: Skill[];
@@ -40,6 +41,15 @@ export interface Hero {
   stuckTimer: number;
   icon: string; // icon key for PixelIcon
 }
+
+export const MAX_LEVEL_BY_RARITY: Record<Rarity, number> = {
+  common: 20,
+  rare: 40,
+  'super-rare': 60,
+  epic: 80,
+  legend: 100,
+  'super-legend': 120,
+};
 
 export type BombTeam = 'heroes' | 'enemies';
 

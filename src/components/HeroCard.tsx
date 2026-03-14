@@ -1,6 +1,7 @@
 import React from 'react';
-import { Hero, RARITY_CONFIG } from '@/game/types';
-import { Swords, Zap, Target, Bomb, Battery, Clover, Shield, Star, Moon, Check } from 'lucide-react';
+import { Hero, RARITY_CONFIG, MAX_LEVEL_BY_RARITY } from '@/game/types';
+import { getXpProgress } from '@/game/upgradeSystem';
+import { Swords, Zap, Target, Bomb, Battery, Clover, Shield, Star, Moon, Check, Sparkles } from 'lucide-react';
 import PixelIcon from '@/components/PixelIcon';
 
 interface HeroCardProps {
@@ -22,6 +23,9 @@ const STAT_ICONS: Record<string, React.ReactNode> = {
 const HeroCard: React.FC<HeroCardProps> = ({ hero, compact, onClick, selected }) => {
   const config = RARITY_CONFIG[hero.rarity];
   const staPct = (hero.currentStamina / hero.maxStamina) * 100;
+  const maxLevel = MAX_LEVEL_BY_RARITY[hero.rarity];
+  const xpProgress = getXpProgress(hero);
+  const isMaxLevel = hero.level >= maxLevel;
 
   const rarityBorderClass = `rarity-${hero.rarity}`;
 
@@ -56,12 +60,23 @@ const HeroCard: React.FC<HeroCardProps> = ({ hero, compact, onClick, selected })
               {config.label}
             </span>
             <span className="text-[9px] text-muted-foreground flex items-center gap-0.5">
-              <Shield size={8} /> Lv.{hero.level}
+              {isMaxLevel ? <Sparkles size={8} className="text-game-gold" /> : <Shield size={8} />} Lv.{hero.level}
+              {isMaxLevel && <span className="text-game-gold">/{maxLevel}</span>}
             </span>
           </div>
         </div>
 
         <div className="w-14 shrink-0">
+          {!isMaxLevel && (
+            <>
+              <div className="h-1.5 rounded-full bg-muted overflow-hidden mb-1">
+                <div
+                  className="h-full transition-all rounded-full bg-game-xp-blue"
+                  style={{ width: `${xpProgress.percentage}%` }}
+                />
+              </div>
+            </>
+          )}
           <div className="h-2 rounded-full bg-muted overflow-hidden">
             <div
               className="h-full transition-all rounded-full"
@@ -101,7 +116,10 @@ const HeroCard: React.FC<HeroCardProps> = ({ hero, compact, onClick, selected })
 
       <div className="space-y-1.5 text-[10px]">
         <div className="flex justify-between items-center text-muted-foreground">
-          <span className="flex items-center gap-1"><Shield size={10} /> Niv. {hero.level}</span>
+          <span className="flex items-center gap-1">
+            {isMaxLevel ? <Sparkles size={10} className="text-game-gold" /> : <Shield size={10} />} 
+            Niv. {hero.level}{!isMaxLevel && `/${maxLevel}`}
+          </span>
           <span className="flex items-center gap-0.5">
             {Array.from({ length: hero.stars }).map((_, i) => (
               <Star key={i} size={10} className="text-game-gold fill-current" />
@@ -111,6 +129,20 @@ const HeroCard: React.FC<HeroCardProps> = ({ hero, compact, onClick, selected })
             ))}
           </span>
         </div>
+
+        {!isMaxLevel && (
+          <div>
+            <div className="h-2 rounded-full bg-muted overflow-hidden">
+              <div
+                className="h-full transition-all rounded-full bg-game-xp-blue"
+                style={{ width: `${xpProgress.percentage}%` }}
+              />
+            </div>
+            <p className="text-[8px] text-muted-foreground text-center mt-0.5">
+              {xpProgress.current}/{xpProgress.required} XP
+            </p>
+          </div>
+        )}
 
         <div className="h-2 rounded-full bg-muted overflow-hidden">
           <div
