@@ -1,6 +1,7 @@
 import { PlayerData, Rarity } from './types';
 import { generateHero } from './summoning';
 import { StoryProgress } from './storyTypes';
+import { getDefaultAchievementState } from './achievements';
 
 const SAVE_KEY = 'bomberquest_save';
 
@@ -26,6 +27,7 @@ export function getDefaultPlayerData(): PlayerData {
       'super-legend': 0,
     } as Record<Rarity, number>,
     huntSpeed: 1,
+    achievements: getDefaultAchievementState(),
   };
 }
 
@@ -41,7 +43,11 @@ export function loadPlayerData(): PlayerData {
   try {
     const saved = localStorage.getItem(SAVE_KEY);
     if (saved) {
-      return JSON.parse(saved);
+      const parsed = JSON.parse(saved);
+      if (!parsed.achievements) {
+        parsed.achievements = getDefaultAchievementState();
+      }
+      return parsed;
     }
   } catch {
     console.warn('Échec du chargement de la sauvegarde');

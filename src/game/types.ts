@@ -101,6 +101,14 @@ export interface GameState {
   storyFailed?: boolean;
 }
 
+export interface AchievementProgress {
+  progress: number;
+  unlocked: boolean;
+  unlockedAt?: number;
+}
+
+export type AchievementState = Record<string, AchievementProgress>;
+
 export interface PlayerData {
   bomberCoins: number;
   heroes: Hero[];
@@ -116,6 +124,7 @@ export interface PlayerData {
   mapsCompleted: number;
   shards: Record<Rarity, number>;
   huntSpeed?: number;
+  achievements: AchievementState;
 }
 
 export const RARITY_CONFIG: Record<Rarity, {
