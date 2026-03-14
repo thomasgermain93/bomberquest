@@ -1350,6 +1350,7 @@ const Index = () => {
             { id: 'hub' as Screen, label: 'Hub', icon: <Home size={14} /> },
             { id: 'story' as Screen, label: 'Histoire', icon: <BookOpen size={14} /> },
             { id: 'heroes' as Screen, label: 'Héros', icon: <Users size={14} /> },
+            { id: 'fusion' as Screen, label: 'Fusion', icon: <Hammer size={14} /> },
             { id: 'summon' as Screen, label: 'Invoquer', icon: <Sparkles size={14} /> },
             { id: 'achievements' as Screen, label: 'Succès', icon: <Trophy size={14} /> },
           ].map(tab => (
@@ -1912,53 +1913,21 @@ const Index = () => {
               </button>
             </div>
 
-            {/* Merge Section */}
-            <div className="pixel-border bg-card p-4">
-              <h3 className="font-pixel text-[9px] text-foreground mb-3 flex items-center gap-2">
-                <Sparkles size={14} /> FUSION DE BOMBERS
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                {MERGE_RECIPES.map(({ from, to, count }) => {
-                  const available = player.heroes.filter(h => h.rarity === from).length;
-                  const canMerge = available >= count;
-                  return (
-                    <button
-                      key={`${from}-${to}`}
-                      onClick={() => canMerge && handleMerge(from, to, count)}
-                      disabled={!canMerge}
-                      className={`pixel-border p-3 text-center transition-all ${
-                        canMerge
-                          ? 'bg-primary/10 hover:bg-primary/20 cursor-pointer hover:scale-[1.02]'
-                          : 'bg-muted/30 opacity-50 cursor-not-allowed'
-                      }`}
-                    >
-                      <div className="flex items-center justify-center gap-1.5 mb-1">
-                        <span className="font-pixel text-[8px]" style={{ color: `hsl(var(--game-rarity-${from}))` }}>
-                          {count}× {RARITY_CONFIG[from].label}
-                        </span>
-                        <span className="text-[8px] text-muted-foreground">→</span>
-                        <span className="font-pixel text-[8px]" style={{ color: `hsl(var(--game-rarity-${to}))` }}>
-                          1× {RARITY_CONFIG[to].label}
-                        </span>
-                      </div>
-                      <p className="text-[7px] text-muted-foreground">
-                        Disponible: {available}/{count}
-                      </p>
-                    </button>
-                  );
-                })}
+            <div className="pixel-border bg-card p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <h3 className="font-pixel text-[9px] text-foreground flex items-center gap-2">
+                  <Hammer size={14} /> Fusion déplacée dans la Forge
+                </h3>
+                <p className="text-[8px] text-muted-foreground mt-1">
+                  Les recettes de fusion sont maintenant centralisées sur l’écran Fusion.
+                </p>
               </div>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
-              <button 
-                onClick={mergeAll}
-                disabled={isMerging}
-                className={`pixel-btn pixel-btn-primary font-pixel text-[8px] flex items-center justify-center gap-2 min-h-[44px] ${isMerging ? 'opacity-50 cursor-not-allowed' : ''}`}
+              <button
+                onClick={() => setScreen('fusion')}
+                className="pixel-btn pixel-btn-primary font-pixel text-[8px] flex items-center justify-center gap-2 min-h-[44px]"
               >
-                <Sparkles size={14} /> {isMerging ? 'Fusion en cours...' : 'Tout fusionner'}
+                <Hammer size={14} /> Ouvrir la Forge
               </button>
-              
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
@@ -2136,22 +2105,6 @@ const Index = () => {
               </div>
             </div>
 
-            {/* Quick fusion (legacy) */}
-            <div className="pixel-border bg-card p-4">
-              <h3 className="font-pixel text-[9px] text-foreground mb-3 flex items-center gap-2">
-                <Sparkles size={14} /> FUSION RAPIDE
-              </h3>
-              <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
-                <button 
-                  onClick={mergeAll}
-                  disabled={isMerging}
-                  className={`pixel-btn pixel-btn-primary font-pixel text-[8px] flex items-center justify-center gap-2 min-h-[44px] ${isMerging ? 'opacity-50 cursor-not-allowed' : ''}`}
-                >
-                  <Sparkles size={14} /> {isMerging ? 'Fusion en cours...' : 'Tout fusionner'}
-                </button>
-                
-              </div>
-            </div>
           </motion.div>
         )}
 
