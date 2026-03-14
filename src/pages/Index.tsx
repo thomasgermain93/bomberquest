@@ -70,7 +70,6 @@ const Index = () => {
   const [isCloudLoading, setIsCloudLoading] = useState(!!user);
   const [cloudValidated, setCloudValidated] = useState(false);
   const [autoFarm, setAutoFarm] = useState(false);
-  const [autoMerge, setAutoMerge] = useState(false);
   const [isMerging, setIsMerging] = useState(false);
   const [farmStats, setFarmStats] = useState({ runs: 0, totalCoins: 0 });
   const [storyRegionIdx, setStoryRegionIdx] = useState(0);
@@ -603,7 +602,10 @@ const Index = () => {
     
     const updatedHeroes = player.heroes.map(h => {
       const deployed = gameState.heroes.find(dh => dh.id === h.id);
-      return deployed ? { ...h, currentStamina: deployed.currentStamina } : h;
+      if (!deployed) return h;
+      return completed
+        ? { ...h, ...deployed, currentStamina: deployed.maxStamina }
+        : { ...h, ...deployed };
     });
     
     const newMapsCompleted = player.mapsCompleted + (completed ? 1 : 0);
@@ -983,8 +985,8 @@ const Index = () => {
         const deployed = stateSnapshot.heroes.find(dh => dh.id === h.id);
         if (!deployed) return h;
         return stateSnapshot.mapCompleted
-          ? { ...h, currentStamina: h.maxStamina }
-          : { ...h, currentStamina: deployed.currentStamina };
+          ? { ...h, ...deployed, currentStamina: deployed.maxStamina }
+          : { ...h, ...deployed };
       });
 
       if (newHero && rewardedRarity) {
@@ -1115,32 +1117,7 @@ const Index = () => {
       batch.push(hero);
     }
 
-    let mergedHeroes = newHeroes;
-    if (autoMerge && (type === 'x10' || type === 'x100')) {
-      let mergeCount = 0;
-      let madeProgress = true;
-      while (madeProgress) {
-        madeProgress = false;
-        for (const recipe of MERGE_RECIPES) {
-          const maxLevel = RARITY_CONFIG[recipe.from].maxLevel;
-          const available = mergedHeroes.filter(h => h.rarity === recipe.from && h.level >= maxLevel);
-          if (available.length >= recipe.count) {
-            const toRemove = new Set(available.slice(0, recipe.count).map(h => h.id));
-            const newHero = generateHero(recipe.to);
-            mergedHeroes = [...mergedHeroes.filter(h => !toRemove.has(h.id)), newHero];
-            mergeCount++;
-            madeProgress = true;
-            break;
-          }
-        }
-      }
-      if (mergeCount > 0) {
-        toast({
-          title: "Fusion automatique",
-          description: `${mergeCount} fusion(s) effectuée(s) après invocation`,
-        });
-      }
-    }
+    const mergedHeroes = newHeroes;
 
     setLastSummoned(batch[batch.length - 1]);
     setSummonedBatch(batch);
@@ -1982,17 +1959,6 @@ const Index = () => {
                 <Sparkles size={14} /> {isMerging ? 'Fusion en cours...' : 'Tout fusionner'}
               </button>
               
-              <label className="flex items-center gap-2 cursor-pointer min-h-[44px] px-3 pixel-border bg-muted/30 hover:bg-muted/50 transition-colors">
-                <input 
-                  type="checkbox" 
-                  checked={autoMerge}
-                  onChange={(e) => setAutoMerge(e.target.checked)}
-                  className="w-4 h-4 accent-primary"
-                />
-                <span className="font-pixel text-[7px] sm:text-[8px] text-muted-foreground">
-                  Fusion auto après invocation x10/x100
-                </span>
-              </label>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
@@ -2130,7 +2096,7 @@ const Index = () => {
                 </div>
 
                 {/* Slots - 6 slots around the anvil */}
-                <div className="grid grid-cols-3 gap-3 mb-6">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 mb-6 w-full max-w-md">
                   {fusionSlots.map((hero, idx) => {
                     const recipe = MERGE_RECIPES[selectedRecipeIdx];
                     const eligibility = hero 
@@ -2184,17 +2150,6 @@ const Index = () => {
                   <Sparkles size={14} /> {isMerging ? 'Fusion en cours...' : 'Tout fusionner'}
                 </button>
                 
-                <label className="flex items-center gap-2 cursor-pointer min-h-[44px] px-3 pixel-border bg-muted/30 hover:bg-muted/50 transition-colors">
-                  <input 
-                    type="checkbox" 
-                    checked={autoMerge}
-                    onChange={(e) => setAutoMerge(e.target.checked)}
-                    className="w-4 h-4 accent-primary"
-                  />
-                  <span className="font-pixel text-[7px] sm:text-[8px] text-muted-foreground">
-                    Fusion auto après invocation x10/x100
-                  </span>
-                </label>
               </div>
             </div>
           </motion.div>
