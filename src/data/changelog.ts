@@ -14,6 +14,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: '2026-03-10',
     title: 'Mises à jour récentes',
     changes: [
+      { type: 'feature', description: 'Feature: Drop garanti de héros au 1er clear de chaque boss Story (#45)' },
       { type: 'feature', description: 'feat(achievements): add achievement system (Closes #43) (#104)' },
       { type: 'feature', description: 'fix(changelog): utiliser src/data/changelog.ts sur la landing (#103)' },
       { type: 'feature', description: 'i18n FR: traduire 100% des textes encore en anglais (UI, toasts, auth, contenu) (#101)' },
