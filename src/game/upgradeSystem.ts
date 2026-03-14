@@ -267,6 +267,18 @@ export const ASCENSION_CONFIG: Record<number, { cost: number; duplicates: number
 
 export const MAX_STARS = 3;
 
+export function getUpgradeCost(currentLevel: number): number {
+  if (currentLevel <= 9) {
+    return {
+      1: 200, 2: 500, 3: 1000, 4: 2000, 5: 4000,
+      6: 8000, 7: 15000, 8: 25000, 9: 50000,
+    }[currentLevel] ?? 100000;
+  }
+  const baseCost = 50000;
+  const levelScaling = (currentLevel - 9) * 30000;
+  return baseCost + levelScaling;
+}
+
 export function getMaxLevel(rarity: Rarity): number {
   return MAX_LEVEL_BY_RARITY[rarity];
 }
@@ -345,7 +357,17 @@ export function getStatsAtLevel(rarity: Rarity, level: number, stars: number = 0
 }
 
 export function upgradeHero(hero: Hero): Hero {
-  return hero;
+  const maxLevel = getMaxLevel(hero.rarity);
+  if (hero.level >= maxLevel) return hero;
+  const newLevel = hero.level + 1;
+  const newStats = getStatsAtLevel(hero.rarity, newLevel, hero.stars);
+  return {
+    ...hero,
+    level: newLevel,
+    stats: newStats,
+    maxStamina: newStats.sta,
+    currentStamina: Math.min(hero.currentStamina, newStats.sta),
+  };
 }
 
 export function ascendHero(hero: Hero): Hero {

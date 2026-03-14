@@ -144,30 +144,37 @@ export const RARITY_CONFIG: Record<Rarity, {
   color: string;
   label: string;
   baseStats: HeroStats;
+  maxLevel: number;
 }> = {
   common: {
     rate: 0.60, statMultiplier: 1.0, skills: 0, color: 'rarity-common', label: 'Common',
     baseStats: { pwr: 1, spd: 1, rng: 1, bnb: 1, sta: 30, lck: 3 },
+    maxLevel: 20,
   },
   rare: {
     rate: 0.25, statMultiplier: 1.4, skills: 1, color: 'rarity-rare', label: 'Rare',
     baseStats: { pwr: 2, spd: 1, rng: 2, bnb: 1, sta: 45, lck: 6 },
+    maxLevel: 40,
   },
   'super-rare': {
     rate: 0.10, statMultiplier: 2.0, skills: 2, color: 'rarity-super-rare', label: 'Super Rare',
     baseStats: { pwr: 3, spd: 2, rng: 3, bnb: 2, sta: 60, lck: 10 },
+    maxLevel: 60,
   },
   epic: {
     rate: 0.04, statMultiplier: 3.0, skills: 3, color: 'rarity-epic', label: 'Epic',
     baseStats: { pwr: 4, spd: 2, rng: 4, bnb: 3, sta: 80, lck: 15 },
+    maxLevel: 80,
   },
   legend: {
     rate: 0.009, statMultiplier: 5.0, skills: 4, color: 'rarity-legend', label: 'Legend',
     baseStats: { pwr: 6, spd: 3, rng: 5, bnb: 4, sta: 110, lck: 22 },
+    maxLevel: 100,
   },
   'super-legend': {
     rate: 0.001, statMultiplier: 8.0, skills: 5, color: 'rarity-super-legend', label: 'Super Legend',
     baseStats: { pwr: 8, spd: 4, rng: 6, bnb: 5, sta: 140, lck: 30 },
+    maxLevel: 120,
   },
 };
 
