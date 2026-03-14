@@ -14,6 +14,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: '2026-03-10',
     title: 'Mises à jour récentes',
     changes: [
+      { type: 'feature', description: 'fix: prevent NaN XP and restore XP gains for legacy heroes (#108)' },
       { type: 'feature', description: 'UI/UX Fusion: page dédiée avec enclume + 6 slots et sélection conditionnelle (#94)' },
       { type: 'feature', description: 'feat(hero): implement XP progression system and max level fusion (closes #93) (#106)' },
       { type: 'feature', description: 'Feature: Drop garanti de héros au 1er clear de chaque boss Story (#45)' },
