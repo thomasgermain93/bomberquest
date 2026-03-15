@@ -8,7 +8,7 @@ export interface ChangelogEntry {
   }[];
 }
 
-export const CHANGELOG: ChangelogEntry[
+export const CHANGELOG: ChangelogEntry[] = [
   {
     version: 'Unreleased',
     date: '2026-03-15',
@@ -20,7 +20,7 @@ export const CHANGELOG: ChangelogEntry[
       { type: 'feature', description: 'fix(fusion): slots dynamiques selon recette + centrage responsive (closes #111) (#120)' },
       { type: 'feature', description: 'Bug: page Changelog bloquée sur vUnreleased au lieu de versions taggées (#110)' },
     ],
-  },] = [
+  },
   {
     version: '1.6.1',
     date: '2026-03-15',
