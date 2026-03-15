@@ -300,28 +300,30 @@ export function getXpProgress(hero: Hero): { current: number; required: number; 
   const maxLevel = getMaxLevel(hero.rarity);
   const maxXp = getXpForLevel(maxLevel);
   const heroXp = Number.isFinite(hero.xp) ? hero.xp : 0;
+  const heroLevel = Number.isFinite(hero.level) ? Math.max(1, hero.level) : 1;
 
-  if (hero.level >= maxLevel) {
+  if (heroLevel >= maxLevel) {
     return { current: maxXp, required: maxXp, percentage: 100 };
   }
 
-  const required = getXpForLevel(hero.level + 1);
-  const prevRequired = getXpForLevel(hero.level);
+  const required = getXpForLevel(heroLevel + 1);
+  const prevRequired = getXpForLevel(heroLevel);
   const progress = Math.max(0, heroXp - prevRequired);
   const needed = Math.max(1, required - prevRequired);
-  const percentage = Math.min(100, Math.max(0, (progress / needed) * 100));
+  const percentage = Math.min(100, Math.max(2, (progress / needed) * 100));
   return { current: progress, required: needed, percentage };
 }
 
 export function addXp(hero: Hero, xp: number): Hero {
   const maxLevel = getMaxLevel(hero.rarity);
-  if (hero.level >= maxLevel) return hero;
+  const heroLevel = Number.isFinite(hero.level) ? Math.max(1, hero.level) : 1;
+  if (heroLevel >= maxLevel) return hero;
 
   const baseXp = Number.isFinite(hero.xp) ? hero.xp : 0;
   const earnedXp = Number.isFinite(xp) ? xp : 0;
   const maxXp = getXpForLevel(maxLevel);
   const newXp = Math.min(baseXp + earnedXp, maxXp);
-  let newLevel = hero.level;
+  let newLevel = heroLevel;
 
   while (newLevel < maxLevel && newXp >= getXpForLevel(newLevel + 1)) {
     newLevel++;
@@ -361,8 +363,9 @@ export function getStatsAtLevel(rarity: Rarity, level: number, stars: number = 0
 
 export function upgradeHero(hero: Hero): Hero {
   const maxLevel = getMaxLevel(hero.rarity);
-  if (hero.level >= maxLevel) return hero;
-  const newLevel = hero.level + 1;
+  const heroLevel = Number.isFinite(hero.level) ? Math.max(1, hero.level) : 1;
+  if (heroLevel >= maxLevel) return hero;
+  const newLevel = heroLevel + 1;
   const newStats = getStatsAtLevel(hero.rarity, newLevel, hero.stars);
   return {
     ...hero,
@@ -375,7 +378,8 @@ export function upgradeHero(hero: Hero): Hero {
 
 export function ascendHero(hero: Hero): Hero {
   const maxLevel = getMaxLevel(hero.rarity);
-  if (hero.level < maxLevel || hero.stars >= MAX_STARS) return hero;
+  const heroLevel = Number.isFinite(hero.level) ? Math.max(1, hero.level) : 1;
+  if (heroLevel < maxLevel || hero.stars >= MAX_STARS) return hero;
   const newStars = hero.stars + 1;
   const newStats = getStatsAtLevel(hero.rarity, hero.level, newStars);
   return {
