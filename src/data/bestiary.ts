@@ -1,18 +1,36 @@
-import { HERO_ICON_KEYS, HERO_NAMES, Rarity } from '@/game/types';
+import { HERO_ICON_KEYS, HERO_NAMES, HERO_FAMILIES, Rarity, HERO_VISUALS, HeroFamilyId, getHeroVisualTraits } from '@/game/types';
 
 export type AssetStatus = 'missing' | 'wip' | 'ready';
 
-export interface BestiaryFamily {
-  id: string;
-  name: string;
+export type BestiaryFamily = typeof HERO_FAMILIES[number] & {
   description: string;
+  color: string;
   notes?: string;
-}
+};
+
+export const CLAN_COLORS: Record<string, string> = {
+  'ember-clan': '#FF6B35',
+  'storm-riders': '#4CC9F0',
+  'forge-guard': '#A8A8A8',
+  'shadow-core': '#7B2CBF',
+  'arcane-circuit': '#06D6A0',
+  'wild-pack': '#70E000',
+};
+
+export const BOMBER_FAMILIES: BestiaryFamily[] = [
+  { id: 'ember-clan', name: 'Clan Braise', description: 'Héros orientés feu et explosion.', color: CLAN_COLORS['ember-clan'] },
+  { id: 'storm-riders', name: "Cavaliers de l'Orage", description: 'Héros rapides avec affinité électrique.', color: CLAN_COLORS['storm-riders'] },
+  { id: 'forge-guard', name: 'Garde de Forge', description: 'Héros robustes axés tank et défense.', color: CLAN_COLORS['forge-guard'] },
+  { id: 'shadow-core', name: "Noyau d'Ombre", description: "Héros d'infiltration et de contrôle.", color: CLAN_COLORS['shadow-core'] },
+  { id: 'arcane-circuit', name: 'Circuit Arcanique', description: 'Héros techno-magiques et utilitaires.', color: CLAN_COLORS['arcane-circuit'] },
+  { id: 'wild-pack', name: 'Meute Sauvage', description: 'Héros agiles orientés rush et chasse.', color: CLAN_COLORS['wild-pack'] },
+];
 
 export interface BomberAssetRefs {
   iconKey?: string;
   spriteSheet?: string;
   portrait?: string;
+  visualTraits?: ReturnType<typeof getHeroVisualTraits>;
 }
 
 export interface BestiaryBomber {
@@ -23,15 +41,6 @@ export interface BestiaryBomber {
   assetStatus: AssetStatus;
   assets: BomberAssetRefs;
 }
-
-export const BOMBER_FAMILIES: BestiaryFamily[] = [
-  { id: 'ember-clan', name: 'Clan Braise', description: 'Héros orientés feu et explosion.' },
-  { id: 'storm-riders', name: "Cavaliers de l'Orage", description: 'Héros rapides avec affinité électrique.' },
-  { id: 'forge-guard', name: 'Garde de Forge', description: 'Héros robustes axés tank et défense.' },
-  { id: 'shadow-core', name: "Noyau d'Ombre", description: "Héros d'infiltration et de contrôle." },
-  { id: 'arcane-circuit', name: 'Circuit Arcanique', description: 'Héros techno-magiques et utilitaires.' },
-  { id: 'wild-pack', name: 'Meute Sauvage', description: 'Héros agiles orientés rush et chasse.' },
-];
 
 const HERO_ICON_BY_NAME = Object.fromEntries(
   HERO_NAMES.map((heroName, index) => [heroName.toLowerCase(), HERO_ICON_KEYS[index % HERO_ICON_KEYS.length]]),
@@ -75,6 +84,7 @@ export const BESTIARY_BOMBERS: BestiaryBomber[] = [
   assets: {
     ...bomber.assets,
     iconKey: bomber.assets.iconKey ?? HERO_ICON_BY_NAME[bomber.name.toLowerCase()],
+    visualTraits: getHeroVisualTraits(bomber.id),
   },
 }));
 

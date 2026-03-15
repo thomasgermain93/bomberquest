@@ -24,6 +24,7 @@ import { getExplosionTiles } from '@/game/engine';
 import DailyQuests from '@/components/DailyQuests';
 import Achievements from '@/components/Achievements';
 import PixelIcon from '@/components/PixelIcon';
+import HeroAvatar from '@/components/HeroAvatar';
 import { Home, Users, Sparkles, Swords, Map, Trophy, Coins, Star, ChevronLeft, Play, Pause, DoorOpen, Check, Scroll, FastForward, BookOpen, Shield, Skull, Bomb, Lock as LockIcon, Volume2, VolumeX, User, Hammer, ArrowDown } from 'lucide-react';
 import { SFX, isMuted, setMuted } from '@/game/sfx';
 import { toast } from '@/hooks/use-toast';
@@ -1557,7 +1558,7 @@ const Index = () => {
                       >
                         {hero ? (
                           <>
-                            <PixelIcon icon={hero.icon} size={22} rarity={hero.rarity} />
+                            <HeroAvatar heroId={hero.id} rarity={hero.rarity} size={32} />
                             <p className="font-pixel text-[7px] text-foreground mt-1 truncate max-w-[60px]">{hero.name.split(' ')[0]}</p>
                             <p className="text-[7px] mt-0.5" style={{ color: `hsl(var(--game-rarity-${hero.rarity}))` }}>
                               {RARITY_CONFIG[hero.rarity].label}

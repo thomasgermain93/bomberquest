@@ -1,8 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AlertTriangle, ArrowLeft, BookOpen, ChevronRight, Image as ImageIcon, PawPrint } from 'lucide-react';
+import HeroAvatar from '@/components/HeroAvatar';
 import PixelIcon from '@/components/PixelIcon';
-import { BESTIARY_BY_FAMILY, BESTIARY_STATUS_LABELS, AssetStatus, BestiaryBomber } from '@/data/bestiary';
+import { BESTIARY_BY_FAMILY, BESTIARY_STATUS_LABELS, CLAN_COLORS, AssetStatus, BestiaryBomber } from '@/data/bestiary';
 import { drawHeroPortrait, drawHeroSprite } from '@/game/heroRenderer';
 import { RARITY_CONFIG } from '@/game/types';
 
@@ -12,7 +13,7 @@ const statusClasses: Record<AssetStatus, string> = {
   ready: 'bg-green-500/10 text-green-400 border-green-500/30',
 };
 
-const AssetPreview: React.FC<{ label: string; src?: string; status: AssetStatus; rarity?: BestiaryBomber['rarity']; mode?: 'sprite' | 'portrait' }> = ({ label, src, status, rarity, mode = 'sprite' }) => {
+const AssetPreview: React.FC<{ label: string; src?: string; status: AssetStatus; rarity?: BestiaryBomber['rarity']; mode?: 'sprite' | 'portrait'; heroId?: string }> = ({ label, src, status, rarity, mode = 'sprite', heroId }) => {
   const [hasLoadError, setHasLoadError] = useState(false);
 
   const generatedSprite = useMemo(() => {
@@ -29,14 +30,14 @@ const AssetPreview: React.FC<{ label: string; src?: string; status: AssetStatus;
     ctx.save();
     ctx.scale(2, 2);
     if (mode === 'portrait') {
-      drawHeroPortrait(ctx, rarity, 0);
+      drawHeroPortrait(ctx, rarity, 0, heroId);
     } else {
-      drawHeroSprite(ctx, 0, 0, rarity, 'idle', 0, 'bestiary-preview', 100, 100);
+      drawHeroSprite(ctx, 0, 0, rarity, 'idle', 0, heroId || 'bestiary-preview', 100, 100);
     }
     ctx.restore();
 
     return canvas.toDataURL('image/png');
-  }, [mode, rarity]);
+  }, [mode, rarity, heroId]);
 
   const resolvedSrc = !hasLoadError && src ? src : generatedSprite;
 
@@ -75,16 +76,23 @@ const AssetPreview: React.FC<{ label: string; src?: string; status: AssetStatus;
 };
 
 const BomberCard: React.FC<{ bomber: BestiaryBomber }> = ({ bomber }) => {
+  const clanColor = CLAN_COLORS[bomber.familyId] || '#888888';
   return (
     <article className="pixel-border bg-card p-3 sm:p-4">
       <div className="flex items-start justify-between gap-2 mb-3">
         <div className="flex items-center gap-2 min-w-0">
-          <div className="w-9 h-9 rounded bg-muted border border-border flex items-center justify-center shrink-0">
-            {bomber.assets.iconKey ? (
-              <PixelIcon icon={bomber.assets.iconKey} size={18} color="hsl(var(--primary))" />
-            ) : (
-              <AlertTriangle size={14} className="text-muted-foreground" />
-            )}
+          <div className="relative">
+            <div className="w-12 h-12 rounded-lg bg-muted border border-border flex items-center justify-center shrink-0 overflow-hidden">
+              {bomber.rarity ? (
+                <HeroAvatar heroId={bomber.id} rarity={bomber.rarity} size={44} />
+              ) : (
+                <AlertTriangle size={14} className="text-muted-foreground" />
+              )}
+            </div>
+            <div 
+              className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full border border-card" 
+              style={{ backgroundColor: clanColor, boxShadow: `0 0 4px ${clanColor}` }}
+            />
           </div>
           <div className="min-w-0">
             <p className="font-pixel text-[8px] text-foreground truncate">{bomber.name}</p>
@@ -107,8 +115,8 @@ const BomberCard: React.FC<{ bomber: BestiaryBomber }> = ({ bomber }) => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-        <AssetPreview label="Sprite" src={bomber.assets.spriteSheet} status={bomber.assetStatus} rarity={bomber.rarity} mode="sprite" />
-        <AssetPreview label="Portrait" src={bomber.assets.portrait} status={bomber.assetStatus} rarity={bomber.rarity} mode="portrait" />
+        <AssetPreview label="Sprite" src={bomber.assets.spriteSheet} status={bomber.assetStatus} rarity={bomber.rarity} mode="sprite" heroId={bomber.id} />
+        <AssetPreview label="Portrait" src={bomber.assets.portrait} status={bomber.assetStatus} rarity={bomber.rarity} mode="portrait" heroId={bomber.id} />
       </div>
     </article>
   );
@@ -144,9 +152,15 @@ const Bestiary: React.FC = () => {
           {BESTIARY_BY_FAMILY.map(({ family, bombers }) => (
             <section key={family.id} className="pixel-border bg-card p-4 sm:p-5">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
-                <div>
-                  <h2 className="font-pixel text-[9px] text-foreground">{family.name}</h2>
-                  <p className="text-xs text-muted-foreground mt-1">{family.description}</p>
+                <div className="flex items-center gap-2">
+                  <div 
+                    className="w-3 h-3 rounded-sm" 
+                    style={{ backgroundColor: family.color || CLAN_COLORS[family.id], boxShadow: `0 0 8px ${family.color || CLAN_COLORS[family.id]}80` }}
+                  />
+                  <div>
+                    <h2 className="font-pixel text-[9px] text-foreground">{family.name}</h2>
+                    <p className="text-xs text-muted-foreground mt-1">{family.description}</p>
+                  </div>
                 </div>
                 <span className="font-pixel text-[7px] px-2 py-1 rounded bg-primary/15 text-primary w-fit">
                   {bombers.length} HÉROS
