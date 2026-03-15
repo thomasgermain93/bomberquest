@@ -674,14 +674,20 @@ const Index = () => {
     }
   }, [autoFarm, gameState?.mapCompleted, collectAndContinue]);
 
-  // Merge system - ratios from issue #93
+  // Merge system - ratios from issue #91 (Proposition B - durcissement moyen)
   const MERGE_RECIPES: { from: Rarity; to: Rarity; count: number }[] = [
-    { from: 'common', to: 'rare', count: 2 },
-    { from: 'rare', to: 'super-rare', count: 3 },
+    { from: 'common', to: 'rare', count: 5 },
+    { from: 'rare', to: 'super-rare', count: 5 },
     { from: 'super-rare', to: 'epic', count: 4 },
-    { from: 'epic', to: 'legend', count: 5 },
-    { from: 'legend', to: 'super-legend', count: 6 },
+    { from: 'epic', to: 'legend', count: 6 },
+    { from: 'legend', to: 'super-legend', count: 5 },
   ];
+
+  // Additional costs for Legend -> Super-Legend fusion (issue #91)
+  const LEGEND_TO_SUPER_LEGEND_COST = {
+    gold: 1_000_000,
+    shards: 2_500,
+  };
 
   const isHeroEligibleForMerge = (hero: Hero, rarity: Rarity, requiredCount: number): { eligible: boolean; reason: string } => {
     const maxLevel = RARITY_CONFIG[rarity].maxLevel;
@@ -748,13 +754,41 @@ const Index = () => {
       return;
     }
 
+    // Check additional costs for Legend -> Super-Legend fusion (issue #91)
+    if (recipe.to === 'super-legend') {
+      if (player.bomberCoins < LEGEND_TO_SUPER_LEGEND_COST.gold) {
+        toast({
+          title: "Fusion impossible",
+          description: `Il vous faut ${LEGEND_TO_SUPER_LEGEND_COST.gold.toLocaleString()} bomberCoins`,
+        });
+        return;
+      }
+      if ((player.shards.legend || 0) < LEGEND_TO_SUPER_LEGEND_COST.shards) {
+        toast({
+          title: "Fusion impossible",
+          description: `Il vous faut ${LEGEND_TO_SUPER_LEGEND_COST.shards} legend shards`,
+        });
+        return;
+      }
+    }
+    
     const toRemove = new Set(filledSlots.map(h => h.id));
     const removedIds = Array.from(toRemove);
     const newHero = generateHero(recipe.to);
     const mergedHeroes = [...player.heroes.filter(h => !toRemove.has(h.id)), newHero];
     
+    // Deduct additional costs for Legend -> Super-Legend fusion
+    const costUpdate = recipe.to === 'super-legend' ? {
+      bomberCoins: player.bomberCoins - LEGEND_TO_SUPER_LEGEND_COST.gold,
+      shards: {
+        ...player.shards,
+        legend: (player.shards.legend || 0) - LEGEND_TO_SUPER_LEGEND_COST.shards,
+      },
+    } : {};
+
     setPlayer(prev => ({
       ...prev,
+      ...costUpdate,
       heroes: mergedHeroes,
       totalHeroesOwned: mergedHeroes.length,
     }));
@@ -765,9 +799,12 @@ const Index = () => {
       removeHeroesFromCloud(removedIds);
     }
 
+    const costDescription = recipe.to === 'super-legend' 
+      ? `\n(${LEGEND_TO_SUPER_LEGEND_COST.gold.toLocaleString()} 💰 + ${LEGEND_TO_SUPER_LEGEND_COST.shards} ✨ déduits)`
+      : '';
     toast({
       title: "Fusion réussie!",
-      description: `${RARITY_CONFIG[recipe.from].label} → ${RARITY_CONFIG[recipe.to].label}`,
+      description: `${RARITY_CONFIG[recipe.from].label} → ${RARITY_CONFIG[recipe.to].label}${costDescription}`,
     });
 
     // Reset slots
@@ -2062,6 +2099,18 @@ const Index = () => {
                   <p className="font-pixel text-[10px]" style={{ color: `hsl(var(--game-rarity-${MERGE_RECIPES[selectedRecipeIdx].to}))` }}>
                     1× {RARITY_CONFIG[MERGE_RECIPES[selectedRecipeIdx].to].label}
                   </p>
+                  {/* Additional costs for Legend -> Super-Legend (issue #91) */}
+                  {MERGE_RECIPES[selectedRecipeIdx].to === 'super-legend' && (
+                    <div className="mt-3 p-2 bg-red-900/30 rounded border border-red-700/50">
+                      <p className="text-[8px] text-red-400 font-pixel">COÛT ADDITIONNEL</p>
+                      <p className="text-[9px] text-amber-400">
+                        💰 {LEGEND_TO_SUPER_LEGEND_COST.gold.toLocaleString()}
+                      </p>
+                      <p className="text-[9px] text-blue-400">
+                        ✨ {LEGEND_TO_SUPER_LEGEND_COST.shards} Legend Shards
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 {/* Slots - 6 slots around the anvil */}
@@ -2086,22 +2135,38 @@ const Index = () => {
                 </div>
 
                 {/* Fusion button */}
-                <button
-                  onClick={executeFusionFromSlots}
-                  disabled={fusionSlots.filter(s => s !== null).length !== MERGE_RECIPES[selectedRecipeIdx].count}
-                  className={`pixel-btn pixel-btn-primary font-pixel text-[10px] flex items-center justify-center gap-2 min-h-[48px] px-8 ${
-                    fusionSlots.filter(s => s !== null).length !== MERGE_RECIPES[selectedRecipeIdx].count 
-                      ? 'opacity-50 cursor-not-allowed' 
-                      : ''
-                  }`}
-                >
-                  <Sparkles size={16} /> FUSIONNER
-                </button>
+                {(() => {
+                  const recipe = MERGE_RECIPES[selectedRecipeIdx];
+                  const canAffordLegendCost = recipe.to !== 'super-legend' || 
+                    (player.bomberCoins >= LEGEND_TO_SUPER_LEGEND_COST.gold && 
+                     (player.shards.legend || 0) >= LEGEND_TO_SUPER_LEGEND_COST.shards);
+                  const slotsFilled = fusionSlots.filter(s => s !== null).length === recipe.count;
+                  const isDisabled = !slotsFilled || !canAffordLegendCost;
+                  
+                  return (
+                    <>
+                      <button
+                        onClick={executeFusionFromSlots}
+                        disabled={isDisabled}
+                        className={`pixel-btn pixel-btn-primary font-pixel text-[10px] flex items-center justify-center gap-2 min-h-[48px] px-8 ${
+                          isDisabled ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
+                      >
+                        <Sparkles size={16} /> FUSIONNER
+                      </button>
 
-                {/* Slot progress */}
-                <p className="text-[8px] text-muted-foreground mt-3">
-                  {fusionSlots.filter(s => s !== null).length}/{MERGE_RECIPES[selectedRecipeIdx].count} slots remplis
-                </p>
+                      {/* Slot progress */}
+                      <p className="text-[8px] text-muted-foreground mt-3">
+                        {fusionSlots.filter(s => s !== null).length}/{recipe.count} slots remplis
+                        {!canAffordLegendCost && recipe.to === 'super-legend' && (
+                          <span className="text-red-400 block mt-1">
+                            💰/✨ insuffisants
+                          </span>
+                        )}
+                      </p>
+                    </>
+                  );
+                })()}
               </div>
             </div>
 
