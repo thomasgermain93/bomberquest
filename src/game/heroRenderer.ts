@@ -181,77 +181,260 @@ function shadeColor(color: string, percent: number): string {
   return `#${(0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1)}`;
 }
 
+const CLAN_PORTRAIT_STYLES: Record<string, {
+  helmetShape: 'rounded' | 'angular' | 'tech' | 'mask' | 'spiked';
+  visorPattern: 'single' | 'dual' | 'visor' | 'none';
+  shoulderPads: boolean;
+  emblemPattern: 'none' | 'flame' | 'lightning' | 'shield' | 'eye' | 'circuit' | 'paw';
+  accentShape: 'none' | 'stripe' | 'gem' | 'wing';
+}> = {
+  'ember-clan': { helmetShape: 'angular', visorPattern: 'dual', shoulderPads: true, emblemPattern: 'flame', accentShape: 'stripe' },
+  'storm-riders': { helmetShape: 'angular', visorPattern: 'visor', shoulderPads: false, emblemPattern: 'lightning', accentShape: 'wing' },
+  'forge-guard': { helmetShape: 'rounded', visorPattern: 'visor', shoulderPads: true, emblemPattern: 'shield', accentShape: 'gem' },
+  'shadow-core': { helmetShape: 'mask', visorPattern: 'visor', shoulderPads: false, emblemPattern: 'eye', accentShape: 'none' },
+  'arcane-circuit': { helmetShape: 'tech', visorPattern: 'visor', shoulderPads: false, emblemPattern: 'circuit', accentShape: 'none' },
+  'wild-pack': { helmetShape: 'spiked', visorPattern: 'dual', shoulderPads: true, emblemPattern: 'paw', accentShape: 'stripe' },
+};
+
+function getClanStyle(heroId?: string) {
+  if (!heroId) return CLAN_PORTRAIT_STYLES['ember-clan'];
+  const heroIdLower = heroId.toLowerCase();
+  const family = HERO_FAMILY_MAP[heroIdLower];
+  return family ? (CLAN_PORTRAIT_STYLES[family] || CLAN_PORTRAIT_STYLES['ember-clan']) : CLAN_PORTRAIT_STYLES['ember-clan'];
+}
+
 export function drawHeroPortrait(ctx: CanvasRenderingContext2D, rarity: string, time: number = 0, heroId?: string) {
   const config = getHeroSpriteConfig(rarity, heroId);
+  const clanStyle = getClanStyle(heroId);
   const shouldBlink = Math.sin(time / 2000) > 0.93;
+  const cx = 20;
+  const cy = 20;
 
   ctx.imageSmoothingEnabled = false;
 
-  // Aura légère pour les raretés élevées
+  // Clan-colored aura for epic+
   if (config.aura) {
-    const grad = ctx.createRadialGradient(20, 20, 6, 20, 20, 18);
+    const grad = ctx.createRadialGradient(cx, cy, 4, cx, cy, 20);
     grad.addColorStop(0, config.aura);
     grad.addColorStop(1, 'transparent');
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, 40, 40);
   }
 
-  // Casque
+  // Shoulder pads (forge-guard, ember-clan, wild-pack)
+  if (clanStyle.shoulderPads) {
+    ctx.fillStyle = config.outlineColor;
+    ctx.fillRect(cx - 14, cy + 2, 5, 8);
+    ctx.fillRect(cx + 9, cy + 2, 5, 8);
+    ctx.fillStyle = config.helmetColor;
+    ctx.fillRect(cx - 13, cy + 3, 3, 6);
+    ctx.fillRect(cx + 10, cy + 3, 3, 6);
+  }
+
+  // Helmet base - different shapes per clan
   ctx.fillStyle = config.outlineColor;
-  ctx.fillRect(10, 8, 20, 16);
+  switch (clanStyle.helmetShape) {
+    case 'angular':
+      ctx.beginPath();
+      ctx.moveTo(cx - 10, cy - 2);
+      ctx.lineTo(cx + 10, cy - 2);
+      ctx.lineTo(cx + 8, cy + 10);
+      ctx.lineTo(cx - 8, cy + 10);
+      ctx.closePath();
+      ctx.fill();
+      break;
+    case 'tech':
+      ctx.fillRect(cx - 10, cy - 4, 20, 14);
+      ctx.fillRect(cx - 12, cy - 2, 2, 8);
+      ctx.fillRect(cx + 10, cy - 2, 2, 8);
+      break;
+    case 'mask':
+      ctx.beginPath();
+      ctx.arc(cx, cy + 2, 11, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+    case 'spiked':
+      ctx.fillRect(cx - 10, cy - 3, 20, 12);
+      ctx.fillRect(cx - 12, cy - 6, 3, 5);
+      ctx.fillRect(cx + 9, cy - 6, 3, 5);
+      break;
+    default: // rounded
+      ctx.beginPath();
+      ctx.arc(cx, cy + 2, 10, 0, Math.PI * 2);
+      ctx.fill();
+  }
+
+  // Helmet inner
   ctx.fillStyle = config.helmetColor;
-  ctx.fillRect(11, 9, 18, 14);
+  switch (clanStyle.helmetShape) {
+    case 'angular':
+      ctx.beginPath();
+      ctx.moveTo(cx - 8, cy);
+      ctx.lineTo(cx + 8, cy);
+      ctx.lineTo(cx + 6, cy + 8);
+      ctx.lineTo(cx - 6, cy + 8);
+      ctx.closePath();
+      ctx.fill();
+      break;
+    case 'tech':
+      ctx.fillRect(cx - 8, cy - 2, 16, 10);
+      break;
+    case 'mask':
+      ctx.beginPath();
+      ctx.arc(cx, cy + 3, 8, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+    case 'spiked':
+      ctx.fillRect(cx - 8, cy - 1, 16, 10);
+      break;
+    default:
+      ctx.beginPath();
+      ctx.arc(cx, cy + 2, 8, 0, Math.PI * 2);
+      ctx.fill();
+  }
 
-  // Crête du casque
-  ctx.fillStyle = config.outlineColor;
-  ctx.fillRect(19, 6, 2, 3);
+  // Clan emblem on helmet
+  if (clanStyle.emblemPattern !== 'none') {
+    ctx.fillStyle = config.beltColor;
+    switch (clanStyle.emblemPattern) {
+      case 'flame':
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - 2);
+        ctx.lineTo(cx - 3, cy + 2);
+        ctx.lineTo(cx - 1, cy + 2);
+        ctx.lineTo(cx - 2, cy + 5);
+        ctx.lineTo(cx + 2, cy + 2);
+        ctx.lineTo(cx + 1, cy + 2);
+        ctx.closePath();
+        ctx.fill();
+        break;
+      case 'lightning':
+        ctx.beginPath();
+        ctx.moveTo(cx + 2, cy - 3);
+        ctx.lineTo(cx - 3, cy + 1);
+        ctx.lineTo(cx, cy + 1);
+        ctx.lineTo(cx - 2, cy + 5);
+        ctx.lineTo(cx + 3, cy);
+        ctx.lineTo(cx, cy);
+        ctx.closePath();
+        ctx.fill();
+        break;
+      case 'shield':
+        ctx.beginPath();
+        ctx.moveTo(cx - 4, cy - 2);
+        ctx.lineTo(cx + 4, cy - 2);
+        ctx.lineTo(cx + 4, cy + 3);
+        ctx.lineTo(cx, cy + 5);
+        ctx.lineTo(cx - 4, cy + 3);
+        ctx.closePath();
+        ctx.fill();
+        break;
+      case 'eye':
+        ctx.beginPath();
+        ctx.arc(cx, cy + 1, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = config.visorColor;
+        ctx.beginPath();
+        ctx.arc(cx, cy + 1, 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#00FFCC';
+        ctx.fillRect(cx - 1, cy, 2, 2);
+        break;
+      case 'circuit':
+        ctx.fillRect(cx - 4, cy, 2, 2);
+        ctx.fillRect(cx + 2, cy, 2, 2);
+        ctx.fillRect(cx - 1, cy - 2, 2, 4);
+        break;
+      case 'paw':
+        ctx.beginPath();
+        ctx.arc(cx, cy + 2, 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillRect(cx - 3, cy + 3, 2, 2);
+        ctx.fillRect(cx + 1, cy + 3, 2, 2);
+        break;
+    }
+  }
 
-  // Visière / visage
+  // Visor/face - different patterns per clan
   ctx.fillStyle = config.visorColor;
-  ctx.fillRect(13, 13, 14, 7);
+  switch (clanStyle.visorPattern) {
+    case 'dual':
+      ctx.fillRect(cx - 6, cy + 2, 5, 5);
+      ctx.fillRect(cx + 1, cy + 2, 5, 5);
+      break;
+    case 'visor':
+      ctx.fillRect(cx - 7, cy + 2, 14, 5);
+      break;
+    case 'single':
+      ctx.fillRect(cx - 4, cy + 2, 8, 5);
+      break;
+  }
 
-  if (!shouldBlink) {
+  // Eyes
+  if (!shouldBlink && clanStyle.visorPattern !== 'none') {
     ctx.fillStyle = '#FFFFFF';
-    ctx.fillRect(14, 14, 4, 4);
-    ctx.fillRect(22, 14, 4, 4);
+    if (clanStyle.visorPattern === 'dual') {
+      ctx.fillRect(cx - 5, cy + 3, 3, 3);
+      ctx.fillRect(cx + 2, cy + 3, 3, 3);
+    } else {
+      ctx.fillRect(cx - 4, cy + 3, 3, 3);
+      ctx.fillRect(cx + 1, cy + 3, 3, 3);
+    }
 
+    // Pupils - color based on rarity
     ctx.fillStyle = '#00FFCC';
     if (rarity === 'legend' || rarity === 'super-legend') {
       ctx.fillStyle = '#FF4444';
     } else if (rarity === 'epic') {
       ctx.fillStyle = '#FFAA00';
     }
-    ctx.fillRect(15, 15, 2, 2);
-    ctx.fillRect(23, 15, 2, 2);
-  } else {
+    if (clanStyle.visorPattern === 'dual') {
+      ctx.fillRect(cx - 4, cy + 4, 2, 2);
+      ctx.fillRect(cx + 3, cy + 4, 2, 2);
+    } else {
+      ctx.fillRect(cx - 3, cy + 4, 2, 2);
+      ctx.fillRect(cx + 1, cy + 4, 2, 2);
+    }
+  } else if (clanStyle.visorPattern !== 'none') {
     ctx.fillStyle = 'rgba(255,255,255,0.3)';
-    ctx.fillRect(14, 16, 4, 1);
-    ctx.fillRect(22, 16, 4, 1);
+    if (clanStyle.visorPattern === 'dual') {
+      ctx.fillRect(cx - 5, cy + 4, 3, 1);
+      ctx.fillRect(cx + 2, cy + 4, 3, 1);
+    } else {
+      ctx.fillRect(cx - 4, cy + 4, 3, 1);
+      ctx.fillRect(cx + 1, cy + 4, 3, 1);
+    }
   }
 
-  // Cornes
+  // Horns for super-rare+
   if (config.hasHorns) {
     ctx.fillStyle = config.beltColor;
     ctx.beginPath();
-    ctx.moveTo(11, 10);
-    ctx.lineTo(7, 3);
-    ctx.lineTo(13, 10);
+    ctx.moveTo(cx - 8, cy - 2);
+    ctx.lineTo(cx - 12, cy - 10);
+    ctx.lineTo(cx - 4, cy - 3);
     ctx.fill();
 
     ctx.beginPath();
-    ctx.moveTo(29, 10);
-    ctx.lineTo(33, 3);
-    ctx.lineTo(27, 10);
+    ctx.moveTo(cx + 8, cy - 2);
+    ctx.lineTo(cx + 12, cy - 10);
+    ctx.lineTo(cx + 4, cy - 3);
     ctx.fill();
   }
 
-  // Couronne
+  // Crown for legend+
   if (config.hasCrown) {
     ctx.fillStyle = '#FFD700';
-    ctx.fillRect(12, 6, 16, 3);
-    ctx.fillRect(12, 3, 2, 3);
-    ctx.fillRect(19, 2, 2, 4);
-    ctx.fillRect(26, 3, 2, 3);
+    ctx.fillRect(cx - 8, cy - 6, 16, 3);
+    ctx.fillRect(cx - 8, cy - 9, 3, 3);
+    ctx.fillRect(cx - 1, cy - 10, 3, 4);
+    ctx.fillRect(cx + 5, cy - 9, 3, 3);
+  }
+
+  // Clan accent shape
+  if (clanStyle.accentShape === 'gem' && (config.hasCrown || config.hasHorns)) {
+    ctx.fillStyle = rarity === 'legend' || rarity === 'super-legend' ? '#FF0044' : '#00CCFF';
+    ctx.fillRect(cx - 1, cy - 8, 2, 2);
   }
 }
 
