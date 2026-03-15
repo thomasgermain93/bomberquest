@@ -27,10 +27,31 @@ const HeroAvatar: React.FC<HeroAvatarProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    const PORTRAIT_BASE_SIZE = 40;
+    const offscreen = document.createElement('canvas');
+    offscreen.width = PORTRAIT_BASE_SIZE;
+    offscreen.height = PORTRAIT_BASE_SIZE;
+    const offscreenCtx = offscreen.getContext('2d');
+    if (!offscreenCtx) return;
+
     const draw = (time: number) => {
+      offscreenCtx.clearRect(0, 0, PORTRAIT_BASE_SIZE, PORTRAIT_BASE_SIZE);
+      offscreenCtx.imageSmoothingEnabled = false;
+      drawHeroPortrait(offscreenCtx, rarity, time, heroId);
+
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.imageSmoothingEnabled = false;
-      drawHeroPortrait(ctx, rarity, time, heroId);
+      ctx.drawImage(
+        offscreen,
+        0,
+        0,
+        PORTRAIT_BASE_SIZE,
+        PORTRAIT_BASE_SIZE,
+        0,
+        0,
+        canvas.width,
+        canvas.height,
+      );
     };
 
     if (animated) {
