@@ -47,6 +47,7 @@ export function loadPlayerData(): PlayerData {
       if (!parsed.achievements) {
         parsed.achievements = getDefaultAchievementState();
       }
+      parsed.xp = Number.isFinite(Number(parsed?.xp)) ? Number(parsed.xp) : 0;
       if (Array.isArray(parsed.heroes)) {
         parsed.heroes = parsed.heroes.map((hero: any) => ({
           ...hero,

@@ -1403,7 +1403,8 @@ const Index = () => {
 
             {/* XP Progress Bar */}
             {(() => {
-              let xpRemaining = player.xp;
+              const safeXp = Number.isFinite(player.xp) ? player.xp : 0;
+              let xpRemaining = safeXp;
               let lvl = 1;
               let xpForLevel = 100;
               while (xpRemaining >= xpForLevel) {
@@ -1411,8 +1412,9 @@ const Index = () => {
                 lvl++;
                 xpForLevel = lvl * 100;
               }
-              const nextLevelXp = (lvl) * 100;
-              const pct = Math.round((xpRemaining / nextLevelXp) * 100);
+              const nextLevelXp = lvl * 100;
+              const rawPct = nextLevelXp > 0 ? (xpRemaining / nextLevelXp) * 100 : 0;
+              const pct = Math.max(2, Math.min(100, Math.round(rawPct)));
               return (
                 <div className="pixel-border bg-card p-3">
                   <div className="flex items-center justify-between mb-1.5">

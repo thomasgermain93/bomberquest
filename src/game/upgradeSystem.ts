@@ -309,7 +309,7 @@ export function getXpProgress(hero: Hero): { current: number; required: number; 
   const prevRequired = getXpForLevel(hero.level);
   const progress = Math.max(0, heroXp - prevRequired);
   const needed = Math.max(1, required - prevRequired);
-  const percentage = Math.min(100, Math.max(0, (progress / needed) * 100));
+  const percentage = Math.min(100, Math.max(2, (progress / needed) * 100));
   return { current: progress, required: needed, percentage };
 }
 
