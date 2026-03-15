@@ -84,7 +84,7 @@ const BomberCard: React.FC<{ bomber: BestiaryBomber }> = ({ bomber }) => {
           <div className="relative">
             <div className="w-12 h-12 rounded-lg bg-muted border border-border flex items-center justify-center shrink-0 overflow-hidden">
               {bomber.rarity ? (
-                <HeroAvatar heroId={bomber.id} rarity={bomber.rarity} size={44} />
+                <HeroAvatar heroId={bomber.id} heroName={bomber.name} rarity={bomber.rarity} size={44} />
               ) : (
                 <AlertTriangle size={14} className="text-muted-foreground" />
               )}

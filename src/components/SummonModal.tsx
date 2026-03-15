@@ -117,7 +117,7 @@ const HeroRevealCard: React.FC<{ hero: Hero; index: number; total: number }> = (
         className="rounded-lg p-2 mb-1 bg-card pixel-border flex items-center justify-center"
         style={{ boxShadow: `0 0 25px ${rarityGlows[hero.rarity]}`, width: avatarSize + 16, height: avatarSize + 16 }}
       >
-        <HeroAvatar heroId={hero.id} rarity={hero.rarity} size={avatarSize} />
+        <HeroAvatar heroId={hero.id} heroName={hero.name} rarity={hero.rarity} size={avatarSize} />
       </div>
       <p className="font-pixel text-[8px] text-foreground truncate max-w-[70px] text-center">{hero.name}</p>
       <p

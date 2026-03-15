@@ -1,7 +1,8 @@
 // Pixel-art hero sprite renderer for canvas
 // Each hero gets a unique look based on rarity with proper body parts
 
-import { HERO_FAMILY_MAP, HERO_VISUALS, getHeroVisualTraits, HeroVisualTraits, HeroFamilyId } from './types';
+import { HeroFamilyId } from './types';
+import { CLAN_VISUAL_PROFILES, HeroSkinVariant, resolveHeroVisualIdentity } from './heroVisualSystem';
 
 const TILE = 40;
 
@@ -83,72 +84,53 @@ const RARITY_SPRITES: Record<string, HeroSpriteConfig> = {
   },
 };
 
-const FAMILY_SPRITES: Record<string, Partial<HeroSpriteConfig>> = {
+const FAMILY_SPRITES: Record<HeroFamilyId, Partial<HeroSpriteConfig>> = {
   'ember-clan': {
-    helmetColor: '#FF6B35',
-    visorColor: '#8B2500',
-    bodyColor: '#E85D04',
+    helmetColor: CLAN_VISUAL_PROFILES['ember-clan'].primary,
+    visorColor: CLAN_VISUAL_PROFILES['ember-clan'].visor,
+    bodyColor: CLAN_VISUAL_PROFILES['ember-clan'].secondary,
   },
   'storm-riders': {
-    helmetColor: '#4CC9F0',
-    visorColor: '#023E8A',
-    bodyColor: '#4361EE',
+    helmetColor: CLAN_VISUAL_PROFILES['storm-riders'].primary,
+    visorColor: CLAN_VISUAL_PROFILES['storm-riders'].visor,
+    bodyColor: CLAN_VISUAL_PROFILES['storm-riders'].secondary,
   },
   'forge-guard': {
-    helmetColor: '#A8A8A8',
-    visorColor: '#404040',
-    bodyColor: '#6C757D',
+    helmetColor: CLAN_VISUAL_PROFILES['forge-guard'].primary,
+    visorColor: CLAN_VISUAL_PROFILES['forge-guard'].visor,
+    bodyColor: CLAN_VISUAL_PROFILES['forge-guard'].secondary,
   },
   'shadow-core': {
-    helmetColor: '#7B2CBF',
-    visorColor: '#240046',
-    bodyColor: '#5A189A',
+    helmetColor: CLAN_VISUAL_PROFILES['shadow-core'].primary,
+    visorColor: CLAN_VISUAL_PROFILES['shadow-core'].visor,
+    bodyColor: CLAN_VISUAL_PROFILES['shadow-core'].secondary,
   },
   'arcane-circuit': {
-    helmetColor: '#06D6A0',
-    visorColor: '#004B23',
-    bodyColor: '#2EC4B6',
+    helmetColor: CLAN_VISUAL_PROFILES['arcane-circuit'].primary,
+    visorColor: CLAN_VISUAL_PROFILES['arcane-circuit'].visor,
+    bodyColor: CLAN_VISUAL_PROFILES['arcane-circuit'].secondary,
   },
   'wild-pack': {
-    helmetColor: '#70E000',
-    visorColor: '#38B000',
-    bodyColor: '#9EF01A',
+    helmetColor: CLAN_VISUAL_PROFILES['wild-pack'].primary,
+    visorColor: CLAN_VISUAL_PROFILES['wild-pack'].visor,
+    bodyColor: CLAN_VISUAL_PROFILES['wild-pack'].secondary,
   },
 };
 
+interface ResolvedHeroRenderConfig {
+  config: HeroSpriteConfig;
+  family: HeroFamilyId;
+  skin: HeroSkinVariant;
+}
 
-
-
-function getHeroSpriteConfig(rarity: string, heroId?: string): HeroSpriteConfig {
+function getHeroSpriteConfig(rarity: string, heroId?: string, heroName?: string): ResolvedHeroRenderConfig {
   const baseConfig = RARITY_SPRITES[rarity] || RARITY_SPRITES.common;
-  
-  if (!heroId || heroId === 'bestiary-preview') {
-    return baseConfig;
-  }
-  
-  const heroIdLower = heroId.toLowerCase();
-  const heroVisual = HERO_VISUALS[heroIdLower];
-  
-  if (!heroVisual) {
-    const family = HERO_FAMILY_MAP[heroIdLower];
-    const familyConfig = family ? FAMILY_SPRITES[family] : null;
-    if (!familyConfig) {
-      return baseConfig;
-    }
-    return {
-      ...baseConfig,
-      ...familyConfig,
-    };
-  }
-  
-  const family = heroVisual.family;
-  const familyConfig = FAMILY_SPRITES[family];
-  
-  const traits = heroVisual.traits;
-  
+  const identity = resolveHeroVisualIdentity(heroId, heroName);
+  const familyConfig = FAMILY_SPRITES[identity.family] || {};
+
   let aura: string | undefined;
-  if (traits.aura || rarity === 'epic' || rarity === 'legend' || rarity === 'super-legend') {
-    const auraColors: Record<string, string> = {
+  if (identity.traits.aura || rarity === 'epic' || rarity === 'legend' || rarity === 'super-legend') {
+    const auraColors: Record<HeroFamilyId, string> = {
       'ember-clan': 'rgba(255,100,0,0.15)',
       'storm-riders': 'rgba(50,150,255,0.15)',
       'forge-guard': 'rgba(150,150,150,0.15)',
@@ -156,19 +138,31 @@ function getHeroSpriteConfig(rarity: string, heroId?: string): HeroSpriteConfig 
       'arcane-circuit': 'rgba(0,200,150,0.15)',
       'wild-pack': 'rgba(100,200,0,0.15)',
     };
-    aura = auraColors[family] || baseConfig.aura;
+    aura = auraColors[identity.family] || baseConfig.aura;
   }
-  
+
+  const skinAccentByVariant: Record<HeroSkinVariant, string> = {
+    classic: identity.traits.accentColor,
+    scarred: shadeColor(identity.traits.accentColor, -10),
+    elite: shadeColor(identity.traits.accentColor, 8),
+    arcane: shadeColor(identity.traits.accentColor, 14),
+  };
+  const skinAccent = skinAccentByVariant[identity.skin] || identity.traits.accentColor;
+
   return {
-    ...baseConfig,
-    ...familyConfig,
-    aura,
-    hasHorns: traits.helmetStyle === 'horned' || baseConfig.hasHorns,
-    hasCrown: traits.helmetStyle === 'crowned' || baseConfig.hasCrown,
-    hasWings: traits.wings || baseConfig.hasWings,
-    helmetColor: traits.accentColor || familyConfig?.helmetColor || baseConfig.helmetColor,
-    bodyColor: traits.accentColor ? shadeColor(traits.accentColor, -20) : familyConfig?.bodyColor || baseConfig.bodyColor,
-    visorColor: traits.accentColor ? shadeColor(traits.accentColor, -60) : familyConfig?.visorColor || baseConfig.visorColor,
+    family: identity.family,
+    skin: identity.skin,
+    config: {
+      ...baseConfig,
+      ...familyConfig,
+      aura,
+      hasHorns: identity.traits.helmetStyle === 'horned' || baseConfig.hasHorns,
+      hasCrown: identity.traits.helmetStyle === 'crowned' || baseConfig.hasCrown,
+      hasWings: identity.traits.wings || baseConfig.hasWings,
+      helmetColor: skinAccent || familyConfig.helmetColor || baseConfig.helmetColor,
+      bodyColor: skinAccent ? shadeColor(skinAccent, -20) : familyConfig.bodyColor || baseConfig.bodyColor,
+      visorColor: skinAccent ? shadeColor(skinAccent, -60) : familyConfig.visorColor || baseConfig.visorColor,
+    },
   };
 }
 
@@ -179,6 +173,35 @@ function shadeColor(color: string, percent: number): string {
   const G = Math.max(0, Math.min(255, ((num >> 8) & 0x00FF) + amt));
   const B = Math.max(0, Math.min(255, (num & 0x0000FF) + amt));
   return `#${(0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1)}`;
+}
+
+function drawSkinPattern(
+  ctx: CanvasRenderingContext2D,
+  skin: HeroSkinVariant,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  accent: string,
+) {
+  switch (skin) {
+    case 'scarred':
+      ctx.fillStyle = shadeColor(accent, -35);
+      ctx.fillRect(x + 1, y + 2, 2, 1);
+      ctx.fillRect(x + width - 4, y + height - 4, 2, 1);
+      break;
+    case 'elite':
+      ctx.fillStyle = shadeColor(accent, 25);
+      ctx.fillRect(x + 1, y + 1, width - 2, 1);
+      break;
+    case 'arcane':
+      ctx.fillStyle = '#C8F7FF';
+      ctx.fillRect(x + width / 2 - 1, y + 1, 2, height - 2);
+      break;
+    default:
+      ctx.fillStyle = 'rgba(255,255,255,0.08)';
+      ctx.fillRect(x + 1, y + 1, width - 2, 1);
+  }
 }
 
 const CLAN_PORTRAIT_STYLES: Record<string, {
@@ -196,16 +219,13 @@ const CLAN_PORTRAIT_STYLES: Record<string, {
   'wild-pack': { helmetShape: 'spiked', visorPattern: 'dual', shoulderPads: true, emblemPattern: 'paw', accentShape: 'stripe' },
 };
 
-function getClanStyle(heroId?: string) {
-  if (!heroId) return CLAN_PORTRAIT_STYLES['ember-clan'];
-  const heroIdLower = heroId.toLowerCase();
-  const family = HERO_FAMILY_MAP[heroIdLower];
-  return family ? (CLAN_PORTRAIT_STYLES[family] || CLAN_PORTRAIT_STYLES['ember-clan']) : CLAN_PORTRAIT_STYLES['ember-clan'];
+function getClanStyle(family: HeroFamilyId) {
+  return CLAN_PORTRAIT_STYLES[family] || CLAN_PORTRAIT_STYLES['ember-clan'];
 }
 
-export function drawHeroPortrait(ctx: CanvasRenderingContext2D, rarity: string, time: number = 0, heroId?: string) {
-  const config = getHeroSpriteConfig(rarity, heroId);
-  const clanStyle = getClanStyle(heroId);
+export function drawHeroPortrait(ctx: CanvasRenderingContext2D, rarity: string, time: number = 0, heroId?: string, heroName?: string) {
+  const { config, family, skin } = getHeroSpriteConfig(rarity, heroId, heroName);
+  const clanStyle = getClanStyle(family);
   const shouldBlink = Math.sin(time / 2000) > 0.93;
   const cx = 20;
   const cy = 20;
@@ -292,6 +312,8 @@ export function drawHeroPortrait(ctx: CanvasRenderingContext2D, rarity: string, 
       ctx.arc(cx, cy + 2, 8, 0, Math.PI * 2);
       ctx.fill();
   }
+
+  drawSkinPattern(ctx, skin, cx - 8, cy - 2, 16, 10, config.helmetColor);
 
   // Clan emblem on helmet
   if (clanStyle.emblemPattern !== 'none') {
@@ -448,12 +470,13 @@ export function drawHeroSprite(
   heroId: string,
   stamina: number,
   maxStamina: number,
+  heroName?: string,
 ) {
   const px = x * TILE;
   const py = y * TILE;
   const cx = px + TILE / 2;
-  const config = getHeroSpriteConfig(rarity, heroId);
-  const clanStyle = getClanStyle(heroId);
+  const { config, family, skin } = getHeroSpriteConfig(rarity, heroId, heroName);
+  const clanStyle = getClanStyle(family);
 
   // Bob animation
   const isMoving = state === 'moving' || state === 'retreating';
@@ -544,6 +567,7 @@ export function drawHeroSprite(
   ctx.fillRect(cx - 9, by + 12, 18, 16 + breathe);
   ctx.fillStyle = config.bodyColor;
   ctx.fillRect(cx - 8, by + 13, 16, 14 + breathe);
+  drawSkinPattern(ctx, skin, cx - 8, by + 13, 16, 14, config.helmetColor);
   // Chest plate highlight
   ctx.fillStyle = 'rgba(255,255,255,0.12)';
   ctx.fillRect(cx - 6, by + 14, 5, 8);
