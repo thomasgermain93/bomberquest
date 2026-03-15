@@ -47,11 +47,15 @@ export function loadPlayerData(): PlayerData {
       if (!parsed.achievements) {
         parsed.achievements = getDefaultAchievementState();
       }
+      parsed.xp = Number.isFinite(Number(parsed?.xp)) ? Number(parsed.xp) : 0;
       if (Array.isArray(parsed.heroes)) {
         parsed.heroes = parsed.heroes.map((hero: any) => ({
           ...hero,
           xp: Number.isFinite(Number(hero?.xp)) ? Number(hero.xp) : 0,
+          level: Number.isFinite(Number(hero?.level)) ? Math.max(1, Math.min(Number(hero.level), 120)) : 1,
         }));
+      } else {
+        parsed.heroes = [];
       }
       return parsed;
     }
