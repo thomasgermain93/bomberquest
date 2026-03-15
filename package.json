@@ -13,7 +13,8 @@
     "test:watch": "vitest",
     "ui:repair:plan": "node scripts/ui-auto-repair/plan-from-radar.mjs",
     "ui:repair:run": "node scripts/ui-auto-repair/run-loop.mjs",
-    "ui:repair:dry": "node scripts/ui-auto-repair/run-loop.mjs --dry-run=true"
+    "ui:repair:dry": "node scripts/ui-auto-repair/run-loop.mjs --dry-run=true",
+    "ui:baseline:capture": "node scripts/capture-ui-baseline.mjs --clean"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -83,6 +84,7 @@
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^15.15.0",
     "jsdom": "^20.0.3",
+    "playwright": "^1.58.2",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.8.3",
