@@ -10,7 +10,7 @@ import HeroUpgradeModal from '@/components/HeroUpgradeModal';
 import HeroPickerModal from '@/components/HeroPickerModal';
 import FusionSlot from '@/components/FusionSlot';
 import StoryMode from '@/components/StoryMode';
-import { GameState, Hero, MAP_CONFIGS, PlayerData, RARITY_CONFIG, Rarity, HERO_FAMILIES, HERO_FAMILY_MAP, HeroFamilyId } from '@/game/types';
+import { GameState, Hero, MAP_CONFIGS, PlayerData, RARITY_CONFIG, Rarity, HERO_NAMES, HERO_FAMILIES, HERO_FAMILY_MAP, HeroFamilyId } from '@/game/types';
 import { generateMap, tickGame } from '@/game/engine';
 import { summonHero, generateHero } from '@/game/summoning';
 import { loadPlayerData, savePlayerData, getDefaultPlayerData, saveStoryProgress, loadStoryProgress } from '@/game/saveSystem';
@@ -29,7 +29,7 @@ import { Home, Users, Sparkles, Swords, Map, Trophy, Coins, Star, ChevronLeft, P
 import { SFX, isMuted, setMuted } from '@/game/sfx';
 import { toast } from '@/hooks/use-toast';
 
-type Screen = 'hub' | 'treasure-hunt' | 'heroes' | 'fusion' | 'summon' | 'story' | 'story-battle' | 'achievements';
+type Screen = 'hub' | 'treasure-hunt' | 'heroes' | 'codex' | 'fusion' | 'summon' | 'story' | 'story-battle' | 'achievements';
 
 
 const LOCAL_SAVE_TS_KEY = 'bq_last_local_save_ts';
@@ -1324,6 +1324,28 @@ const Index = () => {
 
   const upgradeHeroData = upgradeHeroId ? player.heroes.find(h => h.id === upgradeHeroId) ?? null : null;
 
+  const heroRarityOrder: Rarity[] = ['common', 'rare', 'super-rare', 'epic', 'legend', 'super-legend'];
+  const codexByName = HERO_NAMES.map((heroName) => {
+    const normalized = heroName.toLowerCase();
+    const ownedVariants = player.heroes.filter((hero) => hero.name.split(' ')[0].toLowerCase() === normalized);
+    const unlocked = ownedVariants.length > 0;
+    const highestOwned = ownedVariants.sort(
+      (a, b) => heroRarityOrder.indexOf(b.rarity) - heroRarityOrder.indexOf(a.rarity)
+    )[0];
+
+    return {
+      key: normalized,
+      displayName: heroName,
+      unlocked,
+      ownedCount: ownedVariants.length,
+      rarity: highestOwned?.rarity ?? 'common',
+      heroPreviewId: normalized,
+    };
+  });
+
+  const codexUnlockedCount = codexByName.filter((entry) => entry.unlocked).length;
+  const codexTotalCount = codexByName.length;
+
   const handleClaimQuest = (questId: string) => {
     const quest = dailyQuests.quests.find(q => q.id === questId);
     if (!quest || !quest.completed || quest.claimed) return;
@@ -1420,6 +1442,7 @@ const Index = () => {
             { id: 'hub' as Screen, label: 'Hub', icon: <Home size={14} /> },
             { id: 'story' as Screen, label: 'Histoire', icon: <BookOpen size={14} /> },
             { id: 'heroes' as Screen, label: 'Héros', icon: <Users size={14} /> },
+            { id: 'codex' as Screen, label: 'Codex', icon: <BookOpen size={14} /> },
             { id: 'fusion' as Screen, label: 'Fusion', icon: <Hammer size={14} /> },
             { id: 'summon' as Screen, label: 'Invoquer', icon: <Sparkles size={14} /> },
             { id: 'achievements' as Screen, label: 'Succès', icon: <Trophy size={14} /> },
@@ -2082,6 +2105,77 @@ const Index = () => {
                 ))}
               </div>
             )}
+          </motion.div>
+        )}
+
+        {/* HERO CODEX SCREEN */}
+        {screen === 'codex' && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="font-pixel text-xs text-foreground flex items-center gap-2">
+                <BookOpen size={16} /> HERO CODEX
+              </h2>
+              <button onClick={() => setScreen('hub')} className="pixel-btn pixel-btn-secondary font-pixel text-[8px] flex items-center gap-1">
+                <ChevronLeft size={12} /> Retour
+              </button>
+            </div>
+
+            <div className="pixel-border bg-card p-4 space-y-2">
+              <div className="flex items-center justify-between gap-3">
+                <p className="font-pixel text-[9px] text-foreground flex items-center gap-2">
+                  <Trophy size={12} className="text-game-gold" /> Collection débloquée
+                </p>
+                <p className="font-pixel text-[10px] text-primary tabular-nums">
+                  {codexUnlockedCount}/{codexTotalCount}
+                </p>
+              </div>
+              <div className="w-full h-2.5 bg-muted rounded-full overflow-hidden">
+                <motion.div
+                  className="h-full bg-gradient-to-r from-primary to-game-gold rounded-full"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${Math.max(2, Math.round((codexUnlockedCount / codexTotalCount) * 100))}%` }}
+                  transition={{ duration: 0.4 }}
+                />
+              </div>
+              <p className="text-[8px] text-muted-foreground">
+                Les héros non débloqués restent masqués (silhouette) pour garder la surprise.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+              {codexByName.map((entry) => (
+                <div
+                  key={entry.key}
+                  className={`pixel-border p-3 transition-all ${
+                    entry.unlocked ? `bg-card rarity-${entry.rarity}` : 'bg-muted/30'
+                  }`}
+                >
+                  <div className="relative flex justify-center mb-2">
+                    <div className={entry.unlocked ? '' : 'opacity-35 grayscale blur-[0.8px]'}>
+                      <HeroAvatar heroId={entry.heroPreviewId} rarity={entry.rarity} size={48} />
+                    </div>
+                    {!entry.unlocked && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="px-2 py-0.5 rounded bg-background/80 border border-border flex items-center gap-1">
+                          <LockIcon size={10} className="text-muted-foreground" />
+                          <span className="font-pixel text-[7px] text-muted-foreground">LOCKED</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <p className="font-pixel text-[8px] text-center text-foreground truncate">
+                    {entry.unlocked ? entry.displayName : '???'}
+                  </p>
+                  <p className="text-[8px] text-center mt-1" style={{ color: `hsl(var(--game-rarity-${entry.rarity}))` }}>
+                    {entry.unlocked ? RARITY_CONFIG[entry.rarity].label : 'Inconnu'}
+                  </p>
+                  <p className="text-[8px] text-center text-muted-foreground mt-1 tabular-nums">
+                    {entry.unlocked ? `Possédés: ${entry.ownedCount}` : 'À invoquer'}
+                  </p>
+                </div>
+              ))}
+            </div>
           </motion.div>
         )}
 
