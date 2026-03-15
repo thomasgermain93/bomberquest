@@ -1,7 +1,7 @@
 // Pixel-art hero sprite renderer for canvas
 // Each hero gets a unique look based on rarity with proper body parts
 
-import { HERO_FAMILY_MAP } from './types';
+import { HERO_FAMILY_MAP, HERO_VISUALS, getHeroVisualTraits, HeroVisualTraits, HeroFamilyId } from './types';
 
 const TILE = 40;
 
@@ -116,14 +116,7 @@ const FAMILY_SPRITES: Record<string, Partial<HeroSpriteConfig>> = {
   },
 };
 
-const HERO_FAMILY_MAP: Record<string, string> = {
-  blaze: 'ember-clan', ember: 'ember-clan', pyro: 'ember-clan', fuse: 'ember-clan', blast: 'ember-clan', sol: 'ember-clan',
-  spark: 'storm-riders', volt: 'storm-riders', storm: 'storm-riders', zap: 'storm-riders', vega: 'storm-riders', dash: 'storm-riders',
-  flint: 'forge-guard', rex: 'forge-guard', atlas: 'forge-guard', duke: 'forge-guard', max: 'forge-guard',
-  ash: 'shadow-core', nova: 'shadow-core', echo: 'shadow-core', crash: 'shadow-core', luna: 'shadow-core',
-  pixel: 'arcane-circuit', chip: 'arcane-circuit', byte: 'arcane-circuit', orion: 'arcane-circuit',
-  boom: 'wild-pack', nitro: 'wild-pack', rush: 'wild-pack', flash: 'wild-pack', jet: 'wild-pack', ace: 'wild-pack',
-};
+
 
 
 function getHeroSpriteConfig(rarity: string, heroId?: string): HeroSpriteConfig {
@@ -133,17 +126,59 @@ function getHeroSpriteConfig(rarity: string, heroId?: string): HeroSpriteConfig 
     return baseConfig;
   }
   
-  const family = HERO_FAMILY_MAP[heroId.toLowerCase()];
-  const familyConfig = family ? FAMILY_SPRITES[family] : null;
+  const heroIdLower = heroId.toLowerCase();
+  const heroVisual = HERO_VISUALS[heroIdLower];
   
-  if (!familyConfig) {
-    return baseConfig;
+  if (!heroVisual) {
+    const family = HERO_FAMILY_MAP[heroIdLower];
+    const familyConfig = family ? FAMILY_SPRITES[family] : null;
+    if (!familyConfig) {
+      return baseConfig;
+    }
+    return {
+      ...baseConfig,
+      ...familyConfig,
+    };
+  }
+  
+  const family = heroVisual.family;
+  const familyConfig = FAMILY_SPRITES[family];
+  
+  const traits = heroVisual.traits;
+  
+  let aura: string | undefined;
+  if (traits.aura || rarity === 'epic' || rarity === 'legend' || rarity === 'super-legend') {
+    const auraColors: Record<string, string> = {
+      'ember-clan': 'rgba(255,100,0,0.15)',
+      'storm-riders': 'rgba(50,150,255,0.15)',
+      'forge-guard': 'rgba(150,150,150,0.15)',
+      'shadow-core': 'rgba(100,0,150,0.15)',
+      'arcane-circuit': 'rgba(0,200,150,0.15)',
+      'wild-pack': 'rgba(100,200,0,0.15)',
+    };
+    aura = auraColors[family] || baseConfig.aura;
   }
   
   return {
     ...baseConfig,
     ...familyConfig,
+    aura,
+    hasHorns: traits.helmetStyle === 'horned' || baseConfig.hasHorns,
+    hasCrown: traits.helmetStyle === 'crowned' || baseConfig.hasCrown,
+    hasWings: traits.wings || baseConfig.hasWings,
+    helmetColor: traits.accentColor || familyConfig?.helmetColor || baseConfig.helmetColor,
+    bodyColor: traits.accentColor ? shadeColor(traits.accentColor, -20) : familyConfig?.bodyColor || baseConfig.bodyColor,
+    visorColor: traits.accentColor ? shadeColor(traits.accentColor, -60) : familyConfig?.visorColor || baseConfig.visorColor,
   };
+}
+
+function shadeColor(color: string, percent: number): string {
+  const num = parseInt(color.replace('#', ''), 16);
+  const amt = Math.round(2.55 * percent);
+  const R = Math.max(0, Math.min(255, (num >> 16) + amt));
+  const G = Math.max(0, Math.min(255, ((num >> 8) & 0x00FF) + amt));
+  const B = Math.max(0, Math.min(255, (num & 0x0000FF) + amt));
+  return `#${(0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1)}`;
 }
 
 export function drawHeroPortrait(ctx: CanvasRenderingContext2D, rarity: string, time: number = 0, heroId?: string) {

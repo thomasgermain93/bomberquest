@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AlertTriangle, ArrowLeft, BookOpen, ChevronRight, Image as ImageIcon, PawPrint } from 'lucide-react';
 import HeroAvatar from '@/components/HeroAvatar';
+import PixelIcon from '@/components/PixelIcon';
 import { BESTIARY_BY_FAMILY, BESTIARY_STATUS_LABELS, AssetStatus, BestiaryBomber } from '@/data/bestiary';
 import { drawHeroPortrait, drawHeroSprite } from '@/game/heroRenderer';
 import { RARITY_CONFIG } from '@/game/types';
@@ -79,9 +80,9 @@ const BomberCard: React.FC<{ bomber: BestiaryBomber }> = ({ bomber }) => {
     <article className="pixel-border bg-card p-3 sm:p-4">
       <div className="flex items-start justify-between gap-2 mb-3">
         <div className="flex items-center gap-2 min-w-0">
-          <div className="w-9 h-9 rounded bg-muted border border-border flex items-center justify-center shrink-0 overflow-hidden">
+          <div className="w-12 h-12 rounded-lg bg-muted border border-border flex items-center justify-center shrink-0 overflow-hidden">
             {bomber.rarity ? (
-              <HeroAvatar heroId={bomber.id} rarity={bomber.rarity} size={32} />
+              <HeroAvatar heroId={bomber.id} rarity={bomber.rarity} size={44} />
             ) : (
               <AlertTriangle size={14} className="text-muted-foreground" />
             )}

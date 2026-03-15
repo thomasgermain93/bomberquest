@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import PixelIcon from '@/components/PixelIcon';
+import HeroAvatar from '@/components/HeroAvatar';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Hero, RARITY_CONFIG } from '@/game/types';
 import { ChevronLeft, ChevronRight, Sparkles, Star } from 'lucide-react';
@@ -104,6 +105,7 @@ const SummonExplosion: React.FC<{ onComplete: () => void }> = ({ onComplete }) =
 
 const HeroRevealCard: React.FC<{ hero: Hero; index: number; total: number }> = ({ hero, index, total }) => {
   const config = RARITY_CONFIG[hero.rarity];
+  const avatarSize = total > 1 ? 32 : 56;
   return (
     <motion.div
       initial={{ scale: 0, rotateY: 180, opacity: 0 }}
@@ -112,10 +114,10 @@ const HeroRevealCard: React.FC<{ hero: Hero; index: number; total: number }> = (
       className="flex flex-col items-center"
     >
       <div
-        className="rounded-lg p-3 mb-1 bg-card pixel-border"
-        style={{ boxShadow: `0 0 25px ${rarityGlows[hero.rarity]}` }}
+        className="rounded-lg p-2 mb-1 bg-card pixel-border flex items-center justify-center"
+        style={{ boxShadow: `0 0 25px ${rarityGlows[hero.rarity]}`, width: avatarSize + 16, height: avatarSize + 16 }}
       >
-        <PixelIcon icon={hero.icon} size={total > 1 ? 32 : 56} rarity={hero.rarity} />
+        <HeroAvatar heroId={hero.id} rarity={hero.rarity} size={avatarSize} />
       </div>
       <p className="font-pixel text-[8px] text-foreground truncate max-w-[70px] text-center">{hero.name}</p>
       <p
