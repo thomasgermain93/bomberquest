@@ -14,6 +14,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: '2026-03-15',
     title: 'Mises à jour récentes',
     changes: [
+      { type: 'feature', description: 'feat: Hero Codex avec héros débloqués/non débloqués (#127)' },
       { type: 'feature', description: 'feat: synchronize hero visuals by family/rarity (closes #114) (#123)' },
       { type: 'feature', description: 'Bug UI Héros: barre XP visuellement vide malgré XP non nulle (#113)' },
       { type: 'feature', description: 'fix: clamp enemy positions to valid grid bounds in Story Mode (closes #112) (#121)' },
