@@ -131,6 +131,61 @@ export const WIKI_ARTICLES: WikiArticle[] = [
     ],
   },
 
+  // ─── Familles de Héros ────────────────────────────────────────────────────
+  {
+    slug: 'families-heros',
+    title: 'Familles de Héros',
+    subtitle: 'Les 6 familles de héros : Clan Braise, Cavaliers de l\'Orage, Garde de Forge, Noyau d\'Ombre, Circuit Arcanique, Meute Sauvage',
+    category: 'Héros',
+    icon: 'users',
+    content: [
+      {
+        heading: 'Présentation',
+        body: 'Chaque héros appartient à une famille qui définit son archetype et son style de jeu. Les familles influencent l\'apparence visuelle (couleurs du skin) et les compétences typiques du héros.',
+      },
+      {
+        heading: 'Les 6 Familles',
+        table: {
+          headers: ['Famille', 'Description', 'Héros clés'],
+          rows: [
+            ['Clan Braise', 'Héros orientés feu et explosion', 'Blaze, Ember, Pyro, Fuse, Blast, Sol'],
+            ["Cavaliers de l'Orage", 'Héros rapides avec affinité électrique', 'Spark, Volt, Storm, Zap, Vega, Dash'],
+            ['Garde de Forge', 'Héros robustes axés tank et défense', 'Flint, Rex, Atlas, Duke, Max'],
+            ["Noyau d'Ombre", "Héros d'infiltration et de contrôle", 'Ash, Nova, Echo, Crash, Luna'],
+            ['Circuit Arcanique', 'Héros techno-magiques et utilitaires', 'Pixel, Chip, Byte, Orion'],
+            ['Meute Sauvage', 'Héros agiles orientés rush et chasse', 'Boom, Nitro, Rush, Flash, Jet, Ace'],
+          ],
+        },
+      },
+      {
+        heading: 'Skins par Famille',
+        body: 'Chaque famille possède un skin unique qui s\'applique à tous les héros de cette famille. Le skin combine les couleurs de la famille avec les éléments visuels de la rareté du héros (casque, cape, cornes, couronne, ailes).',
+      },
+      {
+        heading: 'Tableau des skins par famille',
+        table: {
+          headers: ['Famille', 'Couleur casque', 'Couleur corps'],
+          rows: [
+            ['Clan Braise', '#FF6B35 (Orange)', '#E85D04'],
+            ["Cavaliers de l'Orage", '#4CC9F0 (Cyan)', '#4361EE'],
+            ['Garde de Forge', '#A8A8A8 (Gris)', '#6C757D'],
+            ["Noyau d'Ombre", '#7B2CBF (Violet)', '#5A189A'],
+            ['Circuit Arcanique', '#06D6A0 (Vert)', '#2EC4B6'],
+            ['Meute Sauvage', '#70E000 (Vert Lime)', '#9EF01A'],
+          ],
+        },
+      },
+      {
+        heading: 'Visualisation',
+        body: 'Consultez le Bestiaire (/wiki/bestiaire) pour voir tous les héros avec leur sprite et portrait générés automatiquement selon leur famille et leur rareté.',
+      },
+      {
+        heading: 'Système de Visuels Centralisé',
+        body: 'Depuis la version avec issue #114, les visuels héros sont gérés de manière centralisée. Le système HERO_VISUALS dans types.ts définit pour chaque héros : sa famille, son style de casque (standard/cornu/couronné/tech/masque), sa cape, ses ailes et son aura. Ces traits sont utilisés par le renderer canvas pour générer les sprites et portraits.',
+      },
+    ],
+  },
+
   // ─── Cartes ───────────────────────────────────────────────────────────────
   {
     slug: 'cartes',

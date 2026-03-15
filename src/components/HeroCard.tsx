@@ -2,7 +2,7 @@ import React from 'react';
 import { Hero, RARITY_CONFIG, MAX_LEVEL_BY_RARITY } from '@/game/types';
 import { getXpProgress } from '@/game/upgradeSystem';
 import { Swords, Zap, Target, Bomb, Battery, Clover, Shield, Star, Moon, Check, Sparkles } from 'lucide-react';
-import PixelIcon from '@/components/PixelIcon';
+import HeroAvatar from '@/components/HeroAvatar';
 
 interface HeroCardProps {
   hero: Hero;
@@ -50,7 +50,7 @@ const HeroCard: React.FC<HeroCardProps> = ({ hero, compact, onClick, selected })
         }`} style={{
           boxShadow: selected ? `0 0 10px hsl(var(--game-rarity-${hero.rarity}) / 0.4)` : 'none'
         }}>
-          <PixelIcon icon={hero.icon} size={22} rarity={hero.rarity} />
+          <HeroAvatar heroId={hero.id} rarity={hero.rarity} size={36} />
         </div>
 
         <div className="text-left flex-1 min-w-0">
@@ -106,7 +106,7 @@ const HeroCard: React.FC<HeroCardProps> = ({ hero, compact, onClick, selected })
       <div className="text-center mb-2 relative">
         <div className="inline-flex items-center justify-center w-14 h-14 rounded-lg bg-muted mb-1 group-hover:scale-110 transition-transform"
           style={{ boxShadow: `0 0 15px hsl(var(--game-rarity-${hero.rarity}) / 0.3)` }}>
-          <PixelIcon icon={hero.icon} size={32} rarity={hero.rarity} />
+          <HeroAvatar heroId={hero.id} rarity={hero.rarity} size={48} />
         </div>
         <h3 className="font-pixel text-[9px] text-foreground">{hero.name}</h3>
         <span className="text-[10px] font-pixel" style={{ color: `hsl(var(--game-rarity-${hero.rarity}))` }}>

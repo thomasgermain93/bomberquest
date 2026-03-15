@@ -1,6 +1,8 @@
 // Pixel-art hero sprite renderer for canvas
 // Each hero gets a unique look based on rarity with proper body parts
 
+import { HERO_FAMILY_MAP } from './types';
+
 const TILE = 40;
 
 interface HeroSpriteConfig {
