@@ -43,6 +43,19 @@ npm run dev
 | `npm run lint` | Linter ESLint |
 | `npm run test` | Lancer les tests (Vitest) |
 | `npm run test:watch` | Tests en mode watch |
+| `npm run ui:radar:install` | Installe Chromium pour le radar UI (Playwright) |
+| `npm run ui:radar` | Lance le scan UI QA + génère rapports JSON/MD + screenshots |
+
+## UI QA Radar
+
+Le radar UI (issue #130) scanne les écrans/états clés et signale automatiquement des problèmes UI/UX (overflow, texte tronqué, hors viewport, contraste, spacing).
+
+Sorties:
+- `reports/ui-radar/ui-radar-report.json`
+- `reports/ui-radar/ui-radar-report.md`
+- `reports/ui-radar/screenshots/*.png`
+
+Détails complets: `docs/ui-qa-radar.md`
 
 ## Variables d'environnement
 

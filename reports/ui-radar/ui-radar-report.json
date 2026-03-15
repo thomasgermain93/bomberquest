@@ -1,0 +1,258 @@
+{
+  "generatedAt": "2026-03-15T22:49:38.851Z",
+  "baseUrl": "http://127.0.0.1:4173",
+  "scenarios": [
+    {
+      "key": "landing",
+      "label": "Landing / Index marketing",
+      "path": "/",
+      "screenshot": "reports/ui-radar/screenshots/landing.png",
+      "actionResults": []
+    },
+    {
+      "key": "game-hub",
+      "label": "Game: Hub",
+      "path": "/game",
+      "screenshot": "reports/ui-radar/screenshots/game-hub.png",
+      "actionResults": []
+    },
+    {
+      "key": "game-fusion",
+      "label": "Game: Fusion tab",
+      "path": "/game",
+      "screenshot": "reports/ui-radar/screenshots/game-fusion.png",
+      "actionResults": [
+        {
+          "ok": false,
+          "reason": "text 'Fusion' not found"
+        }
+      ]
+    },
+    {
+      "key": "game-heroes",
+      "label": "Game: Heroes tab",
+      "path": "/game",
+      "screenshot": "reports/ui-radar/screenshots/game-heroes.png",
+      "actionResults": [
+        {
+          "ok": false,
+          "reason": "text 'Héros' not found"
+        }
+      ]
+    },
+    {
+      "key": "bestiary",
+      "label": "Wiki Bestiary",
+      "path": "/wiki/bestiaire",
+      "screenshot": "reports/ui-radar/screenshots/bestiary.png",
+      "actionResults": []
+    },
+    {
+      "key": "summon",
+      "label": "Summon / Fusion screen",
+      "path": "/summon",
+      "screenshot": "reports/ui-radar/screenshots/summon.png",
+      "actionResults": []
+    },
+    {
+      "key": "summon-fusion-tab",
+      "label": "Summon: Fusion tab state",
+      "path": "/summon",
+      "screenshot": "reports/ui-radar/screenshots/summon-fusion-tab.png",
+      "actionResults": [
+        {
+          "ok": false,
+          "reason": "text 'Fusion' not found"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "totalFindings": 10,
+    "bySeverity": {
+      "P0": 0,
+      "P1": 10,
+      "P2": 0
+    }
+  },
+  "findings": [
+    {
+      "severity": "P1",
+      "category": "missingState",
+      "title": "État/UI attendu introuvable",
+      "page": "/",
+      "scenario": "Landing / Index marketing",
+      "selector": "/",
+      "excerpt": "",
+      "evidence": {
+        "screenshot": "reports/ui-radar/screenshots/landing.png",
+        "details": {
+          "expectedTexts": [
+            "BomberQuest"
+          ]
+        }
+      }
+    },
+    {
+      "severity": "P1",
+      "category": "missingState",
+      "title": "État/UI attendu introuvable",
+      "page": "/game",
+      "scenario": "Game: Hub",
+      "selector": "/game",
+      "excerpt": "",
+      "evidence": {
+        "screenshot": "reports/ui-radar/screenshots/game-hub.png",
+        "details": {
+          "expectedTexts": [
+            "BOMBERQUEST",
+            "Hub"
+          ]
+        }
+      }
+    },
+    {
+      "severity": "P1",
+      "category": "missingState",
+      "title": "État/UI attendu introuvable",
+      "page": "/game",
+      "scenario": "Game: Fusion tab",
+      "selector": "/game",
+      "excerpt": "",
+      "evidence": {
+        "screenshot": "reports/ui-radar/screenshots/game-fusion.png",
+        "details": {
+          "expectedTexts": [
+            "Fusion"
+          ]
+        }
+      }
+    },
+    {
+      "severity": "P1",
+      "category": "missingState",
+      "title": "État/UI attendu introuvable",
+      "page": "/game",
+      "scenario": "Game: Heroes tab",
+      "selector": "/game",
+      "excerpt": "",
+      "evidence": {
+        "screenshot": "reports/ui-radar/screenshots/game-heroes.png",
+        "details": {
+          "expectedTexts": [
+            "Héros"
+          ]
+        }
+      }
+    },
+    {
+      "severity": "P1",
+      "category": "missingState",
+      "title": "État/UI attendu introuvable",
+      "page": "/wiki/bestiaire",
+      "scenario": "Wiki Bestiary",
+      "selector": "/wiki/bestiaire",
+      "excerpt": "",
+      "evidence": {
+        "screenshot": "reports/ui-radar/screenshots/bestiary.png",
+        "details": {
+          "expectedTexts": [
+            "Bestiaire"
+          ]
+        }
+      }
+    },
+    {
+      "severity": "P1",
+      "category": "missingState",
+      "title": "État/UI attendu introuvable",
+      "page": "/summon",
+      "scenario": "Summon / Fusion screen",
+      "selector": "/summon",
+      "excerpt": "",
+      "evidence": {
+        "screenshot": "reports/ui-radar/screenshots/summon.png",
+        "details": {
+          "expectedTexts": [
+            "Invocation",
+            "Invoquer"
+          ]
+        }
+      }
+    },
+    {
+      "severity": "P1",
+      "category": "missingState",
+      "title": "État/UI attendu introuvable",
+      "page": "/summon",
+      "scenario": "Summon: Fusion tab state",
+      "selector": "/summon",
+      "excerpt": "",
+      "evidence": {
+        "screenshot": "reports/ui-radar/screenshots/summon-fusion-tab.png",
+        "details": {
+          "expectedTexts": [
+            "Fusion"
+          ]
+        }
+      }
+    },
+    {
+      "severity": "P1",
+      "category": "stateActionUnavailable",
+      "title": "État UI non accessible automatiquement",
+      "page": "/game",
+      "scenario": "Game: Fusion tab",
+      "selector": "/game",
+      "excerpt": "",
+      "evidence": {
+        "screenshot": "reports/ui-radar/screenshots/game-fusion.png",
+        "details": {
+          "action": {
+            "type": "clickText",
+            "text": "Fusion"
+          },
+          "reason": "text 'Fusion' not found"
+        }
+      }
+    },
+    {
+      "severity": "P1",
+      "category": "stateActionUnavailable",
+      "title": "État UI non accessible automatiquement",
+      "page": "/game",
+      "scenario": "Game: Heroes tab",
+      "selector": "/game",
+      "excerpt": "",
+      "evidence": {
+        "screenshot": "reports/ui-radar/screenshots/game-heroes.png",
+        "details": {
+          "action": {
+            "type": "clickText",
+            "text": "Héros"
+          },
+          "reason": "text 'Héros' not found"
+        }
+      }
+    },
+    {
+      "severity": "P1",
+      "category": "stateActionUnavailable",
+      "title": "État UI non accessible automatiquement",
+      "page": "/summon",
+      "scenario": "Summon: Fusion tab state",
+      "selector": "/summon",
+      "excerpt": "",
+      "evidence": {
+        "screenshot": "reports/ui-radar/screenshots/summon-fusion-tab.png",
+        "details": {
+          "action": {
+            "type": "clickText",
+            "text": "Fusion"
+          },
+          "reason": "text 'Fusion' not found"
+        }
+      }
+    }
+  ]
+}
