@@ -20,6 +20,14 @@ export interface Skill {
   effect: string;
 }
 
+export interface HeroProgressionStats {
+  chestsOpened: number;
+  totalDamageDealt: number;
+  battlesPlayed: number;
+  victories: number;
+  obtainedAt: number; // timestamp
+}
+
 export interface Hero {
   id: string;
   name: string;
@@ -40,6 +48,7 @@ export interface Hero {
   bombCooldown: number;
   stuckTimer: number;
   icon: string; // icon key for PixelIcon
+  progressionStats: HeroProgressionStats;
 }
 
 export const MAX_LEVEL_BY_RARITY: Record<Rarity, number> = {

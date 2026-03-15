@@ -1101,7 +1101,7 @@ const Index = () => {
   const [summonedBatch, setSummonedBatch] = useState<Hero[]>([]);
 
   const handleSummon = (type: 'single' | 'x10' | 'x100') => {
-    const cost = type === 'single' ? 100 : type === 'x10' ? 900 : 8000;
+    const cost = type === 'single' ? 1000 : type === 'x10' ? 9000 : 80000;
     if (player.bomberCoins < cost) return;
 
     const count = type === 'single' ? 1 : type === 'x10' ? 10 : 100;
@@ -1357,7 +1357,7 @@ const Index = () => {
             <button
               key={tab.id}
               onClick={() => {
-                if (tab.id === 'summon') setSummonOpen(true);
+                if (tab.id === 'summon') navigate('/summon');
                 else setScreen(tab.id);
               }}
               className={`font-pixel text-[7px] sm:text-[8px] px-2.5 sm:px-3 py-2.5 sm:py-2 rounded flex items-center gap-1.5 transition-all whitespace-nowrap min-h-[44px] ${

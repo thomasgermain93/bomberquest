@@ -36,6 +36,9 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: '2026-03-14',
     title: 'Features gameplay, forge et progression',
     changes: [
+      { type: 'feature', description: 'Feature: page Invocation dédiée + invocations via shards (#109)' },
+      { type: 'feature', description: 'Game Economy: augmenter les prix d’invocation x10 (#92)' },
+      { type: 'feature', description: 'Feature: carte d\'identité héros (stats de progression uniques) (#55)' },
       { type: 'feature', description: 'UI/UX Fusion: page dédiée avec enclume + 6 slots et sélection conditionnelle (#94)' },
       { type: 'feature', description: 'feat(hero): implement XP progression system and max level fusion (closes #93) (#106)' },
       { type: 'feature', description: 'Feature: Drop garanti de héros au 1er clear de chaque boss Story (#45)' },
