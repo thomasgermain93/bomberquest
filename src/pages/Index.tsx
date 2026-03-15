@@ -76,9 +76,7 @@ const Index = () => {
   
   // Fusion UI state
   const [selectedRecipeIdx, setSelectedRecipeIdx] = useState<number>(0);
-  const [fusionSlots, setFusionSlots] = useState<(Hero | null)[]>(() => 
-    Array(MERGE_RECIPES[0].count).fill(null)
-  );
+  const [fusionSlots, setFusionSlots] = useState<(Hero | null)[]>([null, null]);
   const [heroPickerOpen, setHeroPickerOpen] = useState(false);
   const [activeSlotIdx, setActiveSlotIdx] = useState<number | null>(null);
 
