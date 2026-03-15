@@ -11,6 +11,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
+    "ui:radar": "node scripts/ui-qa-radar.mjs",
+    "ui:radar:install": "playwright install chromium",
     "ui:baseline:capture": "node scripts/capture-ui-baseline.mjs --clean"
   },
   "dependencies": {
