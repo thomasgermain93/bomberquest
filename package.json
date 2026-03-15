@@ -11,6 +11,9 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
+    "ui:repair:plan": "node scripts/ui-auto-repair/plan-from-radar.mjs",
+    "ui:repair:run": "node scripts/ui-auto-repair/run-loop.mjs",
+    "ui:repair:dry": "node scripts/ui-auto-repair/run-loop.mjs --dry-run=true",
     "ui:radar": "node scripts/ui-qa-radar.mjs",
     "ui:radar:install": "playwright install chromium",
     "ui:baseline:capture": "node scripts/capture-ui-baseline.mjs --clean"

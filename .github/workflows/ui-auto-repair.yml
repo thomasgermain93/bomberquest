@@ -1,0 +1,53 @@
+name: UI Auto-Repair (MVP)
+
+on:
+  workflow_dispatch:
+    inputs:
+      radar_path:
+        description: "Path du rapport radar JSON"
+        required: false
+        default: "artifacts/ui-radar/report.json"
+      baseline_path:
+        description: "Path de la baseline JSON"
+        required: false
+        default: "artifacts/ui-baseline/baseline.json"
+
+jobs:
+  ui-auto-repair:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Plan from radar
+        run: |
+          if [ ! -f "${{ inputs.radar_path }}" ]; then
+            echo "Missing radar report at ${{ inputs.radar_path }}"
+            exit 1
+          fi
+          BASELINE_ARGS=""
+          if [ -f "${{ inputs.baseline_path }}" ]; then
+            BASELINE_ARGS="--baseline ${{ inputs.baseline_path }}"
+          fi
+          npm run ui:repair:plan -- --radar "${{ inputs.radar_path }}" $BASELINE_ARGS --out artifacts/ui-auto-repair/repair-plan.json
+
+      - name: Run auto-repair with guardrails
+        run: |
+          npm run ui:repair:run -- --plan artifacts/ui-auto-repair/repair-plan.json --summary artifacts/ui-auto-repair/repair-summary.json --max-files 4 --max-diff-lines 200
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-auto-repair-artifacts
+          path: |
+            artifacts/ui-auto-repair/repair-plan.json
+            artifacts/ui-auto-repair/repair-summary.json
