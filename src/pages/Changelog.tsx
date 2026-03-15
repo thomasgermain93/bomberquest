@@ -77,7 +77,7 @@ const Changelog: React.FC = () => {
             <div className="absolute left-[11px] top-0 bottom-0 w-px bg-border" />
 
             <div className="space-y-8">
-              {CHANGELOG.map((entry, i) => (
+              {CHANGELOG.filter((entry) => entry.version !== 'Unreleased').map((entry, i) => (
                 <motion.div
                   key={entry.version}
                   initial={{ opacity: 0, x: -20 }}
