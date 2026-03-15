@@ -1357,7 +1357,7 @@ const Index = () => {
             <button
               key={tab.id}
               onClick={() => {
-                if (tab.id === 'summon') setSummonOpen(true);
+                if (tab.id === 'summon') navigate('/summon');
                 else setScreen(tab.id);
               }}
               className={`font-pixel text-[7px] sm:text-[8px] px-2.5 sm:px-3 py-2.5 sm:py-2 rounded flex items-center gap-1.5 transition-all whitespace-nowrap min-h-[44px] ${

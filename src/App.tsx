@@ -17,6 +17,7 @@ import Bestiary from "./pages/Bestiary";
 import Changelog from "./pages/Changelog";
 import ResetPassword from "./pages/ResetPassword";
 import Profile from "./pages/Profile";
+import Summon from "./pages/Summon";
 import NotFound from "./pages/NotFound";
 import UsernameRequiredDialog from "./components/UsernameRequiredDialog";
 
@@ -44,6 +45,7 @@ const App = () => (
             <Route path="/changelog" element={<Changelog />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/summon" element={<Summon />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
             </Routes>
