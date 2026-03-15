@@ -14,6 +14,7 @@ export const CHANGELOG: ChangelogEntry[
     date: '2026-03-15',
     title: 'Mises à jour récentes',
     changes: [
+      { type: 'feature', description: 'fix: clamp enemy positions to valid grid bounds in Story Mode (closes #112) (#121)' },
       { type: 'feature', description: 'fix(fusion): slots dynamiques selon recette + centrage responsive (closes #111) (#120)' },
       { type: 'feature', description: 'Bug: page Changelog bloquée sur vUnreleased au lieu de versions taggées (#110)' },
     ],
