@@ -1645,7 +1645,7 @@ const Index = () => {
                       >
                         {hero ? (
                           <>
-                            <HeroAvatar heroId={hero.id} rarity={hero.rarity} size={32} />
+                            <HeroAvatar heroId={hero.id} heroName={hero.name} rarity={hero.rarity} size={32} />
                             <p className="font-pixel text-[7px] text-foreground mt-1 truncate max-w-[60px]">{hero.name.split(' ')[0]}</p>
                             <p className="text-[7px] mt-0.5" style={{ color: `hsl(var(--game-rarity-${hero.rarity}))` }}>
                               {RARITY_CONFIG[hero.rarity].label}

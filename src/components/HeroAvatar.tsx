@@ -4,6 +4,7 @@ import { Rarity } from '@/game/types';
 
 interface HeroAvatarProps {
   heroId?: string;
+  heroName?: string;
   rarity: Rarity;
   size?: number;
   className?: string;
@@ -11,7 +12,8 @@ interface HeroAvatarProps {
 }
 
 const HeroAvatar: React.FC<HeroAvatarProps> = ({ 
-  heroId, 
+  heroId,
+  heroName,
   rarity, 
   size = 40, 
   className = '',
@@ -37,7 +39,7 @@ const HeroAvatar: React.FC<HeroAvatarProps> = ({
     const draw = (time: number) => {
       offscreenCtx.clearRect(0, 0, PORTRAIT_BASE_SIZE, PORTRAIT_BASE_SIZE);
       offscreenCtx.imageSmoothingEnabled = false;
-      drawHeroPortrait(offscreenCtx, rarity, time, heroId);
+      drawHeroPortrait(offscreenCtx, rarity, time, heroId, heroName);
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.imageSmoothingEnabled = false;
@@ -69,7 +71,7 @@ const HeroAvatar: React.FC<HeroAvatarProps> = ({
     } else {
       draw(0);
     }
-  }, [heroId, rarity, animated]);
+  }, [heroId, heroName, rarity, animated]);
 
   return (
     <canvas

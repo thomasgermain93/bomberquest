@@ -185,6 +185,7 @@ const GameGrid: React.FC<GameGridProps> = ({ gameState }) => {
         hero.id,
         hero.currentStamina,
         hero.maxStamina,
+        hero.name,
       );
     }
 
