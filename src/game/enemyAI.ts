@@ -54,6 +54,20 @@ function canWalk(map: GameMap, x: number, y: number): boolean {
   return map.tiles[y][x] === 'floor';
 }
 
+function canMoveToPosition(map: GameMap, fromX: number, fromY: number, toX: number, toY: number): boolean {
+  const minX = Math.floor(Math.min(fromX, toX));
+  const maxX = Math.ceil(Math.max(fromX, toX));
+  const minY = Math.floor(Math.min(fromY, toY));
+  const maxY = Math.ceil(Math.max(fromY, toY));
+
+  for (let y = minY; y <= maxY; y++) {
+    for (let x = minX; x <= maxX; x++) {
+      if (!canWalk(map, x, y)) return false;
+    }
+  }
+  return true;
+}
+
 function clampPosition(pos: { x: number; y: number }, map: GameMap): { x: number; y: number } {
   return {
     x: Math.max(0, Math.min(map.width - 1, pos.x)),
@@ -118,13 +132,10 @@ export function tickEnemies(
     if (e.direction.x !== 0 || e.direction.y !== 0) {
       const nx = e.position.x + e.direction.x * e.speed * dt;
       const ny = e.position.y + e.direction.y * e.speed * dt;
-      const rnx = Math.round(nx);
-      const rny = Math.round(ny);
 
-      if (canWalk(map, rnx, rny)) {
+      if (canMoveToPosition(map, e.position.x, e.position.y, nx, ny)) {
         e.position.x = nx;
         e.position.y = ny;
-        // Snap when close to grid to prevent floating-point drift
         if (Math.abs(e.position.x - Math.round(e.position.x)) < 0.02 &&
             Math.abs(e.position.y - Math.round(e.position.y)) < 0.02) {
           e.position.x = Math.round(e.position.x);
@@ -132,7 +143,7 @@ export function tickEnemies(
         }
       } else {
         e.direction = { x: 0, y: 0 };
-        e.moveTimer = 0; // re-pick direction immediately
+        e.moveTimer = 0;
       }
     }
 
@@ -216,7 +227,7 @@ export function tickBoss(
         const my = (dy / dist) * speed * dt;
         const nx = b.position.x + mx;
         const ny = b.position.y + my;
-        if (canWalk(map, Math.round(nx), Math.round(ny))) {
+        if (canMoveToPosition(map, b.position.x, b.position.y, nx, ny)) {
           b.position.x = nx;
           b.position.y = ny;
         }
@@ -283,7 +294,7 @@ export function tickBoss(
   if (b.direction.x !== 0 || b.direction.y !== 0) {
     const nx = b.position.x + b.direction.x * b.speed * dt;
     const ny = b.position.y + b.direction.y * b.speed * dt;
-    if (canWalk(map, Math.round(nx), Math.round(ny))) {
+    if (canMoveToPosition(map, b.position.x, b.position.y, nx, ny)) {
       b.position.x = nx;
       b.position.y = ny;
     } else {
