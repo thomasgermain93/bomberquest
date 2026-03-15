@@ -52,7 +52,10 @@ export function loadPlayerData(): PlayerData {
         parsed.heroes = parsed.heroes.map((hero: any) => ({
           ...hero,
           xp: Number.isFinite(Number(hero?.xp)) ? Number(hero.xp) : 0,
+          level: Number.isFinite(Number(hero?.level)) ? Math.max(1, Math.min(Number(hero.level), 120)) : 1,
         }));
+      } else {
+        parsed.heroes = [];
       }
       return parsed;
     }
