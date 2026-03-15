@@ -54,6 +54,13 @@ function canWalk(map: GameMap, x: number, y: number): boolean {
   return map.tiles[y][x] === 'floor';
 }
 
+function clampPosition(pos: { x: number; y: number }, map: GameMap): { x: number; y: number } {
+  return {
+    x: Math.max(0, Math.min(map.width - 1, pos.x)),
+    y: Math.max(0, Math.min(map.height - 1, pos.y)),
+  };
+}
+
 export function tickEnemies(
   enemies: Enemy[],
   map: GameMap,
@@ -63,6 +70,31 @@ export function tickEnemies(
   return enemies.filter(e => e.hp > 0).map(enemy => {
     const e = { ...enemy, position: { ...enemy.position } };
 
+    // Clamp position to valid bounds to prevent drifting outside grid
+    e.position = clampPosition(e.position, map);
+
+    // Verify current tile is walkable, otherwise respawn on nearest floor
+    const ex = Math.round(e.position.x);
+    const ey = Math.round(e.position.y);
+    if (!canWalk(map, ex, ey)) {
+      const floorTiles: { x: number; y: number }[] = [];
+      for (let y = 1; y < map.height - 1; y++) {
+        for (let x = 1; x < map.width - 1; x++) {
+          if (map.tiles[y][x] === 'floor') {
+            floorTiles.push({ x, y });
+          }
+        }
+      }
+      if (floorTiles.length > 0) {
+        const nearest = floorTiles.reduce((a, b) => {
+          const da = Math.abs(a.x - e.position.x) + Math.abs(a.y - e.position.y);
+          const db = Math.abs(b.x - e.position.x) + Math.abs(b.y - e.position.y);
+          return da < db ? a : b;
+        });
+        e.position = nearest;
+      }
+    }
+
     if (e.stunTimer > 0) {
       e.stunTimer = Math.max(0, e.stunTimer - dt);
       return e;
@@ -71,10 +103,10 @@ export function tickEnemies(
     e.moveTimer -= dt;
     if (e.moveTimer <= 0) {
       // Random patrol: pick a new random direction
-      const ex = Math.round(e.position.x);
-      const ey = Math.round(e.position.y);
+      const pex = Math.round(e.position.x);
+      const pey = Math.round(e.position.y);
       
-      const validDirs = DIRS.filter(d => canWalk(map, ex + d.x, ey + d.y));
+      const validDirs = DIRS.filter(d => canWalk(map, pex + d.x, pey + d.y));
       if (validDirs.length > 0) {
         const chosen = validDirs[Math.floor(Math.random() * validDirs.length)];
         e.direction = chosen;
@@ -92,9 +124,9 @@ export function tickEnemies(
       if (canWalk(map, rnx, rny)) {
         e.position.x = nx;
         e.position.y = ny;
-        // Snap when close to grid
-        if (Math.abs(e.position.x - Math.round(e.position.x)) < 0.05 &&
-            Math.abs(e.position.y - Math.round(e.position.y)) < 0.05) {
+        // Snap when close to grid to prevent floating-point drift
+        if (Math.abs(e.position.x - Math.round(e.position.x)) < 0.02 &&
+            Math.abs(e.position.y - Math.round(e.position.y)) < 0.02) {
           e.position.x = Math.round(e.position.x);
           e.position.y = Math.round(e.position.y);
         }
@@ -103,6 +135,9 @@ export function tickEnemies(
         e.moveTimer = 0; // re-pick direction immediately
       }
     }
+
+    // Final clamp after movement
+    e.position = clampPosition(e.position, map);
 
     return e;
   });
@@ -120,9 +155,35 @@ export function tickBoss(
     position: { ...boss.position },
     minions: boss.minions.map(m => ({ ...m, position: { ...m.position } })),
   };
-  let newMinions: Enemy[] = [];
+  const newMinions: Enemy[] = [];
 
   if (b.hp <= 0) return { boss: b, newMinions };
+
+  // Clamp boss position to valid bounds
+  b.position = clampPosition(b.position, map);
+
+  // Verify current tile is walkable
+  const bx = Math.round(b.position.x);
+  const by = Math.round(b.position.y);
+  if (!canWalk(map, bx, by)) {
+    // Find nearest floor tile
+    const floorTiles: { x: number; y: number }[] = [];
+    for (let y = 1; y < map.height - 1; y++) {
+      for (let x = 1; x < map.width - 1; x++) {
+        if (map.tiles[y][x] === 'floor') {
+          floorTiles.push({ x, y });
+        }
+      }
+    }
+    if (floorTiles.length > 0) {
+      const nearest = floorTiles.reduce((a, c) => {
+        const da = Math.abs(a.x - b.position.x) + Math.abs(a.y - b.position.y);
+        const dc = Math.abs(c.x - b.position.x) + Math.abs(c.y - b.position.y);
+        return da < dc ? a : c;
+      });
+      b.position = nearest;
+    }
+  }
 
   // Phase transitions
   const hpPct = b.hp / b.maxHp;
