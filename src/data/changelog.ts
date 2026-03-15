@@ -14,6 +14,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: '2026-03-15',
     title: 'Mises à jour récentes',
     changes: [
+      { type: 'feature', description: 'Chore: UI baseline snapshots + checklist d\'états critiques (#132)' },
       { type: 'feature', description: 'feat: vrais visuels héros par clan + skins avec fallback legacy (#129)' },
       { type: 'feature', description: 'feat: filtres héros par clan, rareté et niveau (#128)' },
       { type: 'feature', description: 'feat: Hero Codex avec héros débloqués/non débloqués (#127)' },
