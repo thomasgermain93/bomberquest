@@ -76,9 +76,14 @@ const Index = () => {
   
   // Fusion UI state
   const [selectedRecipeIdx, setSelectedRecipeIdx] = useState<number>(0);
-  const [fusionSlots, setFusionSlots] = useState<(Hero | null)[]>([null, null, null, null, null, null]);
+  const [fusionSlots, setFusionSlots] = useState<(Hero | null)[]>([null, null]);
   const [heroPickerOpen, setHeroPickerOpen] = useState(false);
   const [activeSlotIdx, setActiveSlotIdx] = useState<number | null>(null);
+
+  // Reset fusion slots when recipe changes
+  useEffect(() => {
+    setFusionSlots(Array(MERGE_RECIPES[selectedRecipeIdx].count).fill(null));
+  }, [selectedRecipeIdx]);
   const huntSpeedRef = useRef(1);
   const gameLoopRef = useRef<number>();
   const cloudLoadedRef = useRef(false);
@@ -771,7 +776,7 @@ const Index = () => {
     });
 
     // Reset slots
-    setFusionSlots([null, null, null, null, null, null]);
+    setFusionSlots(Array(recipe.count).fill(null));
   };
 
   const handleSlotClick = (index: number) => {
@@ -2005,7 +2010,6 @@ const Index = () => {
                       key={`${recipe.from}-${recipe.to}`}
                       onClick={() => {
                         setSelectedRecipeIdx(idx);
-                        setFusionSlots([null, null, null, null, null, null]);
                       }}
                       className={`pixel-border p-2 text-center transition-all ${
                         isSelected 
@@ -2064,8 +2068,9 @@ const Index = () => {
                   </p>
                 </div>
 
-                {/* Slots - 6 slots around the anvil */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 mb-6 w-full max-w-md">
+                {/* Slots - dynamic number based on recipe, centered responsive */}
+                <div className="w-full max-w-md mb-6">
+                  <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
                   {fusionSlots.map((hero, idx) => {
                     const recipe = MERGE_RECIPES[selectedRecipeIdx];
                     const eligibility = hero 
@@ -2083,6 +2088,7 @@ const Index = () => {
                       />
                     );
                   })}
+                  </div>
                 </div>
 
                 {/* Fusion button */}
