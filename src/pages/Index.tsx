@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -10,7 +10,7 @@ import HeroUpgradeModal from '@/components/HeroUpgradeModal';
 import HeroPickerModal from '@/components/HeroPickerModal';
 import FusionSlot from '@/components/FusionSlot';
 import StoryMode from '@/components/StoryMode';
-import { GameState, Hero, MAP_CONFIGS, PlayerData, RARITY_CONFIG, Rarity, HERO_NAMES } from '@/game/types';
+import { GameState, Hero, MAP_CONFIGS, PlayerData, RARITY_CONFIG, Rarity, HERO_NAMES, HERO_FAMILIES, HERO_FAMILY_MAP, HeroFamilyId } from '@/game/types';
 import { generateMap, tickGame } from '@/game/engine';
 import { summonHero, generateHero } from '@/game/summoning';
 import { loadPlayerData, savePlayerData, getDefaultPlayerData, saveStoryProgress, loadStoryProgress } from '@/game/saveSystem';
@@ -43,6 +43,22 @@ const markHeroMutation = () => {
   const now = Date.now();
   localStorage.setItem(LOCAL_HERO_MUTATION_TS_KEY, String(now));
   localStorage.setItem(LOCAL_SAVE_TS_KEY, String(now));
+};
+
+type HeroLevelFilter = 'all' | '1-20' | '21-40' | '41-60' | '61+';
+
+type HeroFilters = {
+  clan: 'all' | HeroFamilyId;
+  rarity: 'all' | Rarity;
+  level: HeroLevelFilter;
+};
+
+const HERO_FILTERS_SESSION_KEY = 'bq_heroes_filters_v1';
+
+const DEFAULT_HERO_FILTERS: HeroFilters = {
+  clan: 'all',
+  rarity: 'all',
+  level: 'all',
 };
 
 const Index = () => {
@@ -80,6 +96,21 @@ const Index = () => {
   const [fusionSlots, setFusionSlots] = useState<(Hero | null)[]>([null, null]);
   const [heroPickerOpen, setHeroPickerOpen] = useState(false);
   const [activeSlotIdx, setActiveSlotIdx] = useState<number | null>(null);
+  const [heroFilters, setHeroFilters] = useState<HeroFilters>(() => {
+    if (typeof window === 'undefined') return DEFAULT_HERO_FILTERS;
+    try {
+      const raw = sessionStorage.getItem(HERO_FILTERS_SESSION_KEY);
+      if (!raw) return DEFAULT_HERO_FILTERS;
+      const parsed = JSON.parse(raw) as Partial<HeroFilters>;
+      return {
+        clan: parsed.clan && (parsed.clan === 'all' || HERO_FAMILIES.some(f => f.id === parsed.clan)) ? parsed.clan : 'all',
+        rarity: parsed.rarity && (parsed.rarity === 'all' || Object.keys(RARITY_CONFIG).includes(parsed.rarity)) ? parsed.rarity as HeroFilters['rarity'] : 'all',
+        level: parsed.level && ['all', '1-20', '21-40', '41-60', '61+'].includes(parsed.level) ? parsed.level as HeroLevelFilter : 'all',
+      };
+    } catch {
+      return DEFAULT_HERO_FILTERS;
+    }
+  });
 
   // Reset fusion slots when recipe changes
   useEffect(() => {
@@ -101,6 +132,39 @@ const Index = () => {
   }, []);
   const lastTickRef = useRef<number>(Date.now());
   const processedExplosionsRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    sessionStorage.setItem(HERO_FILTERS_SESSION_KEY, JSON.stringify(heroFilters));
+  }, [heroFilters]);
+
+  const filteredHeroes = useMemo(() => {
+    return [...player.heroes]
+      .filter((hero) => {
+        if (heroFilters.clan !== 'all') {
+          const baseHeroName = hero.name.split('#')[0].trim().toLowerCase();
+          const heroFamily = HERO_FAMILY_MAP[baseHeroName];
+          if (heroFamily !== heroFilters.clan) return false;
+        }
+
+        if (heroFilters.rarity !== 'all' && hero.rarity !== heroFilters.rarity) {
+          return false;
+        }
+
+        if (heroFilters.level !== 'all') {
+          if (heroFilters.level === '1-20' && !(hero.level >= 1 && hero.level <= 20)) return false;
+          if (heroFilters.level === '21-40' && !(hero.level >= 21 && hero.level <= 40)) return false;
+          if (heroFilters.level === '41-60' && !(hero.level >= 41 && hero.level <= 60)) return false;
+          if (heroFilters.level === '61+' && hero.level < 61) return false;
+        }
+
+        return true;
+      })
+      .sort((a, b) => {
+        const order = ['super-legend', 'legend', 'epic', 'super-rare', 'rare', 'common'];
+        return order.indexOf(a.rarity) - order.indexOf(b.rarity);
+      });
+  }, [player.heroes, heroFilters]);
 
   const cloudSessionReady = Boolean(user?.id && session?.access_token && !authLoading);
   const canWriteCloud = cloudSessionReady && cloudValidated;
@@ -1961,16 +2025,86 @@ const Index = () => {
               </button>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-              {player.heroes
-                .sort((a, b) => {
-                  const order = ['super-legend', 'legend', 'epic', 'super-rare', 'rare', 'common'];
-                  return order.indexOf(a.rarity) - order.indexOf(b.rarity);
-                })
-                .map(hero => (
+            <div className="pixel-border bg-card p-3 sm:p-4 space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="font-pixel text-[9px] text-foreground">FILTRES</h3>
+                <button
+                  onClick={() => setHeroFilters(DEFAULT_HERO_FILTERS)}
+                  className="pixel-btn pixel-btn-secondary font-pixel text-[8px] min-h-[36px] px-3"
+                  disabled={heroFilters.clan === 'all' && heroFilters.rarity === 'all' && heroFilters.level === 'all'}
+                >
+                  Réinitialiser
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <label className="text-[8px] text-muted-foreground space-y-1">
+                  <span className="font-pixel">Clan</span>
+                  <select
+                    className="w-full bg-muted border border-border rounded px-2 py-2 text-[10px]"
+                    value={heroFilters.clan}
+                    onChange={(e) => setHeroFilters(prev => ({ ...prev, clan: e.target.value as HeroFilters['clan'] }))}
+                  >
+                    <option value="all">Tous les clans</option>
+                    {HERO_FAMILIES.map((family) => (
+                      <option key={family.id} value={family.id}>{family.name}</option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="text-[8px] text-muted-foreground space-y-1">
+                  <span className="font-pixel">Rareté</span>
+                  <select
+                    className="w-full bg-muted border border-border rounded px-2 py-2 text-[10px]"
+                    value={heroFilters.rarity}
+                    onChange={(e) => setHeroFilters(prev => ({ ...prev, rarity: e.target.value as HeroFilters['rarity'] }))}
+                  >
+                    <option value="all">Toutes les raretés</option>
+                    {(Object.keys(RARITY_CONFIG) as Rarity[]).map((rarity) => (
+                      <option key={rarity} value={rarity}>{RARITY_CONFIG[rarity].label}</option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="text-[8px] text-muted-foreground space-y-1">
+                  <span className="font-pixel">Niveau</span>
+                  <select
+                    className="w-full bg-muted border border-border rounded px-2 py-2 text-[10px]"
+                    value={heroFilters.level}
+                    onChange={(e) => setHeroFilters(prev => ({ ...prev, level: e.target.value as HeroLevelFilter }))}
+                  >
+                    <option value="all">Tous les niveaux</option>
+                    <option value="1-20">Niv. 1-20</option>
+                    <option value="21-40">Niv. 21-40</option>
+                    <option value="41-60">Niv. 41-60</option>
+                    <option value="61+">Niv. 61+</option>
+                  </select>
+                </label>
+              </div>
+
+              <p className="text-[8px] text-muted-foreground">
+                {filteredHeroes.length} héros affichés sur {player.heroes.length}
+              </p>
+            </div>
+
+            {filteredHeroes.length === 0 ? (
+              <div className="pixel-border bg-card p-6 text-center space-y-3">
+                <p className="font-pixel text-[10px] text-foreground">Aucun héros ne correspond aux filtres.</p>
+                <p className="text-[8px] text-muted-foreground">Essayez d'élargir un critère ou réinitialisez les filtres.</p>
+                <button
+                  onClick={() => setHeroFilters(DEFAULT_HERO_FILTERS)}
+                  className="pixel-btn font-pixel text-[8px] min-h-[40px] px-4"
+                >
+                  Voir tous les héros
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                {filteredHeroes.map(hero => (
                   <HeroCard key={hero.id} hero={hero} onClick={() => setUpgradeHeroId(hero.id)} />
                 ))}
-            </div>
+              </div>
+            )}
           </motion.div>
         )}
 
