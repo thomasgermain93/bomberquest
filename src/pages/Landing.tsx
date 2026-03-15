@@ -229,7 +229,7 @@ const TreasureHuntCanvas: React.FC = () => {
   return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" style={{ imageRendering: 'pixelated' }} />;
 };
 
-const CHANGELOG = APP_CHANGELOG.filter((entry) => entry.version !== 'Unreleased').slice(0, 3).map((entry) => ({
+const CHANGELOG = APP_CHANGELOG.slice(0, 3).map((entry) => ({
   version: entry.version,
   date: entry.date,
   entries: entry.changes.slice(0, 3).map((change) => ({
