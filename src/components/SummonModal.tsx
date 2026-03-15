@@ -365,33 +365,33 @@ const SummonModal: React.FC<SummonModalProps> = ({ isOpen, onClose, onSummon, co
           <div className="flex gap-2 flex-wrap">
             <button
               onClick={() => handleSummon('single')}
-              disabled={coins < 100 || animating}
+              disabled={coins < 1000 || animating}
               className="pixel-btn flex-1 text-center disabled:opacity-40"
             >
               <div className="font-pixel text-[8px]">×1</div>
               <div className="font-pixel text-[9px] mt-0.5 flex items-center justify-center gap-1">
-                <PixelIcon icon="coins" size={10} /> 100
+                <PixelIcon icon="coins" size={10} /> 1000
               </div>
             </button>
             <button
               onClick={() => handleSummon('x10')}
-              disabled={coins < 900 || animating}
+              disabled={coins < 9000 || animating}
               className="pixel-btn pixel-btn-gold flex-1 text-center disabled:opacity-40"
             >
               <div className="font-pixel text-[8px]">×10</div>
               <div className="font-pixel text-[9px] mt-0.5 flex items-center justify-center gap-1">
-                <PixelIcon icon="coins" size={10} /> 900
+                <PixelIcon icon="coins" size={10} /> 9000
               </div>
             </button>
             <button
               onClick={() => handleSummon('x100')}
-              disabled={coins < 8000 || animating}
+              disabled={coins < 80000 || animating}
               className="pixel-btn flex-1 text-center disabled:opacity-40"
               style={{ background: 'linear-gradient(135deg, hsl(var(--game-rarity-epic)), hsl(var(--game-rarity-legend)))' }}
             >
               <div className="font-pixel text-[8px] text-white">×100</div>
               <div className="font-pixel text-[9px] mt-0.5 flex items-center justify-center gap-1 text-white">
-                <PixelIcon icon="coins" size={10} /> 8000
+                <PixelIcon icon="coins" size={10} /> 80000
               </div>
             </button>
           </div>

@@ -1101,7 +1101,7 @@ const Index = () => {
   const [summonedBatch, setSummonedBatch] = useState<Hero[]>([]);
 
   const handleSummon = (type: 'single' | 'x10' | 'x100') => {
-    const cost = type === 'single' ? 100 : type === 'x10' ? 900 : 8000;
+    const cost = type === 'single' ? 1000 : type === 'x10' ? 9000 : 80000;
     if (player.bomberCoins < cost) return;
 
     const count = type === 'single' ? 1 : type === 'x10' ? 10 : 100;
