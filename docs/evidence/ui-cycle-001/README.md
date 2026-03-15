@@ -85,4 +85,5 @@ npm run ui:repair:dry -- --plan artifacts/ui-auto-repair/repair-plan.json --repo
 
 ## PR de reporting
 
-- PR ouverte après push de cette branche (voir lien dans le commentaire de #131).
+- #139 — https://github.com/thomasgermain93/bomberquest/pull/139
+- Commentaire de synthèse sur #131: https://github.com/thomasgermain93/bomberquest/issues/131#issuecomment-4064188964
