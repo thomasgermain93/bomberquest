@@ -8,7 +8,15 @@ export interface ChangelogEntry {
   }[];
 }
 
-export const CHANGELOG: ChangelogEntry[] = [
+export const CHANGELOG: ChangelogEntry[
+  {
+    version: 'Unreleased',
+    date: '2026-03-15',
+    title: 'Mises à jour récentes',
+    changes: [
+      { type: 'feature', description: 'Bug: page Changelog bloquée sur vUnreleased au lieu de versions taggées (#110)' },
+    ],
+  },] = [
   {
     version: '1.6.1',
     date: '2026-03-15',
