@@ -452,7 +452,8 @@ export function drawHeroSprite(
   const px = x * TILE;
   const py = y * TILE;
   const cx = px + TILE / 2;
-  const config = getHeroSpriteConfig(rarity);
+  const config = getHeroSpriteConfig(rarity, heroId);
+  const clanStyle = getClanStyle(heroId);
 
   // Bob animation
   const isMoving = state === 'moving' || state === 'retreating';
