@@ -87,6 +87,13 @@ export function generateHero(rarity: Rarity): Hero {
     bombCooldown: 0,
     stuckTimer: 0,
     icon,
+    progressionStats: {
+      chestsOpened: 0,
+      totalDamageDealt: 0,
+      battlesPlayed: 0,
+      victories: 0,
+      obtainedAt: Date.now(),
+    },
   };
 }
 
