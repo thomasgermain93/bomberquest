@@ -1,6 +1,6 @@
 # UI QA Radar report
 
-- Generated at: 2026-03-15T22:51:35.116Z
+- Generated at: 2026-03-15T23:38:37.182Z
 - Base URL: http://127.0.0.1:4173
 - Scenarios scanned: 7
 - Findings: 10 (P0=0, P1=10, P2=0)
