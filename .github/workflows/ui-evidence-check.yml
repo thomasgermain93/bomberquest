@@ -57,13 +57,13 @@ jobs:
         if: steps.check.outputs.is_ui == 'true' && (steps.check.outputs.has_evidence_section == 'false' || steps.check.outputs.has_evidence_paths == 'false' || steps.check.outputs.evidence_files_exist == 'false')
         run: |
           echo "❌ This PR is tagged UI/UX but is missing required evidence:"
-          if steps.check.outputs.has_evidence_section == 'false'
+          if [[ "${{ steps.check.outputs.has_evidence_section }}" == 'false' ]]; then
             echo "  - Missing '## Evidence' section in PR description"
           fi
-          if steps.check.outputs.has_evidence_paths == 'false'
+          if [[ "${{ steps.check.outputs.has_evidence_paths }}" == 'false' ]]; then
             echo "  - Missing 'Before:' and 'After:' paths in Evidence section"
           fi
-          if steps.check.outputs.evidence_files_exist == 'false'
+          if [[ "${{ steps.check.outputs.evidence_files_exist }}" == 'false' ]]; then
             echo "  - Missing screenshot files in docs/evidence/issue-${{ steps.check.outputs.issue_number }}/"
           fi
           echo ""
