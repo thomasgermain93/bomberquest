@@ -19,14 +19,14 @@ const scenarios = [
     label: 'Game: Fusion tab',
     path: '/game',
     expectedTexts: ['Fusion'],
-    actions: [{ type: 'clickText', text: 'Fusion' }],
+    actions: [{ type: 'clickTestId', testId: 'tab-fusion' }],
   },
   {
     key: 'game-heroes',
     label: 'Game: Heroes tab',
     path: '/game',
     expectedTexts: ['Héros'],
-    actions: [{ type: 'clickText', text: 'Héros' }],
+    actions: [{ type: 'clickTestId', testId: 'tab-heroes' }],
   },
   { key: 'bestiary', label: 'Wiki Bestiary', path: '/wiki/bestiaire', expectedTexts: ['Bestiaire'] },
   { key: 'summon', label: 'Summon / Fusion screen', path: '/summon', expectedTexts: ['Invocation', 'Invoquer'] },
@@ -35,7 +35,7 @@ const scenarios = [
     label: 'Summon: Fusion tab state',
     path: '/summon',
     expectedTexts: ['Fusion'],
-    actions: [{ type: 'clickText', text: 'Fusion' }],
+    actions: [{ type: 'clickTestId', testId: 'tab-summon' }],
   },
 ];
 
@@ -84,6 +84,15 @@ async function runAction(page, action) {
       return { ok: true };
     }
     return { ok: false, reason: `text '${action.text}' not found` };
+  }
+  if (action.type === 'clickTestId') {
+    const locator = page.getByTestId(action.testId);
+    if (await locator.count()) {
+      await locator.click({ timeout: 3000 }).catch(() => {});
+      await page.waitForTimeout(400);
+      return { ok: true };
+    }
+    return { ok: false, reason: `testId '${action.testId}' not found` };
   }
   return { ok: false, reason: `unknown action ${action.type}` };
 }

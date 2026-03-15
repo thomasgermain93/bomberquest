@@ -1439,16 +1439,17 @@ const Index = () => {
       {!isInBattle && (
         <nav className="sticky top-[49px] sm:top-[49px] z-30 bg-card/90 backdrop-blur border-b border-border px-1 sm:px-2 py-1.5 flex gap-1 overflow-x-auto">
           {[
-            { id: 'hub' as Screen, label: 'Hub', icon: <Home size={14} /> },
-            { id: 'story' as Screen, label: 'Histoire', icon: <BookOpen size={14} /> },
-            { id: 'heroes' as Screen, label: 'Héros', icon: <Users size={14} /> },
-            { id: 'codex' as Screen, label: 'Codex', icon: <BookOpen size={14} /> },
-            { id: 'fusion' as Screen, label: 'Fusion', icon: <Hammer size={14} /> },
-            { id: 'summon' as Screen, label: 'Invoquer', icon: <Sparkles size={14} /> },
-            { id: 'achievements' as Screen, label: 'Succès', icon: <Trophy size={14} /> },
+            { id: 'hub' as Screen, label: 'Hub', icon: <Home size={14} />, testId: 'tab-hub' },
+            { id: 'story' as Screen, label: 'Histoire', icon: <BookOpen size={14} />, testId: 'tab-story' },
+            { id: 'heroes' as Screen, label: 'Héros', icon: <Users size={14} />, testId: 'tab-heroes' },
+            { id: 'codex' as Screen, label: 'Codex', icon: <BookOpen size={14} />, testId: 'tab-codex' },
+            { id: 'fusion' as Screen, label: 'Fusion', icon: <Hammer size={14} />, testId: 'tab-fusion' },
+            { id: 'summon' as Screen, label: 'Invoquer', icon: <Sparkles size={14} />, testId: 'tab-summon' },
+            { id: 'achievements' as Screen, label: 'Succès', icon: <Trophy size={14} />, testId: 'tab-achievements' },
           ].map(tab => (
             <button
               key={tab.id}
+              data-testid={tab.testId}
               onClick={() => {
                 if (tab.id === 'summon') navigate('/summon');
                 else setScreen(tab.id);
