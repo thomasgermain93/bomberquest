@@ -14,6 +14,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: '2026-03-10',
     title: 'Mises à jour récentes',
     changes: [
+      { type: 'feature', description: 'Game Economy: augmenter les prix d’invocation x10 (#92)' },
       { type: 'feature', description: 'Feature: carte d\'identité héros (stats de progression uniques) (#55)' },
       { type: 'feature', description: 'fix: prevent NaN XP and restore XP gains for legacy heroes (#108)' },
       { type: 'feature', description: 'UI/UX Fusion: page dédiée avec enclume + 6 slots et sélection conditionnelle (#94)' },
