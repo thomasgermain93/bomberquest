@@ -1,0 +1,28 @@
+{
+  "generatedAt": "2026-03-15T23:38:51.986Z",
+  "radarMeta": {
+    "reportPath": null,
+    "reportGeneratedAt": "2026-03-15T23:38:37.182Z",
+    "issuesTotal": 0
+  },
+  "baselineMeta": null,
+  "guardrails": {
+    "maxFilesTouched": 4,
+    "maxChangedLines": 200,
+    "allowedFileRegex": "^src/.+\\.(tsx|ts|css)$",
+    "supportedFixKind": [
+      "replace_text"
+    ]
+  },
+  "summary": {
+    "autoFixable": 0,
+    "manualOnly": 0,
+    "bySeverity": {
+      "P0": 0,
+      "P1": 0,
+      "P2": 0
+    }
+  },
+  "actions": [],
+  "skipped": []
+}

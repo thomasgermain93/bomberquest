@@ -1,0 +1,26 @@
+{
+  "generatedAt": "2026-03-15T23:38:52.597Z",
+  "planPath": "artifacts/ui-auto-repair/repair-plan.json",
+  "guardrails": {
+    "maxFiles": 4,
+    "maxDiffLines": 200,
+    "triggered": null
+  },
+  "result": {
+    "dryRun": true,
+    "appliedCount": 0,
+    "skippedCount": 0,
+    "touchedFiles": [],
+    "build": {
+      "ok": null,
+      "status": null
+    },
+    "totalChangedLines": 4
+  },
+  "beforeAfter": {
+    "inputIssues": 0,
+    "autoFixCandidates": 0,
+    "appliedIssueIds": [],
+    "skipped": []
+  }
+}
