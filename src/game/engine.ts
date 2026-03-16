@@ -426,8 +426,17 @@ export function tickGame(state: GameState, deltaMs: number): GameState {
           eventLog.push(`Coffre ${chest.tier} ouvert! +${chest.reward} BC`);
           if (bomb.heroId && bomb.team === 'heroes') {
             const heroIdx = heroes.findIndex(h => h.id === bomb.heroId);
-            if (heroIdx >= 0 && heroes[heroIdx].level < getMaxLevel(heroes[heroIdx].rarity)) {
-              heroes[heroIdx] = addXp(heroes[heroIdx], XP_REWARDS.chestOpened);
+            if (heroIdx >= 0) {
+              if (heroes[heroIdx].level < getMaxLevel(heroes[heroIdx].rarity)) {
+                heroes[heroIdx] = addXp(heroes[heroIdx], XP_REWARDS.chestOpened);
+              }
+              heroes[heroIdx] = {
+                ...heroes[heroIdx],
+                progressionStats: {
+                  ...heroes[heroIdx].progressionStats,
+                  chestsOpened: heroes[heroIdx].progressionStats.chestsOpened + 1,
+                },
+              };
             }
           }
         }

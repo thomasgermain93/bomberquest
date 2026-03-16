@@ -495,7 +495,7 @@ const Index = () => {
             SFX.explosion();
             if (exp.team === 'heroes') {
               const heroPower = Math.max(...state.heroes.map(h => h.stats.pwr), 1);
-              const { enemies: updatedEnemies, kills } = damageEnemiesFromExplosion(enemies, exp.tiles, heroPower);
+              const { enemies: updatedEnemies, kills, totalDamage } = damageEnemiesFromExplosion(enemies, exp.tiles, heroPower, exp.heroId);
               enemies = updatedEnemies;
               enemiesKilled += kills;
               if (kills > 0) {
@@ -503,13 +503,39 @@ const Index = () => {
                 eventLog.push(`💥 ${kills} ennemi(s) éliminé(s)!`);
                 coinsEarned += kills * 10;
               }
+              if (totalDamage > 0 && exp.heroId) {
+                const heroIdx = heroes.findIndex(h => h.id === exp.heroId);
+                if (heroIdx >= 0) {
+                  heroes[heroIdx] = {
+                    ...heroes[heroIdx],
+                    progressionStats: {
+                      ...heroes[heroIdx].progressionStats,
+                      totalDamageDealt: heroes[heroIdx].progressionStats.totalDamageDealt + totalDamage,
+                    },
+                  };
+                }
+              }
 
               if (boss && boss.hp > 0) {
                 const prevHp = boss.hp;
-                boss = damageBossFromExplosion(boss, exp.tiles, heroPower + 1);
+                const bossResult = damageBossFromExplosion(boss, exp.tiles, heroPower + 1);
+                boss = bossResult.boss;
                 if (boss.hp < prevHp) {
                   SFX.bossHit();
+                  const bossDamage = bossResult.damageDealt;
                   eventLog.push(`💥 Boss touché! (${boss.hp}/${boss.maxHp} HP)`);
+                  if (bossDamage > 0 && exp.heroId) {
+                    const heroIdx = heroes.findIndex(h => h.id === exp.heroId);
+                    if (heroIdx >= 0) {
+                      heroes[heroIdx] = {
+                        ...heroes[heroIdx],
+                        progressionStats: {
+                          ...heroes[heroIdx].progressionStats,
+                          totalDamageDealt: heroes[heroIdx].progressionStats.totalDamageDealt + bossDamage,
+                        },
+                      };
+                    }
+                  }
                 }
                 if (boss.hp <= 0 && prevHp > 0) {
                   eventLog.push(`👑 BOSS VAINCU!`);
@@ -673,9 +699,17 @@ const Index = () => {
     const updatedHeroes = player.heroes.map(h => {
       const deployed = gameState.heroes.find(dh => dh.id === h.id);
       if (!deployed) return h;
-      return completed
+      const baseHero = completed
         ? { ...h, ...deployed, currentStamina: deployed.maxStamina }
         : { ...h, ...deployed };
+      return {
+        ...baseHero,
+        progressionStats: {
+          ...baseHero.progressionStats,
+          battlesPlayed: baseHero.progressionStats.battlesPlayed + 1,
+          victories: baseHero.progressionStats.victories + (completed ? 1 : 0),
+        },
+      };
     });
     
     const newMapsCompleted = player.mapsCompleted + (completed ? 1 : 0);
@@ -1054,9 +1088,17 @@ const Index = () => {
       const storyUpdatedHeroes = player.heroes.map(h => {
         const deployed = stateSnapshot.heroes.find(dh => dh.id === h.id);
         if (!deployed) return h;
-        return stateSnapshot.mapCompleted
+        const baseHero = stateSnapshot.mapCompleted
           ? { ...h, ...deployed, currentStamina: deployed.maxStamina }
           : { ...h, ...deployed };
+        return {
+          ...baseHero,
+          progressionStats: {
+            ...baseHero.progressionStats,
+            battlesPlayed: baseHero.progressionStats.battlesPlayed + 1,
+            victories: baseHero.progressionStats.victories + (stateSnapshot.mapCompleted ? 1 : 0),
+          },
+        };
       });
 
       if (newHero && rewardedRarity) {
