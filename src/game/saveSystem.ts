@@ -11,7 +11,7 @@ export function getDefaultPlayerData(): PlayerData {
   starterHero.icon = 'bomb';
 
   return {
-    bomberCoins: 200,
+    bomberCoins: 2000,
     heroes: [starterHero],
     accountLevel: 1,
     xp: 0,
