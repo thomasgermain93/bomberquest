@@ -309,37 +309,42 @@ export function tickBoss(
 export function damageEnemiesFromExplosion(
   enemies: Enemy[],
   explosionTiles: { x: number; y: number }[],
-  power: number
-): { enemies: Enemy[]; kills: number } {
+  power: number,
+  heroId?: string
+): { enemies: Enemy[]; kills: number; totalDamage: number } {
   let kills = 0;
+  let totalDamage = 0;
   const updated = enemies.map(e => {
     const ex = Math.round(e.position.x);
     const ey = Math.round(e.position.y);
     if (explosionTiles.some(t => t.x === ex && t.y === ey)) {
+      const damage = Math.min(e.hp, power);
+      totalDamage += damage;
       const ne = { ...e, hp: e.hp - power, stunTimer: 0.5 };
       if (ne.hp <= 0) kills++;
       return ne;
     }
     return e;
   });
-  return { enemies: updated, kills };
+  return { enemies: updated, kills, totalDamage };
 }
 
 export function damageBossFromExplosion(
   boss: Boss,
   explosionTiles: { x: number; y: number }[],
   power: number
-): Boss {
-  if (boss.hp <= 0) return boss;
+): { boss: Boss; damageDealt: number } {
+  if (boss.hp <= 0) return { boss, damageDealt: 0 };
   const bx = Math.round(boss.position.x);
   const by = Math.round(boss.position.y);
   if (explosionTiles.some(t => t.x === bx && t.y === by)) {
     if (boss.invincible) {
-      return { ...boss, stunTimer: 0.2 }; // visual feedback only
+      return { boss: { ...boss, stunTimer: 0.2 }, damageDealt: 0 }; // visual feedback only
     }
-    return { ...boss, hp: Math.max(0, boss.hp - power), stunTimer: 0.8 };
+    const damageDealt = Math.min(boss.hp, power);
+    return { boss: { ...boss, hp: Math.max(0, boss.hp - power), stunTimer: 0.8 }, damageDealt };
   }
-  return boss;
+  return { boss, damageDealt: 0 };
 }
 
 export function checkEnemyHeroCollision(
