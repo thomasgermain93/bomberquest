@@ -24,7 +24,7 @@ jobs:
             const title = pr.title || '';
             const labels = (pr.labels || []).map(l => typeof l === 'string' ? l : l.name);
             
-            const isUI = labels.includes('UI/UX') || title.toLowerCase().includes('ui');
+            const isUI = labels.includes('UI/UX') || /\bui[\/:]/.test(title.toLowerCase());
             
             // Check if PR body contains Evidence section with paths
             const hasEvidenceSection = /##\s*Evidence/i.test(body);

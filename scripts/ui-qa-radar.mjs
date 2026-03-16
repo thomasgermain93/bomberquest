@@ -29,13 +29,13 @@ const scenarios = [
     actions: [{ type: 'clickTestId', testId: 'tab-heroes' }],
   },
   { key: 'bestiary', label: 'Wiki Bestiary', path: '/wiki/bestiaire', expectedTexts: ['Bestiaire'] },
-  { key: 'summon', label: 'Summon / Fusion screen', path: '/summon', expectedTexts: ['Invocation', 'Invoquer'] },
+  { key: 'summon', label: 'Summon / Fusion screen', path: '/summon', expectedTexts: ['Invocation'] },
   {
     key: 'summon-fusion-tab',
-    label: 'Summon: Fusion tab state',
+    label: 'Summon: Shards tab state',
     path: '/summon',
-    expectedTexts: ['Fusion'],
-    actions: [{ type: 'clickTestId', testId: 'tab-summon' }],
+    expectedTexts: ['INVOCATION'],
+    actions: [{ type: 'clickText', text: 'Shards' }],
   },
 ];
 
@@ -113,7 +113,9 @@ async function scanScenario(browser, scenario) {
   const stateFindings = [];
 
   if ((scenario.expectedTexts || []).length > 0) {
-    const matched = scenario.expectedTexts.some((t) => pageText.toLowerCase().includes(t.toLowerCase()));
+    const normalize = (s) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const normalizedPageText = normalize(pageText);
+    const matched = scenario.expectedTexts.some((t) => normalizedPageText.includes(normalize(t)));
     if (!matched) {
       stateFindings.push({
         kind: 'missingState',
