@@ -14,6 +14,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: '2026-03-15',
     title: 'Mises à jour récentes',
     changes: [
+      { type: 'ui', description: 'UI Auto-Repair: aligner le contrat radar→plan (+support --report en dry-run) (#138)' },
       { type: 'ui', description: 'UI Radar: fiabiliser les actions de scénario (remplacer clickText fragile) (#137)' },
       { type: 'feature', description: 'chore: report UI cycle 001 (radar + repair diagnostics) (#139)' },
       { type: 'feature', description: 'Feature: UI Auto-Repair Loop (issues -> PR de fix) (#131)' },
