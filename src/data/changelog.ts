@@ -14,6 +14,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: '2026-03-15',
     title: 'Mises à jour récentes',
     changes: [
+      { type: 'feature', description: 'fix(ui-radar): reduce false positives missingState (issue #136) (#172)' },
       { type: 'feature', description: 'feat(hero-identity): carte d\'identité héros avec stats de progression (#171)' },
       { type: 'ui', description: 'UI Auto-Repair: aligner le contrat radar→plan (+support --report en dry-run) (#138)' },
       { type: 'ui', description: 'UI Radar: fiabiliser les actions de scénario (remplacer clickText fragile) (#137)' },
