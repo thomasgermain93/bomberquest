@@ -21,6 +21,7 @@ import { StoryProgress, StoryStage, BOSS_LEVEL_BY_TYPE, BOSS_RARITY_REWARD, Boss
 import { spawnEnemy, spawnBoss, tickEnemies, tickBoss, damageEnemiesFromExplosion, damageBossFromExplosion, checkEnemyHeroCollision, checkBossHeroCollision } from '@/game/enemyAI';
 import { STORY_REGIONS } from '@/game/storyData';
 import { getExplosionTiles } from '@/game/engine';
+import { generateShardRewards, applyShardRewards, ShardReward, getMapInfoForTier } from '@/game/shardRewardSystem';
 import DailyQuests from '@/components/DailyQuests';
 import Achievements from '@/components/Achievements';
 import PixelIcon from '@/components/PixelIcon';
@@ -89,6 +90,7 @@ const Index = () => {
   const [autoFarm, setAutoFarm] = useState(false);
   const [isMerging, setIsMerging] = useState(false);
   const [farmStats, setFarmStats] = useState({ runs: 0, totalCoins: 0 });
+  const [lastShardRewards, setLastShardRewards] = useState<ShardReward[]>([]);
   const [storyRegionIdx, setStoryRegionIdx] = useState(0);
   
   // Fusion UI state
@@ -726,6 +728,14 @@ const Index = () => {
     const { newState: chestState, unlocked: chestUnlocks } = trackChestsOpened(player.achievements, totalChestsOpened);
     Object.assign(newAchievements, chestState);
     newAchievementUnlocks.push(...chestUnlocks);
+
+    let newShards = player.shards;
+    let currentShardRewards: ShardReward[] = [];
+    if (completed && !gameState.isStoryMode) {
+      currentShardRewards = generateShardRewards(selectedMap);
+      newShards = applyShardRewards(player.shards, currentShardRewards);
+      setLastShardRewards(currentShardRewards);
+    }
     
     setPlayer(prev => ({
       ...prev,
@@ -734,6 +744,7 @@ const Index = () => {
       xp: prev.xp + earned,
       heroes: updatedHeroes,
       achievements: newAchievements,
+      shards: newShards,
     }));
     
     for (const achievement of newAchievementUnlocks) {
@@ -1937,6 +1948,23 @@ const Index = () => {
                 <p className="font-pixel text-lg sm:text-xl text-game-gold mt-2 flex items-center justify-center gap-2">
                   <Coins size={20} /> +{gameState.coinsEarned + (currentStoryStage?.reward || 0)} BC
                 </p>
+                {!gameState.isStoryMode && lastShardRewards.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-2 justify-center">
+                    {lastShardRewards.map((reward, idx) => (
+                      <div
+                        key={idx}
+                        className={`font-pixel text-xs px-2 py-1 rounded flex items-center gap-1 ${
+                          reward.rarity === 'common' ? 'bg-gray-600 text-gray-200' :
+                          reward.rarity === 'rare' ? 'bg-blue-600 text-blue-200' :
+                          reward.rarity === 'epic' ? 'bg-purple-600 text-purple-200' :
+                          'bg-orange-600 text-orange-200'
+                        }`}
+                      >
+                        <Sparkles size={12} /> +{reward.quantity} {RARITY_CONFIG[reward.rarity].label}
+                      </div>
+                    ))}
+                  </div>
+                )}
                 {gameState.isStoryMode && (
                   <p className="text-xs text-muted-foreground mt-1">
                     +{currentStoryStage?.xpReward || 0} XP • {gameState.enemiesKilled || 0} ennemis éliminés
