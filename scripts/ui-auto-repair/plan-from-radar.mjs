@@ -53,12 +53,18 @@ function loadJson(file) {
   return JSON.parse(fs.readFileSync(file, 'utf8'));
 }
 
+function getRadarItems(radarReport) {
+  if (Array.isArray(radarReport?.findings)) return radarReport.findings;
+  if (Array.isArray(radarReport?.issues)) return radarReport.issues;
+  return [];
+}
+
 function buildPlan(radarReport, baselineReport) {
-  const issues = Array.isArray(radarReport?.issues) ? radarReport.issues : [];
+  const items = getRadarItems(radarReport);
   const actions = [];
   const skipped = [];
 
-  for (const issue of issues) {
+  for (const issue of items) {
     const severity = toSeverity(issue.severity || issue.priority);
     const eligibility = isAutoFixable(issue);
 
@@ -91,7 +97,7 @@ function buildPlan(radarReport, baselineReport) {
     radarMeta: {
       reportPath: radarReport?.meta?.reportPath || null,
       reportGeneratedAt: radarReport?.generatedAt || null,
-      issuesTotal: issues.length,
+      issuesTotal: items.length,
     },
     baselineMeta: baselineReport
       ? {

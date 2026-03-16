@@ -13,7 +13,7 @@ MVP pragmatique pour transformer un rapport **UI radar** (JSON) en plan de corre
 ```json
 {
   "generatedAt": "2026-03-15T22:00:00Z",
-  "issues": [
+  "findings": [
     {
       "id": 201,
       "title": "CTA mobile tronqué",
@@ -30,13 +30,15 @@ MVP pragmatique pour transformer un rapport **UI radar** (JSON) en plan de corre
 }
 ```
 
+> Le planner lit en priorité `findings` (contrat radar courant) et reste compatible avec `issues` (ancien format).
+>
 > Le loop n'applique **pas** de patch libre: uniquement `replace_text` dans `src/**/*.ts(x)|css`.
 
 ## Scripts npm
 
 - `npm run ui:repair:plan -- --radar <file> [--baseline <file>] [--out <file>]`
-- `npm run ui:repair:run -- --plan <file> [--summary <file>] [--max-files 4] [--max-diff-lines 200]`
-- `npm run ui:repair:dry -- --plan <file>`
+- `npm run ui:repair:run -- --plan <file> [--summary <file>|--report <file>] [--max-files 4] [--max-diff-lines 200]`
+- `npm run ui:repair:dry -- --plan <file> [--report <file>]`
 
 ## Exécution locale
 

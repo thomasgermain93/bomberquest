@@ -67,7 +67,7 @@ function rollbackFiles(files) {
 function main() {
   const args = parseArgs(process.argv);
   const planPath = args.plan || 'artifacts/ui-auto-repair/repair-plan.json';
-  const summaryPath = args.summary || 'artifacts/ui-auto-repair/repair-summary.json';
+  const summaryPath = args.report || args.summary || 'artifacts/ui-auto-repair/repair-summary.json';
   const dryRun = String(args['dry-run'] || 'false') === 'true';
   const maxFiles = Number(args['max-files'] || 4);
   const maxDiffLines = Number(args['max-diff-lines'] || 200);
