@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { pixelFade } from '@/lib/animations';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCloudSave } from '@/hooks/useCloudSave';
@@ -37,6 +38,8 @@ import HeroAvatar from '@/components/HeroAvatar';
 import SlimHeader from '@/components/SlimHeader';
 import MainNav from '@/components/MainNav';
 import TeamPresets, { TeamPreset } from '@/components/TeamPresets';
+import PixelLoader from '@/components/PixelLoader';
+import EmptyState from '@/components/EmptyState';
 import { Users, Sparkles, Swords, Map as MapIcon, Trophy, Coins, Play, Pause, DoorOpen, Check, Scroll, FastForward, BookOpen, Shield, Skull, Lock as LockIcon, Hammer, ArrowDown, Gem, Filter, ChevronDown, Zap } from 'lucide-react';
 import PityTracker from '@/components/PityTracker';
 import VictoryOverlay from '@/components/VictoryOverlay';
@@ -1648,8 +1651,7 @@ const Index = () => {
   if (isCloudLoading) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
-        <div className="font-pixel text-primary text-xs animate-pulse tracking-widest">CHARGEMENT...</div>
-        <div className="font-pixel text-muted-foreground text-[10px]">Synchronisation du cloud</div>
+        <PixelLoader size="lg" label="Synchronisation du cloud" color="primary" />
       </div>
     );
   }
@@ -1874,7 +1876,7 @@ const Index = () => {
 
             {/* Tab Collection */}
             {heroesTab === 'collection' && (
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+              <motion.div variants={pixelFade} initial="hidden" animate="visible" className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h2 className="font-pixel text-xs text-foreground flex items-center gap-2">
                     <Users size={16} /> TOUS LES HÉROS ({player.heroes.length})
@@ -1992,16 +1994,16 @@ const Index = () => {
                 </div>
 
                 {filteredHeroes.length === 0 ? (
-                  <div className="pixel-border bg-card p-6 text-center space-y-3">
-                    <p className="font-pixel text-[10px] text-foreground">Aucun héros ne correspond aux filtres.</p>
-                    <p className="text-[8px] text-muted-foreground">Essayez d'élargir un critère ou réinitialisez les filtres.</p>
-                    <button
-                      onClick={() => setHeroFilters(DEFAULT_HERO_FILTERS)}
-                      className="pixel-btn font-pixel text-[8px] min-h-[40px] px-4"
-                    >
-                      Voir tous les héros
-                    </button>
-                  </div>
+                  <EmptyState
+                    icon={Filter}
+                    title="Aucun héros ne correspond"
+                    description="Essayez d'élargir un critère ou réinitialisez les filtres."
+                    action={{
+                      label: 'Réinitialiser les filtres',
+                      onClick: () => setHeroFilters(DEFAULT_HERO_FILTERS),
+                      variant: 'secondary'
+                    }}
+                  />
                 ) : (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                     {filteredHeroes.map(hero => (
@@ -2014,7 +2016,7 @@ const Index = () => {
 
             {/* Tab Codex */}
             {heroesTab === 'codex' && (
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+              <motion.div variants={pixelFade} initial="hidden" animate="visible" className="space-y-4">
                 <div className="pixel-border bg-card p-4 space-y-2">
                   <div className="flex items-center justify-between gap-3">
                     <p className="font-pixel text-[9px] text-foreground flex items-center gap-2">
@@ -2024,9 +2026,9 @@ const Index = () => {
                       {codexUnlockedCount}/{codexTotalCount}
                     </p>
                   </div>
-                  <div className="w-full h-2.5 bg-muted rounded-full overflow-hidden">
+                  <div className="w-full h-2.5 bg-muted overflow-hidden">
                     <motion.div
-                      className="h-full bg-gradient-to-r from-primary to-game-gold rounded-full"
+                      className="h-full bg-gradient-to-r from-primary to-game-gold"
                       initial={{ width: 0 }}
                       animate={{ width: `${Math.max(2, Math.round((codexUnlockedCount / codexTotalCount) * 100))}%` }}
                       transition={{ duration: 0.4 }}
@@ -2182,7 +2184,7 @@ const Index = () => {
 
             {/* Sélecteur carte + équipe (hors bataille, onglet chasse au trésor) */}
             {!isInBattle && combatTab === 'treasure' && (
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+              <motion.div variants={pixelFade} initial="hidden" animate="visible" className="space-y-6">
 
                 {/* Treasure Hunt Launcher */}
                 <div className="pixel-border bg-card p-4">
@@ -2457,7 +2459,7 @@ const Index = () => {
                         {gameState.boss.hp}/{gameState.boss.maxHp} HP
                       </span>
                     </div>
-                    <div className="w-full h-3 bg-muted rounded-full overflow-hidden">
+                    <div className="w-full h-3 bg-muted overflow-hidden">
                       <div
                         className="h-full bg-destructive transition-all duration-300"
                         style={{ width: `${(gameState.boss.hp / gameState.boss.maxHp) * 100}%` }}
@@ -2639,7 +2641,7 @@ const Index = () => {
             />
 
             {/* Achievements */}
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+            <motion.div variants={pixelFade} initial="hidden" animate="visible" className="space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="font-pixel text-xs text-foreground flex items-center gap-2">
                   <Trophy size={16} /> SUCCÈS
@@ -2719,7 +2721,7 @@ const Index = () => {
 
             {/* Fusion */}
             {forgeTab === 'fusion' && (
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+              <motion.div variants={pixelFade} initial="hidden" animate="visible" className="space-y-4">
                 {/* Recipe selector */}
                 <div className="pixel-border bg-card p-4">
                   <h3 className="font-pixel text-[9px] text-foreground mb-3 flex items-center gap-2">
@@ -2860,7 +2862,7 @@ const Index = () => {
 
             {/* Recyclage */}
             {forgeTab === 'recycle' && (
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+              <motion.div variants={pixelFade} initial="hidden" animate="visible" className="space-y-4">
                 <div className="pixel-border bg-card p-3 sm:p-4">
                   <RecyclePanel
                     heroes={player.heroes}

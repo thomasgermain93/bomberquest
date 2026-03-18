@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Hero, PlayerData } from '@/game/types';
 import { StoryProgress } from '@/game/storyTypes';
@@ -59,6 +59,7 @@ function rowToHero(row: PlayerHeroRow): Hero {
 export function useCloudSave(userId: string | undefined, canWriteCloud: boolean) {
   const saveTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const heroSyncTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
     return () => {
@@ -73,6 +74,7 @@ export function useCloudSave(userId: string | undefined, canWriteCloud: boolean)
     dailyQuests: DailyQuestData;
   } | null> => {
     if (!userId) return null;
+    setIsSyncing(true);
 
     // Load stats and heroes in parallel
     const [savesResult, heroesResult] = await Promise.all([
@@ -122,6 +124,7 @@ export function useCloudSave(userId: string | undefined, canWriteCloud: boolean)
       migratedFromLegacy: heroesResult.data?.length === 0 && heroes.length > 0,
     });
 
+    setIsSyncing(false);
     return {
       playerData,
       storyProgress: saveData.story_progress as unknown as StoryProgress,
@@ -131,8 +134,13 @@ export function useCloudSave(userId: string | undefined, canWriteCloud: boolean)
 
   const saveHeroesToCloud = useCallback(async (heroes: Hero[]) => {
     if (!userId || !canWriteCloud || heroes.length === 0) return;
-    const rows = heroes.map(h => heroToRow(h, userId));
-    await supabase.from('player_heroes').upsert(rows, { onConflict: 'id,user_id' });
+    setIsSyncing(true);
+    try {
+      const rows = heroes.map(h => heroToRow(h, userId));
+      await supabase.from('player_heroes').upsert(rows, { onConflict: 'id,user_id' });
+    } finally {
+      setIsSyncing(false);
+    }
   }, [userId, canWriteCloud]);
 
   const removeHeroesFromCloud = useCallback(async (ids: string[]) => {
@@ -148,16 +156,21 @@ export function useCloudSave(userId: string | undefined, canWriteCloud: boolean)
     if (!userId || !canWriteCloud) return;
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(async () => {
-      // Strip heroes from save_data — they live in player_heroes
-      const { heroes: _, ...statsOnly } = playerData;
-      await supabase
-        .from('player_saves')
-        .upsert({
-          user_id: userId,
-          save_data: statsOnly as any,
-          story_progress: storyProgress as any,
-          daily_quests: dailyQuests as any,
-        }, { onConflict: 'user_id' });
+      setIsSyncing(true);
+      try {
+        // Strip heroes from save_data — they live in player_heroes
+        const { heroes: _, ...statsOnly } = playerData;
+        await supabase
+          .from('player_saves')
+          .upsert({
+            user_id: userId,
+            save_data: statsOnly as any,
+            story_progress: storyProgress as any,
+            daily_quests: dailyQuests as any,
+          }, { onConflict: 'user_id' });
+      } finally {
+        setIsSyncing(false);
+      }
     }, 3000);
   }, [userId, canWriteCloud]);
 
@@ -166,31 +179,36 @@ export function useCloudSave(userId: string | undefined, canWriteCloud: boolean)
     if (heroSyncTimerRef.current) clearTimeout(heroSyncTimerRef.current);
 
     heroSyncTimerRef.current = setTimeout(async () => {
-      const rows = heroes.map(h => heroToRow(h, userId));
+      setIsSyncing(true);
+      try {
+        const rows = heroes.map(h => heroToRow(h, userId));
 
-      if (rows.length > 0) {
-        await supabase.from('player_heroes').upsert(rows, { onConflict: 'id,user_id' });
-      }
+        if (rows.length > 0) {
+          await supabase.from('player_heroes').upsert(rows, { onConflict: 'id,user_id' });
+        }
 
-      const { data: existingRows, error } = await supabase
-        .from('player_heroes')
-        .select('id')
-        .eq('user_id', userId);
+        const { data: existingRows, error } = await supabase
+          .from('player_heroes')
+          .select('id')
+          .eq('user_id', userId);
 
-      if (error) {
-        throw new Error(`player_heroes_sync_failed:${error.message}`);
-      }
+        if (error) {
+          throw new Error(`player_heroes_sync_failed:${error.message}`);
+        }
 
-      const keepIds = new Set(heroes.map(h => h.id));
-      const idsToDelete = (existingRows || [])
-        .map((row: any) => row.id as string)
-        .filter(id => !keepIds.has(id));
+        const keepIds = new Set(heroes.map(h => h.id));
+        const idsToDelete = (existingRows || [])
+          .map((row: any) => row.id as string)
+          .filter(id => !keepIds.has(id));
 
-      if (idsToDelete.length > 0) {
-        await supabase.from('player_heroes').delete().eq('user_id', userId).in('id', idsToDelete);
+        if (idsToDelete.length > 0) {
+          await supabase.from('player_heroes').delete().eq('user_id', userId).in('id', idsToDelete);
+        }
+      } finally {
+        setIsSyncing(false);
       }
     }, 1200);
   }, [userId, canWriteCloud]);
 
-  return { loadFromCloud, saveHeroesToCloud, removeHeroesFromCloud, saveStatsToCloud, syncHeroesSnapshotToCloud };
+  return { loadFromCloud, saveHeroesToCloud, removeHeroesFromCloud, saveStatsToCloud, syncHeroesSnapshotToCloud, isSyncing };
 }

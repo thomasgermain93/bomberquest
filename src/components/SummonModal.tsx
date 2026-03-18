@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import PixelIcon from '@/components/PixelIcon';
 import HeroAvatar from '@/components/HeroAvatar';
+import PixelLoader from '@/components/PixelLoader';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Hero, RARITY_CONFIG } from '@/game/types';
 import { ChevronLeft, ChevronRight, Sparkles, Star } from 'lucide-react';
@@ -229,13 +230,7 @@ const SummonModal: React.FC<SummonModalProps> = ({ isOpen, onClose, onSummon, co
                     </motion.div>
                   ))}
                 </div>
-                <motion.p 
-                  className="font-pixel text-[8px] text-primary"
-                  animate={{ opacity: [0.5, 1, 0.5] }}
-                  transition={{ duration: 1, repeat: Infinity }}
-                >
-                  Invocation en cours...
-                </motion.p>
+                <PixelLoader size="md" label="Invocation en cours..." color="primary" />
                 <div className="flex gap-1 mt-1">
                   {[...Array(5)].map((_, i) => (
                     <motion.div

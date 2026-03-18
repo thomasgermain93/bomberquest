@@ -46,12 +46,12 @@ export function BottomNav({ screen, onNavigate }: BottomNavProps) {
                 {isActive && (
                   <motion.span
                     layoutId="nav-indicator"
-                    className="absolute inset-x-1 top-1/2 -translate-y-1/2 h-10 rounded-full bg-primary/10"
+                    className="absolute inset-x-1 top-1/2 -translate-y-1/2 h-10 bg-primary/10"
                     transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                   />
                 )}
                 <Icon size={20} className="relative z-10" />
-                <span className="relative z-10 text-[10px] font-medium leading-none">
+                <span className="relative z-10 font-pixel text-[7px] leading-none">
                   {label}
                 </span>
               </button>

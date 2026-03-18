@@ -2,6 +2,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Book, Zap, Trophy, RefreshCw, BookOpen, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { overlayBackdrop, pixelSlide } from '@/lib/animations';
 
 interface MoreDrawerProps {
   open: boolean;
@@ -36,10 +37,10 @@ export function MoreDrawer({
           {/* Overlay semi-transparent */}
           <motion.div
             key="more-drawer-overlay"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            variants={overlayBackdrop}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
             className="fixed inset-0 z-50 bg-black/50"
             onClick={onClose}
           />
@@ -47,10 +48,10 @@ export function MoreDrawer({
           {/* Drawer depuis la droite */}
           <motion.aside
             key="more-drawer-panel"
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            transition={{ type: 'spring', stiffness: 350, damping: 35 }}
+            variants={pixelSlide('right')}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
             className={cn(
               'fixed right-0 top-0 bottom-0 z-50',
               'w-64 bg-card border-l border-border',
