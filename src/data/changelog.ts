@@ -14,6 +14,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: '2026-03-15',
     title: 'Mises à jour récentes',
     changes: [
+      { type: 'feature', description: 'ui: audit UI/UX — 42 violations (animations, UX laws, typography, audio) (#183)' },
       { type: 'feature', description: 'ci: GitHub Actions workflow + TypeScript strict (Issue #3) (#182)' },
       { type: 'feature', description: 'refactor: code quality & DX improvements (Issue #2) (#181)' },
       { type: 'feature', description: 'cleanup: dead code & unused dependencies (Issue #1) (#180)' },
