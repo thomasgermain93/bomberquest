@@ -1,5 +1,5 @@
 import React from 'react';
-import { Coins, Gem } from 'lucide-react';
+import { Coins, Gem, Crown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PixelIcon } from '@/components/PixelIcon';
 
@@ -43,11 +43,15 @@ export function SlimHeader({
           )}
         </div>
 
-        {/* Droite : ressources */}
-        <div className="flex items-center gap-3 shrink-0">
+        {/* Droite : niveau + ressources */}
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1 text-xs font-medium text-foreground">
+            <Crown size={13} className="text-primary" />
+            <span className="text-[11px]">{accountLevel}</span>
+          </div>
           <div className="flex items-center gap-1 text-xs font-medium text-foreground">
             <Coins size={14} className="text-yellow-400" />
-            <span>BC: {bomberCoins.toLocaleString('fr-FR')}</span>
+            <span>{bomberCoins.toLocaleString('fr-FR')}</span>
           </div>
           <div className="flex items-center gap-1 text-xs font-medium text-foreground">
             <Gem size={14} className="text-blue-400" />

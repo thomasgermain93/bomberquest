@@ -3,9 +3,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Home, Swords, Users, Sparkles, MoreHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+type BottomNavScreen = 'hub' | 'combat' | 'heroes' | 'summon' | 'more';
+
 interface BottomNavProps {
-  screen: string;
-  onNavigate: (screen: string) => void;
+  screen: BottomNavScreen | string; // string pour les sous-écrans mappés (codex → more, etc.)
+  onNavigate: (screen: BottomNavScreen) => void;
 }
 
 const NAV_ITEMS = [
@@ -22,7 +24,7 @@ export function BottomNav({ screen, onNavigate }: BottomNavProps) {
       {/* Mobile : barre sticky en bas */}
       <nav
         className={cn(
-          'fixed bottom-0 left-0 right-0 z-50',
+          'fixed bottom-0 left-0 right-0 z-40',
           'md:hidden',
           'h-16 bg-card/95 backdrop-blur border-t border-border',
           'pb-[env(safe-area-inset-bottom)]',
@@ -62,7 +64,7 @@ export function BottomNav({ screen, onNavigate }: BottomNavProps) {
       <nav
         className={cn(
           'hidden md:flex',
-          'fixed left-0 top-0 bottom-0 z-50',
+          'fixed left-0 top-0 bottom-0 z-40',
           'w-16 flex-col items-center py-4 gap-1',
           'bg-card/95 backdrop-blur border-r border-border',
         )}
