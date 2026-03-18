@@ -1,4 +1,4 @@
-import { Hero, Rarity, RARITY_CONFIG, HERO_NAMES, HERO_ICON_KEYS, Skill } from './types';
+import { Hero, Rarity, RARITY_CONFIG, HERO_NAMES, HERO_ICON_KEYS, Skill, HERO_VISUALS, HeroFamilyId } from './types';
 
 let heroIdCounter = Date.now();
 
@@ -46,6 +46,7 @@ export function generateHero(rarity: Rarity): Hero {
   const config = RARITY_CONFIG[rarity];
   const name = HERO_NAMES[Math.floor(Math.random() * HERO_NAMES.length)];
   const icon = HERO_ICON_KEYS[Math.floor(Math.random() * HERO_ICON_KEYS.length)];
+  const family = (HERO_VISUALS[name.toLowerCase()]?.family || undefined) as HeroFamilyId | undefined;
 
   // Random variance ±10%
   const vary = (base: number) => Math.max(1, Math.round(base * (0.9 + Math.random() * 0.2)));
@@ -87,6 +88,7 @@ export function generateHero(rarity: Rarity): Hero {
     bombCooldown: 0,
     stuckTimer: 0,
     icon,
+    family,
     progressionStats: {
       chestsOpened: 0,
       totalDamageDealt: 0,
