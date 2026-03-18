@@ -22,12 +22,14 @@ import { spawnEnemy, spawnBoss, tickEnemies, tickBoss, damageEnemiesFromExplosio
 import { STORY_REGIONS } from '@/game/storyData';
 import { getExplosionTiles } from '@/game/engine';
 import { generateShardRewards, applyShardRewards, ShardReward, generateUniversalShardReward } from '@/game/shardRewardSystem';
+import { recycleHeroes } from '@/game/recycleSystem';
+import RecyclePanel from '@/components/RecyclePanel';
 import DailyQuests from '@/components/DailyQuests';
 import Achievements from '@/components/Achievements';
 import XpBar from '@/components/XpBar';
 import PixelIcon from '@/components/PixelIcon';
 import HeroAvatar from '@/components/HeroAvatar';
-import { Home, Users, Sparkles, Swords, Map, Trophy, Coins, Star, ChevronLeft, Play, Pause, DoorOpen, Check, Scroll, FastForward, BookOpen, Shield, Skull, Bomb, Lock as LockIcon, Volume2, VolumeX, User, Hammer, ArrowDown } from 'lucide-react';
+import { Home, Users, Sparkles, Swords, Map, Trophy, Coins, Star, ChevronLeft, Play, Pause, DoorOpen, Check, Scroll, FastForward, BookOpen, Shield, Skull, Bomb, Lock as LockIcon, Volume2, VolumeX, User, Hammer, ArrowDown, Trash2 } from 'lucide-react';
 import { SFX, isMuted, setMuted } from '@/game/sfx';
 import { toast } from '@/hooks/use-toast';
 
@@ -109,6 +111,7 @@ const Index = () => {
   const [fusionSlots, setFusionSlots] = useState<(Hero | null)[]>([null, null]);
   const [heroPickerOpen, setHeroPickerOpen] = useState(false);
   const [activeSlotIdx, setActiveSlotIdx] = useState<number | null>(null);
+  const [showRecycleMode, setShowRecycleMode] = useState(false);
   const [heroFilters, setHeroFilters] = useState<HeroFilters>(() => {
     if (typeof window === 'undefined') return DEFAULT_HERO_FILTERS;
     try {
@@ -1378,6 +1381,27 @@ const Index = () => {
     }
   };
 
+  const handleRecycle = (ids: string[], shardsGained: number) => {
+    const { remainingHeroes } = recycleHeroes(player.heroes, ids);
+    setPlayer(prev => ({
+      ...prev,
+      heroes: remainingHeroes,
+      universalShards: prev.universalShards + shardsGained,
+    }));
+    if (canWriteCloud) {
+      saveHeroesToCloud(remainingHeroes);
+      removeHeroesFromCloud(ids);
+    }
+    toast({ title: `♻️ Recyclage!`, description: `${ids.length} héros recyclés → +${shardsGained} 💎` });
+  };
+
+  const handleToggleLock = (heroId: string) => {
+    setPlayer(prev => ({
+      ...prev,
+      heroes: prev.heroes.map(h => h.id === heroId ? { ...h, isLocked: !h.isLocked } : h),
+    }));
+  };
+
   const upgradeHeroData = upgradeHeroId ? player.heroes.find(h => h.id === upgradeHeroId) ?? null : null;
 
   const heroRarityOrder: Rarity[] = ['common', 'rare', 'super-rare', 'epic', 'legend', 'super-legend'];
@@ -2130,6 +2154,28 @@ const Index = () => {
                 {filteredHeroes.length} héros affichés sur {player.heroes.length}
               </p>
             </div>
+
+            {/* Toggle mode recyclage */}
+            <div className="flex justify-end mb-2">
+              <button
+                className={`pixel-btn font-pixel text-[8px] flex items-center gap-1 ${showRecycleMode ? 'pixel-btn-primary' : 'pixel-btn-secondary'}`}
+                onClick={() => setShowRecycleMode(r => !r)}
+              >
+                <Trash2 size={12} />
+                {showRecycleMode ? 'Terminer recyclage' : 'Recycler des héros'}
+              </button>
+            </div>
+
+            {showRecycleMode && (
+              <div className="pixel-border bg-card p-3 sm:p-4">
+                <RecyclePanel
+                  heroes={player.heroes}
+                  universalShards={player.universalShards}
+                  onRecycle={handleRecycle}
+                  onToggleLock={handleToggleLock}
+                />
+              </div>
+            )}
 
             {filteredHeroes.length === 0 ? (
               <div className="pixel-border bg-card p-6 text-center space-y-3">
