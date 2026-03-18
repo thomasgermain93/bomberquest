@@ -4,6 +4,7 @@ import { DailyQuestData, ALL_CLAIMED_BONUS, ALL_CLAIMED_XP_BONUS } from '@/game/
 import { Coins, Gift, Check, Clock, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import DailyResetTimer from '@/components/DailyResetTimer';
 
 interface DailyQuestsProps {
   quests: DailyQuestData;
@@ -21,9 +22,12 @@ const DailyQuests: React.FC<DailyQuestsProps> = ({ quests, onClaim, onClaimBonus
         <h3 className="font-pixel text-xs text-foreground flex items-center gap-2">
           <Clock size={16} className="text-primary" /> QUÊTES DU JOUR
         </h3>
-        <span className="text-[9px] text-muted-foreground font-pixel tabular-nums">
-          {quests.quests.filter(q => q.claimed).length}/{quests.quests.length} complétées
-        </span>
+        <div className="flex items-center gap-3">
+          <DailyResetTimer />
+          <span className="text-[9px] text-muted-foreground font-pixel tabular-nums">
+            {quests.quests.filter(q => q.claimed).length}/{quests.quests.length} complétées
+          </span>
+        </div>
       </div>
 
       <div className="space-y-2">
