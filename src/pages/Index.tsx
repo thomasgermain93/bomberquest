@@ -1514,13 +1514,9 @@ const Index = () => {
       return;
     }
     setMoreDrawerOpen(false);
-    // Mapper 'combat' → 'story' (BottomNav utilise 'combat', le jeu utilise 'story')
-    if (newScreen === 'combat') {
-      setScreen('story');
-      return;
-    }
+    // Invoquer → ouvre le modal inline (reste dans la navigation)
     if (newScreen === 'summon') {
-      navigate('/summon');
+      setSummonOpen(true);
       return;
     }
     setScreen(newScreen as Screen);
@@ -1537,13 +1533,14 @@ const Index = () => {
       case 'story': return 'Aventure';
       case 'story-battle': return 'Combat';
       case 'treasure-hunt': return 'Chasse au Trésor';
+      case 'combat': return 'Combat';
       case 'recycle': return 'Recyclage';
       default: return 'BomberQuest';
     }
   })();
 
-  // Écran BottomNav actif (mapper story → combat pour la surbrillance)
-  const bottomNavScreen = screen === 'story' || screen === 'story-battle' ? 'combat' : screen;
+  // Écran BottomNav actif (mapper story/treasure-hunt/battle → combat pour la surbrillance)
+  const bottomNavScreen = ['story', 'story-battle', 'treasure-hunt'].includes(screen) ? 'combat' : screen;
 
   if (isCloudLoading) {
     return (
@@ -1601,7 +1598,12 @@ const Index = () => {
               onClaim={handleClaimQuest}
               onClaimBonus={handleClaimDailyBonus}
             />
+          </motion.div>
+        )}
 
+        {/* COMBAT SCREEN — Chasse au Trésor + Mode Histoire */}
+        {screen === 'combat' && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
             {/* Story Mode CTA */}
             <button
               onClick={() => setScreen('story')}
@@ -1619,7 +1621,7 @@ const Index = () => {
               <p className="text-[8px] text-muted-foreground mb-3 flex items-center gap-1">
                 <Trophy size={10} /> {player.mapsCompleted} cartes complétées
               </p>
-              
+
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
                 {MAP_CONFIGS.map((mapCfg, i) => {
                   const unlocked = player.mapsCompleted >= mapCfg.unlockMaps && player.accountLevel >= mapCfg.unlockLevel;
@@ -1672,7 +1674,7 @@ const Index = () => {
                 })}
               </div>
 
-              {/* Mon Équipe - Slot-based selection */}
+              {/* Mon Équipe */}
               <div className="mb-4">
                 <div className="flex items-center justify-between mb-2">
                   <p className="font-pixel text-[8px] text-foreground flex items-center gap-1.5">
@@ -1696,7 +1698,6 @@ const Index = () => {
                   </div>
                 </div>
 
-                {/* 6 Slots */}
                 <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-3">
                   {Array.from({ length: 6 }).map((_, slotIdx) => {
                     const heroId = Array.from(selectedHeroes)[slotIdx];
@@ -1730,23 +1731,20 @@ const Index = () => {
                   })}
                 </div>
 
-                {/* Expandable hero picker */}
                 <details className="pixel-border bg-muted/20 rounded">
                   <summary className="font-pixel text-[8px] text-muted-foreground cursor-pointer px-3 py-2 flex items-center gap-1.5 hover:text-foreground transition-colors">
                     <Users size={10} /> Choisir manuellement ({player.heroes.length} héros disponibles)
                   </summary>
                   <div className="p-2 grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-60 overflow-y-auto">
-                    {player.heroes
-                      .sort(sortByRarity)
-                      .map(hero => (
-                        <HeroCard
-                          key={hero.id}
-                          hero={hero}
-                          compact
-                          selected={selectedHeroes.has(hero.id)}
-                          onClick={() => toggleHeroSelection(hero.id)}
-                        />
-                      ))}
+                    {player.heroes.sort(sortByRarity).map(hero => (
+                      <HeroCard
+                        key={hero.id}
+                        hero={hero}
+                        compact
+                        selected={selectedHeroes.has(hero.id)}
+                        onClick={() => toggleHeroSelection(hero.id)}
+                      />
+                    ))}
                   </div>
                 </details>
               </div>
@@ -1755,23 +1753,6 @@ const Index = () => {
                 <Swords size={16} /> LANCER LA CHASSE !
               </button>
             </div>
-
-            {/* Quick link to all heroes */}
-            <button onClick={() => setScreen('heroes')} className="pixel-btn pixel-btn-secondary w-full font-pixel text-[8px] flex items-center justify-center gap-2">
-              <Users size={12} /> Gérer tous les héros ({player.heroes.length})
-            </button>
-
-            {/* Quick link to fusion */}
-            <button onClick={() => setScreen('fusion')} className="pixel-btn pixel-btn-secondary w-full font-pixel text-[8px] flex items-center justify-center gap-2">
-              <Hammer size={12} /> Forge de Fusion
-            </button>
-
-            <button
-              onClick={() => setSummonOpen(true)}
-              className="pixel-btn pixel-btn-gold w-full font-pixel text-xs glow-gold flex items-center justify-center gap-2"
-            >
-              <Sparkles size={16} /> INVOQUER UN HÉROS (100 BC)
-            </button>
           </motion.div>
         )}
 

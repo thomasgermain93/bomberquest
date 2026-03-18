@@ -27,7 +27,7 @@ export function SlimHeader({
   return (
     <header
       className={cn(
-        'fixed top-0 left-0 right-0 z-40',
+        'fixed top-0 left-0 right-0 md:left-16 z-40',
         'h-12 bg-card/95 backdrop-blur border-b border-border',
         'flex flex-col',
       )}
