@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCloudSave } from '@/hooks/useCloudSave';
 import GameGrid from '@/components/GameGrid';
+import CombatHeroPanel from '@/components/CombatHeroPanel';
 import HeroCard from '@/components/HeroCard';
 import HeroCollectionStats from '@/components/HeroCollectionStats';
 import SummonModal from '@/components/SummonModal';
@@ -2098,8 +2099,14 @@ const Index = () => {
             </AnimatePresence>
 
             {/* Grid */}
-            <div className="flex justify-center">
+            <div className="flex justify-center flex-col items-center">
               <GameGrid gameState={gameState} />
+              {gameState && (
+                <CombatHeroPanel
+                  deployedHeroes={gameState.heroes}
+                  playerHeroes={player.heroes}
+                />
+              )}
             </div>
 
             {/* Event log - collapsible */}
