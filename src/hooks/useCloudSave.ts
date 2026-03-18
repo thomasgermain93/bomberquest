@@ -110,6 +110,18 @@ export function useCloudSave(userId: string | undefined, canWriteCloud: boolean)
       }
     }
 
+    // Si saveData existe mais heroes = 0 : race condition auth mobile → retry une fois
+    if (heroes.length === 0 && saveData) {
+      await new Promise(resolve => setTimeout(resolve, 1200));
+      const retryResult = await supabase
+        .from('player_heroes')
+        .select('*')
+        .eq('user_id', userId);
+      if (!retryResult.error && retryResult.data && retryResult.data.length > 0) {
+        heroes = retryResult.data.map(rowToHero);
+      }
+    }
+
     const rawStats = saveData.save_data as any;
     const { heroes: _removedHeroes, ...statsOnly } = rawStats ?? {};
 
