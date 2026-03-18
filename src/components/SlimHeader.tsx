@@ -1,7 +1,7 @@
 import React from 'react';
 import { Coins, Gem, Crown } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { PixelIcon } from '@/components/PixelIcon';
+import PixelIcon from '@/components/PixelIcon';
 
 interface SlimHeaderProps {
   bomberCoins: number;
