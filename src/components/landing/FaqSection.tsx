@@ -25,7 +25,7 @@ const FaqSection: React.FC = () => (
             TES QUESTIONS,{' '}
             <span className="text-primary">NOS RÉPONSES</span>
           </h2>
-          <p className="text-sm text-muted-foreground mt-4 leading-relaxed">
+          <p className="text-base text-muted-foreground mt-4 leading-relaxed">
             Tu as une autre question ? Rejoins la communauté ou consulte le Wiki.
           </p>
         </motion.div>
@@ -47,7 +47,7 @@ const FaqSection: React.FC = () => (
                 <AccordionTrigger className="font-pixel text-[8px] text-foreground hover:no-underline hover:text-primary py-4">
                   {item.question}
                 </AccordionTrigger>
-                <AccordionContent className="text-sm text-muted-foreground leading-relaxed pb-4">
+                <AccordionContent className="text-base text-muted-foreground leading-relaxed pb-4">
                   {item.answer}
                 </AccordionContent>
               </AccordionItem>

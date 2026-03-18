@@ -19,7 +19,7 @@ const CtaSection: React.FC = () => {
         <h2 className="font-pixel text-sm sm:text-xl text-foreground text-glow-gold mb-4">
           PRÊT À JOUER ?
         </h2>
-        <p className="text-sm text-muted-foreground mb-10">
+        <p className="text-base text-muted-foreground mb-10">
           Crée ton compte gratuit et commence à collectionner des héros dès maintenant.
         </p>
         <motion.button

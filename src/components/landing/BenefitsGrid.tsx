@@ -95,7 +95,7 @@ const BenefitsGrid: React.FC<BenefitsGridProps> = ({ kpis, kpisLoading }) => {
               ) : card.kpiValue ? (
                 <p className="font-pixel text-sm text-game-gold mb-2">{card.kpiValue}</p>
               ) : null}
-              <p className="text-xs text-muted-foreground leading-relaxed">{card.description}</p>
+              <p className="text-base text-muted-foreground leading-relaxed">{card.description}</p>
             </motion.div>
           ))}
         </div>

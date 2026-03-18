@@ -74,7 +74,7 @@ const CoreFeatures: React.FC = () => (
             <div className="flex-1">
               <div className="text-primary mb-4">{f.icon}</div>
               <h3 className="font-pixel text-xs sm:text-sm text-foreground mb-4">{f.title}</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
+              <p className="text-base text-muted-foreground leading-relaxed">{f.desc}</p>
             </div>
           </motion.div>
         ))}
