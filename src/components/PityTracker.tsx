@@ -86,17 +86,17 @@ export function PityTracker({
               <span
                 className={cn(
                   'font-pixel text-[8px]',
-                  isImminent ? 'text-orange-400' : 'text-muted-foreground',
+                  isImminent ? 'text-rarity-epic' : 'text-muted-foreground',
                 )}
               >
                 Garanti dans {remaining} tirages
               </span>
             </div>
-            <div className="h-2 bg-muted rounded-full overflow-hidden">
+            <div className="h-2 bg-muted overflow-hidden">
               <div
                 className={cn(
-                  'h-full rounded-full transition-all duration-300',
-                  isImminent ? 'bg-orange-500' : bgColor,
+                  'h-full transition-all duration-300',
+                  isImminent ? 'bg-rarity-epic' : bgColor,
                 )}
                 style={{ width: `${pct}%` }}
               />

@@ -59,7 +59,7 @@ const StoryMode: React.FC<StoryModeProps> = ({
         <h2 className="font-pixel text-sm sm:text-lg text-foreground text-glow-red mb-1 flex items-center justify-center gap-2">
           <Swords size={20} /> MODE HISTOIRE
         </h2>
-        <p className="text-xs text-muted-foreground">Combats les ennemis et vaincs les boss !</p>
+        <p className="font-pixel text-[7px] text-muted-foreground">Combats les ennemis et vaincs les boss !</p>
       </div>
 
       {/* Region Navigator */}
@@ -115,7 +115,7 @@ const StoryMode: React.FC<StoryModeProps> = ({
             onClick={() => onRegionChange(i)}
             className="w-8 h-8 flex items-center justify-center transition-all"
           >
-            <span className={`w-3 h-3 rounded-full transition-all ${
+            <span className={`w-3 h-3 transition-all ${
               i === selectedRegionIdx ? 'bg-primary scale-125' : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
             }`} />
           </button>
@@ -149,14 +149,14 @@ const StoryMode: React.FC<StoryModeProps> = ({
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded flex items-center justify-center bg-muted/50">
+                      <div className="w-8 h-8 flex items-center justify-center bg-muted/50">
                         <PixelIcon icon={stage.icon} size={18} />
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
                           <p className="font-pixel text-[8px] text-foreground">{stage.stageNumber}. {stage.name}</p>
                           {stage.isBoss && (
-                            <span className="font-pixel text-[7px] px-1.5 py-0.5 rounded bg-destructive/20 text-destructive flex items-center gap-1">
+                            <span className="font-pixel text-[7px] px-1.5 py-0.5 bg-destructive/20 text-destructive flex items-center gap-1">
                               <Crown size={8} /> BOSS
                             </span>
                           )}
@@ -195,7 +195,7 @@ const StoryMode: React.FC<StoryModeProps> = ({
 
           <div className="pixel-border bg-card p-4">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center">
+              <div className="w-12 h-12 bg-muted flex items-center justify-center">
                 <PixelIcon icon={selectedStage.icon} size={28} />
               </div>
               <div>
@@ -203,7 +203,7 @@ const StoryMode: React.FC<StoryModeProps> = ({
                 <p className="text-[10px] text-muted-foreground">{region.name} • Étape {selectedStage.stageNumber}</p>
               </div>
               {selectedStage.isBoss && (
-                <span className="font-pixel text-[8px] px-2 py-1 rounded bg-destructive/20 text-destructive flex items-center gap-1 ml-auto">
+                <span className="font-pixel text-[8px] px-2 py-1 bg-destructive/20 text-destructive flex items-center gap-1 ml-auto">
                   <Crown size={10} /> BOSS
                 </span>
               )}
@@ -246,14 +246,14 @@ const StoryMode: React.FC<StoryModeProps> = ({
               <div className="flex items-center gap-1.5">
                 <button
                   onClick={onAutoSelectHeroes}
-                  className="font-pixel text-[7px] px-2.5 py-2 rounded bg-primary/15 text-primary hover:bg-primary/25 transition-colors flex items-center gap-1"
+                  className="pixel-btn font-pixel text-[7px] px-2 py-1 min-h-0 flex items-center gap-1"
                 >
                   Auto-sélection
                 </button>
                 {selectedHeroes.size > 0 && (
                   <button
                     onClick={onClearSelectedHeroes}
-                    className="font-pixel text-[7px] px-2.5 py-2 rounded bg-muted text-muted-foreground hover:bg-muted/80 transition-colors"
+                    className="pixel-btn pixel-btn-secondary font-pixel text-[7px] px-2 py-1 min-h-0"
                   >
                     Reset
                   </button>
@@ -280,7 +280,7 @@ const StoryMode: React.FC<StoryModeProps> = ({
               )}
             </div>
 
-            <details className="pixel-border bg-muted/20 rounded mb-4">
+            <details className="pixel-border bg-muted/20 mb-4">
               <summary className="font-pixel text-[8px] text-muted-foreground cursor-pointer px-3 py-2 hover:text-foreground transition-colors">
                 Choisir manuellement (top 12)
               </summary>

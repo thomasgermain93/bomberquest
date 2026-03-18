@@ -1,8 +1,8 @@
 import { useState, useMemo } from 'react';
 import { Hero, Rarity } from '@/game/types';
 import { getRecycleValue } from '@/game/recycleSystem';
-import { Button } from '@/components/ui/button';
 import { Trash2, Lock, Unlock, RefreshCw, Gem } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const RARITY_RANK: Record<Rarity, number> = {
   common: 0, rare: 1, 'super-rare': 2, epic: 3, legend: 4, 'super-legend': 5,
@@ -19,7 +19,6 @@ export default function RecyclePanel({ heroes, universalShards, onRecycle, onTog
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showConfirm, setShowConfirm] = useState(false);
 
-  // Grouper les héros par nom de base et ne garder que les groupes avec 2+ exemplaires
   const duplicateHeroes = useMemo(() => {
     const groups = new Map<string, Hero[]>();
     heroes.forEach(h => {
@@ -27,7 +26,6 @@ export default function RecyclePanel({ heroes, universalShards, onRecycle, onTog
       if (!groups.has(base)) groups.set(base, []);
       groups.get(base)!.push(h);
     });
-    // Retourner uniquement les héros faisant partie d'un groupe avec duplicata
     return heroes.filter(h => (groups.get(h.name.split(' #')[0]) || []).length > 1);
   }, [heroes]);
 
@@ -42,7 +40,6 @@ export default function RecyclePanel({ heroes, universalShards, onRecycle, onTog
     });
   };
 
-  // Sélectionner les doublons en gardant le meilleur exemplaire de chaque héros
   const selectAllKeepingBest = () => {
     const groups = new Map<string, Hero[]>();
     duplicateHeroes.forEach(h => {
@@ -50,16 +47,13 @@ export default function RecyclePanel({ heroes, universalShards, onRecycle, onTog
       if (!groups.has(base)) groups.set(base, []);
       groups.get(base)!.push(h);
     });
-
     const toSelect = new Set<string>();
     groups.forEach(group => {
-      // Trier par rareté décroissante puis niveau décroissant → le premier est le meilleur
       const sorted = [...group].sort((a, b) => {
         const rarityDiff = (RARITY_RANK[b.rarity as Rarity] ?? 0) - (RARITY_RANK[a.rarity as Rarity] ?? 0);
         if (rarityDiff !== 0) return rarityDiff;
         return b.level - a.level;
       });
-      // Sélectionner tous sauf le meilleur (non-lockés)
       sorted.slice(1).forEach(h => { if (!h.isLocked) toSelect.add(h.id); });
     });
     setSelectedIds(toSelect);
@@ -74,19 +68,10 @@ export default function RecyclePanel({ heroes, universalShards, onRecycle, onTog
     setShowConfirm(false);
   };
 
-  const rarityColors: Record<string, string> = {
-    common: 'rarity-common',
-    rare: 'rarity-rare',
-    'super-rare': 'rarity-super-rare',
-    epic: 'rarity-epic',
-    legend: 'rarity-legend',
-    'super-legend': 'rarity-super-legend',
-  };
-
   if (duplicateHeroes.length === 0) {
     return (
-      <div className="text-center py-6 text-muted-foreground text-sm">
-        Aucun doublon à recycler.
+      <div className="text-center py-6">
+        <p className="font-pixel text-[8px] text-muted-foreground">Aucun doublon à recycler.</p>
       </div>
     );
   }
@@ -94,37 +79,55 @@ export default function RecyclePanel({ heroes, universalShards, onRecycle, onTog
   return (
     <div className="space-y-3">
       {/* Header stats */}
-      <div className="flex items-center justify-between text-sm flex-wrap gap-2">
-        <span className="text-muted-foreground flex items-center gap-1"><Gem size={12} className="text-blue-400 inline" /> {universalShards} Shards · {duplicateHeroes.length} doublons</span>
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <span className="font-pixel text-[8px] text-muted-foreground flex items-center gap-1">
+          <Gem size={12} className="text-game-blue" /> {universalShards} Shards · {duplicateHeroes.length} doublons
+        </span>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={selectAllKeepingBest}>
-            <RefreshCw className="w-3 h-3 mr-1" />
-            Garder le meilleur
-          </Button>
+          <button
+            onClick={selectAllKeepingBest}
+            className="pixel-btn pixel-btn-secondary font-pixel text-[7px] flex items-center gap-1 px-2 py-1 min-h-0"
+          >
+            <RefreshCw size={10} /> Garder le meilleur
+          </button>
           {selectedIds.size > 0 && (
-            <Button variant="destructive" size="sm" onClick={() => setShowConfirm(true)}>
-              <Trash2 className="w-3 h-3 mr-1" />
-              Recycler {selectedIds.size} (+{totalShards} <Gem size={12} className="text-blue-400 inline" />)
-            </Button>
+            <button
+              onClick={() => setShowConfirm(true)}
+              className="pixel-btn font-pixel text-[7px] flex items-center gap-1 px-2 py-1 min-h-0"
+              style={{ background: 'hsl(var(--destructive))', borderColor: 'hsl(var(--destructive))' }}
+            >
+              <Trash2 size={10} /> Recycler {selectedIds.size} (+{totalShards})
+            </button>
           )}
         </div>
       </div>
 
       {/* Confirmation */}
       {showConfirm && (
-        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 space-y-2">
-          <p className="text-sm text-destructive font-medium flex items-center gap-1">
-            Recycler {selectedIds.size} héros pour {totalShards} <Gem size={12} className="text-blue-400 inline" /> Shards ?
+        <div className="pixel-border bg-destructive/10 p-3 space-y-2">
+          <p className="font-pixel text-[8px] text-destructive flex items-center gap-1">
+            Recycler {selectedIds.size} héros pour {totalShards} <Gem size={10} className="text-game-blue" /> Shards ?
           </p>
-          <p className="text-xs text-muted-foreground">Cette action est irréversible.</p>
+          <p className="font-pixel text-[7px] text-muted-foreground">Cette action est irréversible.</p>
           <div className="flex gap-2">
-            <Button variant="destructive" size="sm" onClick={handleConfirmRecycle}>Confirmer</Button>
-            <Button variant="outline" size="sm" onClick={() => setShowConfirm(false)}>Annuler</Button>
+            <button
+              onClick={handleConfirmRecycle}
+              className="pixel-btn font-pixel text-[7px] px-2 py-1 min-h-0"
+              style={{ background: 'hsl(var(--destructive))', borderColor: 'hsl(var(--destructive))' }}
+            >
+              Confirmer
+            </button>
+            <button
+              onClick={() => setShowConfirm(false)}
+              className="pixel-btn pixel-btn-secondary font-pixel text-[7px] px-2 py-1 min-h-0"
+            >
+              Annuler
+            </button>
           </div>
         </div>
       )}
 
-      {/* Grille de doublons uniquement */}
+      {/* Grille de doublons */}
       <div className="grid grid-cols-4 gap-2 max-h-80 overflow-y-auto">
         {duplicateHeroes.map(hero => {
           const selected = selectedIds.has(hero.id);
@@ -132,22 +135,25 @@ export default function RecyclePanel({ heroes, universalShards, onRecycle, onTog
           return (
             <div
               key={hero.id}
-              className={`relative border-2 rounded-md p-1.5 cursor-pointer transition-all ${
-                rarityColors[hero.rarity] || 'rarity-common'
-              } ${selected ? 'bg-destructive/20 scale-95' : 'bg-card/50 hover:bg-card'} ${
-                hero.isLocked ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
+              className={cn(
+                'relative pixel-border p-1.5 cursor-pointer transition-all',
+                `rarity-${hero.rarity}`,
+                selected ? 'bg-destructive/20 scale-95' : 'bg-card/50 hover:bg-card',
+                hero.isLocked && 'opacity-50 cursor-not-allowed',
+              )}
               onClick={() => toggleSelect(hero.id)}
             >
-              <div className="text-xs text-center truncate">{hero.name.split(' #')[0]}</div>
-              <div className="text-[10px] text-center text-muted-foreground">Niv.{hero.level}</div>
-              <div className="text-xs text-center text-cyan-400 flex items-center justify-center gap-0.5">+{recycleVal}<Gem size={10} className="text-blue-400 inline" /></div>
+              <div className="font-pixel text-[7px] text-center truncate">{hero.name.split(' #')[0]}</div>
+              <div className="font-pixel text-[6px] text-center text-muted-foreground">Niv.{hero.level}</div>
+              <div className="font-pixel text-[7px] text-center text-game-blue flex items-center justify-center gap-0.5">
+                +{recycleVal}<Gem size={8} className="text-game-blue" />
+              </div>
               <button
-                className="absolute top-0.5 right-0.5 p-0.5 rounded hover:bg-white/10"
+                className="absolute top-0.5 right-0.5 p-0.5 hover:bg-white/10"
                 onClick={e => { e.stopPropagation(); onToggleLock(hero.id); }}
               >
                 {hero.isLocked
-                  ? <Lock className="w-2.5 h-2.5 text-yellow-400" />
+                  ? <Lock className="w-2.5 h-2.5 text-game-gold" />
                   : <Unlock className="w-2.5 h-2.5 text-muted-foreground" />
                 }
               </button>
@@ -156,10 +162,9 @@ export default function RecyclePanel({ heroes, universalShards, onRecycle, onTog
         })}
       </div>
 
-      <div className="text-xs text-muted-foreground border-t pt-2">
-        <span className="font-medium">Taux : </span>
-        Common=1 · Rare=3 · Super-Rare=8 · Epic=20 · Legend=50 · Super-Legend=150 <Gem size={10} className="text-blue-400 inline" />
-        <span className="ml-1">(+1<Gem size={10} className="text-blue-400 inline" />/10 niveaux)</span>
+      <div className="font-pixel text-[7px] text-muted-foreground border-t border-border pt-2">
+        <span className="text-foreground">Taux : </span>
+        Common=1 · Rare=3 · SR=8 · Epic=20 · Legend=50 · SL=150 (+1/10 niveaux)
       </div>
     </div>
   );

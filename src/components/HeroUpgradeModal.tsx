@@ -4,8 +4,6 @@ import HeroAvatar from '@/components/HeroAvatar';
 import { Hero, RARITY_CONFIG, MAX_LEVEL_BY_RARITY } from '@/game/types';
 import { getStatsAtLevel, getAscensionCost, MAX_STARS, countDuplicates, getXpProgress, getMaxLevel } from '@/game/upgradeSystem';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import { Swords, Zap, Target, Bomb, Battery, Clover, Shield, Star, ArrowUp, Coins, TrendingUp, Lock, Sparkles, Users, User, Calendar, Trophy, Gem } from 'lucide-react';
 
 interface HeroUpgradeModalProps {
@@ -58,7 +56,7 @@ const HeroUpgradeModal: React.FC<HeroUpgradeModalProps> = ({ hero, coins, allHer
 
   return (
     <Dialog open={!!hero} onOpenChange={() => onClose()}>
-      <DialogContent className="pixel-border bg-card border-border max-w-md p-0 overflow-hidden rounded-none sm:rounded-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="pixel-border bg-card border-border max-w-md p-0 overflow-hidden rounded-none max-h-[90vh] overflow-y-auto">
         <div
           className="p-5 pb-3 relative"
           style={{
@@ -72,7 +70,7 @@ const HeroUpgradeModal: React.FC<HeroUpgradeModalProps> = ({ hero, coins, allHer
             </DialogTitle>
             <DialogDescription className="flex items-center gap-2 mt-1">
               <span
-                className="font-pixel text-[10px] px-2 py-0.5 rounded"
+                className="font-pixel text-[10px] px-2 py-0.5"
                 style={{
                   color: `hsl(var(--game-rarity-${hero.rarity}))`,
                   backgroundColor: `hsl(var(--game-rarity-${hero.rarity}) / 0.15)`,
@@ -125,7 +123,7 @@ const HeroUpgradeModal: React.FC<HeroUpgradeModalProps> = ({ hero, coins, allHer
             <div className="space-y-5">
               <div className="flex flex-col items-center">
                 <div
-                  className="w-20 h-20 rounded-xl flex items-center justify-center mb-3"
+                  className="w-20 h-20 flex items-center justify-center mb-3"
                   style={{
                     boxShadow: `0 0 20px hsl(var(--game-rarity-${hero.rarity}) / 0.4)`,
                     background: `linear-gradient(135deg, hsl(var(--game-rarity-${hero.rarity}) / 0.2) 0%, hsl(var(--game-rarity-${hero.rarity}) / 0.05) 100%)`,
@@ -142,7 +140,7 @@ const HeroUpgradeModal: React.FC<HeroUpgradeModalProps> = ({ hero, coins, allHer
                 </span>
               </div>
 
-              <div className="bg-muted/30 rounded-lg p-3 space-y-2">
+              <div className="pixel-border bg-muted/30 p-3 space-y-2">
                 <div className="flex items-center justify-between text-[11px]">
                   <span className="flex items-center gap-2 text-muted-foreground">
                     <User size={12} /> ID Unique
@@ -158,31 +156,31 @@ const HeroUpgradeModal: React.FC<HeroUpgradeModalProps> = ({ hero, coins, allHer
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <div className="bg-muted/30 rounded-lg p-3 flex flex-col items-center">
+                <div className="pixel-border bg-muted/30 p-3 flex flex-col items-center">
                   <Coins size={16} className="text-game-gold mb-1" />
                   <span className="text-lg font-bold text-foreground">{hero.progressionStats.chestsOpened}</span>
-                  <span className="text-[9px] text-muted-foreground text-center">Coffres ouverts</span>
+                  <span className="font-pixel text-[7px] text-muted-foreground text-center">Coffres ouverts</span>
                 </div>
-                <div className="bg-muted/30 rounded-lg p-3 flex flex-col items-center">
+                <div className="pixel-border bg-muted/30 p-3 flex flex-col items-center">
                   <Swords size={16} className="text-destructive mb-1" />
                   <span className="text-lg font-bold text-foreground">{hero.progressionStats.totalDamageDealt.toLocaleString('fr-FR')}</span>
-                  <span className="text-[9px] text-muted-foreground text-center">Dégâts infligés</span>
+                  <span className="font-pixel text-[7px] text-muted-foreground text-center">Dégâts infligés</span>
                 </div>
-                <div className="bg-muted/30 rounded-lg p-3 flex flex-col items-center">
-                  <Trophy size={16} className="text-game-energy-green mb-1" />
+                <div className="pixel-border bg-muted/30 p-3 flex flex-col items-center">
+                  <Trophy size={16} className="text-game-green mb-1" />
                   <span className="text-lg font-bold text-foreground">{hero.progressionStats.battlesPlayed}</span>
-                  <span className="text-[9px] text-muted-foreground text-center">Combats joués</span>
+                  <span className="font-pixel text-[7px] text-muted-foreground text-center">Combats joués</span>
                 </div>
-                <div className="bg-muted/30 rounded-lg p-3 flex flex-col items-center">
-                  <Sparkles size={16} className="text-yellow-500 mb-1" />
+                <div className="pixel-border bg-muted/30 p-3 flex flex-col items-center">
+                  <Sparkles size={16} className="text-game-gold mb-1" />
                   <span className="text-lg font-bold text-foreground">{hero.progressionStats.victories}</span>
-                  <span className="text-[9px] text-muted-foreground text-center">Victoires ({winRate}%)</span>
+                  <span className="font-pixel text-[7px] text-muted-foreground text-center">Victoires ({winRate}%)</span>
                 </div>
               </div>
 
               <div className="flex items-center justify-center gap-2 pt-2">
                 <Gem size={14} className="text-accent" />
-                <span className="text-[10px] text-muted-foreground">
+                <span className="font-pixel text-[8px] text-muted-foreground">
                   Héros collecté le {formattedDate}
                 </span>
               </div>
@@ -194,7 +192,16 @@ const HeroUpgradeModal: React.FC<HeroUpgradeModalProps> = ({ hero, coins, allHer
                   <span className="flex items-center gap-1"><Battery size={10} /> Endurance</span>
                   <span>{Math.floor(hero.currentStamina)}/{hero.maxStamina}</span>
                 </div>
-                <Progress value={staPct} className="h-2" />
+                {/* Stamina bar pixel art */}
+                <div className="h-2 bg-muted overflow-hidden">
+                  <div
+                    className="h-full transition-all duration-300"
+                    style={{
+                      width: `${staPct}%`,
+                      backgroundColor: staPct > 50 ? 'hsl(var(--game-energy-green))' : staPct > 25 ? 'hsl(var(--game-energy-low))' : 'hsl(var(--destructive))',
+                    }}
+                  />
+                </div>
               </div>
 
               <div className="space-y-1.5">
@@ -215,9 +222,9 @@ const HeroUpgradeModal: React.FC<HeroUpgradeModalProps> = ({ hero, coins, allHer
                         <span className="font-bold text-foreground w-8 text-right tabular-nums">{val}</span>
                         {nextVal !== null && diff > 0 && (
                           <>
-                            <ArrowUp size={10} className={nextStarStats ? 'text-game-gold' : 'text-game-energy-green'} />
-                            <span className={`font-bold tabular-nums ${nextStarStats ? 'text-game-gold' : 'text-game-energy-green'}`}>{nextVal}</span>
-                            <span className={`text-[9px] tabular-nums ${nextStarStats ? 'text-game-gold' : 'text-game-energy-green'}`}>(+{key === 'lck' ? diff + '%' : diff})</span>
+                            <ArrowUp size={10} className={nextStarStats ? 'text-game-gold' : 'text-game-green'} />
+                            <span className={`font-bold tabular-nums ${nextStarStats ? 'text-game-gold' : 'text-game-green'}`}>{nextVal}</span>
+                            <span className={`text-[9px] tabular-nums ${nextStarStats ? 'text-game-gold' : 'text-game-green'}`}>(+{key === 'lck' ? diff + '%' : diff})</span>
                           </>
                         )}
                       </div>
@@ -232,7 +239,7 @@ const HeroUpgradeModal: React.FC<HeroUpgradeModalProps> = ({ hero, coins, allHer
                     <Zap size={10} /> COMPÉTENCES
                   </p>
                   {hero.skills.map((skill, i) => (
-                    <div key={i} className="bg-muted rounded px-2 py-1.5 text-[10px]">
+                    <div key={i} className="pixel-border bg-muted px-2 py-1.5 text-[10px]">
                       <p className="text-foreground font-medium flex items-center gap-1">
                         <Zap size={9} className="text-accent" /> {skill.name}
                       </p>
@@ -244,17 +251,23 @@ const HeroUpgradeModal: React.FC<HeroUpgradeModalProps> = ({ hero, coins, allHer
 
               <div className="pt-2 border-t border-border space-y-2">
                 {!isMaxLevel && (
-                  <div className="bg-muted/50 rounded p-3 space-y-2">
-                    <p className="font-pixel text-[9px] text-game-xp-blue flex items-center gap-1">
+                  <div className="pixel-border bg-muted/50 p-3 space-y-2">
+                    <p className="font-pixel text-[9px] flex items-center gap-1" style={{ color: 'hsl(var(--game-xp-blue))' }}>
                       <Zap size={12} /> PROGRESSION XP
                     </p>
                     <div className="space-y-1">
-                      <Progress value={xpProgress.percentage} className="h-3" />
-                      <p className="text-[10px] text-muted-foreground text-center">
+                      {/* XP bar pixel art */}
+                      <div className="h-3 bg-muted overflow-hidden">
+                        <div
+                          className="h-full transition-all duration-300"
+                          style={{ width: `${xpProgress.percentage}%`, backgroundColor: 'hsl(var(--game-xp-blue))' }}
+                        />
+                      </div>
+                      <p className="font-pixel text-[8px] text-muted-foreground text-center">
                         {xpProgress.current.toLocaleString()} / {xpProgress.required.toLocaleString()} XP
                       </p>
                     </div>
-                    <p className="text-[9px] text-muted-foreground">
+                    <p className="font-pixel text-[7px] text-muted-foreground">
                       Joue pour gagner de l'XP! Pose des bombes, détruis des blocs et ouvre des coffres.
                     </p>
                   </div>
@@ -262,33 +275,32 @@ const HeroUpgradeModal: React.FC<HeroUpgradeModalProps> = ({ hero, coins, allHer
 
                 {isMaxLevel && !isMaxStars && ascensionInfo && (
                   <div className="space-y-2">
-                    <div className="bg-muted/50 rounded p-3 space-y-2">
+                    <div className="pixel-border bg-muted/50 p-3 space-y-2">
                       <p className="font-pixel text-[9px] text-game-gold flex items-center gap-1">
                         <Sparkles size={12} /> ASCENSION — ÉTOILE {hero.stars + 1}/{MAX_STARS}
                       </p>
-                      <p className="text-[10px] text-muted-foreground">
+                      <p className="font-pixel text-[7px] text-muted-foreground">
                         L'ascension augmente toutes les stats de +{((hero.stars + 1) * 20)}% et renforce ton héros au-delà du niveau max.
                       </p>
                       <div className="flex items-center gap-4 text-[10px]">
                         <div className="flex items-center gap-1">
                           <Coins size={12} className="text-game-gold" />
-                          <span className={coins >= ascensionInfo.cost ? 'text-game-energy-green' : 'text-destructive'}>
+                          <span className={coins >= ascensionInfo.cost ? 'text-game-green' : 'text-destructive'}>
                             {ascensionInfo.cost.toLocaleString()} BC
                           </span>
                         </div>
                         <div className="flex items-center gap-1">
                           <Users size={12} className="text-primary" />
-                          <span className={duplicates >= ascensionInfo.duplicates ? 'text-game-energy-green' : 'text-destructive'}>
+                          <span className={duplicates >= ascensionInfo.duplicates ? 'text-game-green' : 'text-destructive'}>
                             {duplicates}/{ascensionInfo.duplicates} doublons {config.label}
                           </span>
                         </div>
                       </div>
                     </div>
-                    <Button
+                    <button
                       onClick={() => onAscend?.(hero.id)}
                       disabled={!canAscend}
-                      className="w-full font-pixel text-[10px] gap-2 bg-game-gold/90 hover:bg-game-gold text-background"
-                      variant="default"
+                      className="pixel-btn pixel-btn-gold w-full font-pixel text-[10px] flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       {canAscend ? (
                         <>
@@ -301,7 +313,7 @@ const HeroUpgradeModal: React.FC<HeroUpgradeModalProps> = ({ hero, coins, allHer
                           RESSOURCES INSUFFISANTES
                         </>
                       )}
-                    </Button>
+                    </button>
                   </div>
                 )}
 
@@ -312,7 +324,7 @@ const HeroUpgradeModal: React.FC<HeroUpgradeModalProps> = ({ hero, coins, allHer
                       HÉROS MAXIMUM ★★★
                       <Sparkles size={14} className="fill-current" />
                     </p>
-                    <p className="text-[9px] text-muted-foreground mt-1">Niveau {maxLevel} • Ascension complète • Prêt pour fusion</p>
+                    <p className="font-pixel text-[8px] text-muted-foreground mt-1">Niveau {maxLevel} • Ascension complète • Prêt pour fusion</p>
                   </div>
                 )}
               </div>

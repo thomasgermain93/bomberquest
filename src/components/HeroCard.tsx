@@ -34,22 +34,21 @@ const HeroCard: React.FC<HeroCardProps> = ({ hero, compact, onClick, selected })
       <button
         onClick={onClick}
         className={`pixel-border p-2.5 flex items-center gap-2.5 w-full transition-all relative group ${rarityBorderClass} ${
-          selected 
-            ? 'bg-primary/15 ring-2 ring-primary/60 scale-[1.02]' 
+          selected
+            ? 'bg-primary/15 ring-2 ring-primary/60 scale-[1.02]'
             : 'bg-card hover:bg-muted hover:scale-[1.01]'
         }`}
       >
         {selected && (
-          <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-primary flex items-center justify-center shadow-md z-10">
+          <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-primary flex items-center justify-center shadow-md z-10">
             <Check size={12} className="text-primary-foreground" />
           </div>
         )}
 
-        <div className={`w-11 h-11 rounded-lg flex items-center justify-center shrink-0 ${
-          selected ? 'bg-primary/20' : 'bg-muted'
-        }`} style={{
-          boxShadow: selected ? `0 0 10px hsl(var(--game-rarity-${hero.rarity}) / 0.4)` : 'none'
-        }}>
+        <div
+          className={`w-11 h-11 flex items-center justify-center shrink-0 ${selected ? 'bg-primary/20' : 'bg-muted'}`}
+          style={{ boxShadow: selected ? `0 0 10px hsl(var(--game-rarity-${hero.rarity}) / 0.4)` : 'none' }}
+        >
           <HeroAvatar heroId={hero.id} heroName={hero.name} rarity={hero.rarity} size={44} />
         </div>
 
@@ -68,18 +67,16 @@ const HeroCard: React.FC<HeroCardProps> = ({ hero, compact, onClick, selected })
 
         <div className="w-14 shrink-0">
           {!isMaxLevel && (
-            <>
-              <div className="h-1.5 rounded-full bg-muted overflow-hidden mb-1">
-                <div
-                  className="h-full transition-all rounded-full bg-game-xp-blue"
-                  style={{ width: `${xpProgress.percentage}%` }}
-                />
-              </div>
-            </>
+            <div className="h-1.5 bg-muted overflow-hidden mb-1">
+              <div
+                className="h-full transition-all"
+                style={{ width: `${xpProgress.percentage}%`, backgroundColor: 'hsl(var(--game-xp-blue))' }}
+              />
+            </div>
           )}
-          <div className="h-2 rounded-full bg-muted overflow-hidden">
+          <div className="h-2 bg-muted overflow-hidden">
             <div
-              className="h-full transition-all rounded-full"
+              className="h-full transition-all"
               style={{
                 width: `${staPct}%`,
                 backgroundColor: staPct > 50 ? 'hsl(var(--game-energy-green))' : staPct > 25 ? 'hsl(var(--game-energy-low))' : 'hsl(var(--destructive))',
@@ -99,13 +96,16 @@ const HeroCard: React.FC<HeroCardProps> = ({ hero, compact, onClick, selected })
       onClick={onClick}
       className={`pixel-border p-3 bg-card cursor-pointer transition-all hover:scale-[1.03] active:scale-[0.97] group relative ${rarityBorderClass} ${selected ? 'ring-2 ring-primary/60' : ''}`}
     >
-      <div className="absolute inset-0 opacity-[0.06] rounded pointer-events-none"
+      <div
+        className="absolute inset-0 opacity-[0.06] pointer-events-none"
         style={{ background: `radial-gradient(circle at 50% 30%, hsl(var(--game-rarity-${hero.rarity})), transparent 70%)` }}
       />
 
       <div className="text-center mb-2 relative">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-lg bg-muted mb-1 group-hover:scale-110 transition-transform"
-          style={{ boxShadow: `0 0 15px hsl(var(--game-rarity-${hero.rarity}) / 0.3)` }}>
+        <div
+          className="inline-flex items-center justify-center w-16 h-16 bg-muted mb-1 group-hover:scale-110 transition-transform"
+          style={{ boxShadow: `0 0 15px hsl(var(--game-rarity-${hero.rarity}) / 0.3)` }}
+        >
           <HeroAvatar heroId={hero.id} heroName={hero.name} rarity={hero.rarity} size={64} />
         </div>
         <h3 className="font-pixel text-[9px] text-foreground">{hero.name}</h3>
@@ -117,7 +117,7 @@ const HeroCard: React.FC<HeroCardProps> = ({ hero, compact, onClick, selected })
       <div className="space-y-1.5 text-[10px]">
         <div className="flex justify-between items-center text-muted-foreground">
           <span className="flex items-center gap-1">
-            {isMaxLevel ? <Sparkles size={10} className="text-game-gold" /> : <Shield size={10} />} 
+            {isMaxLevel ? <Sparkles size={10} className="text-game-gold" /> : <Shield size={10} />}
             Niv. {hero.level}{!isMaxLevel && `/${maxLevel}`}
           </span>
           <span className="flex items-center gap-0.5">
@@ -132,10 +132,10 @@ const HeroCard: React.FC<HeroCardProps> = ({ hero, compact, onClick, selected })
 
         {!isMaxLevel && (
           <div>
-            <div className="h-2 rounded-full bg-muted overflow-hidden">
+            <div className="h-2 bg-muted overflow-hidden">
               <div
-                className="h-full transition-all rounded-full bg-game-xp-blue"
-                style={{ width: `${xpProgress.percentage}%` }}
+                className="h-full transition-all"
+                style={{ width: `${xpProgress.percentage}%`, backgroundColor: 'hsl(var(--game-xp-blue))' }}
               />
             </div>
             <p className="text-[8px] text-muted-foreground text-center mt-0.5 tabular-nums">
@@ -144,9 +144,9 @@ const HeroCard: React.FC<HeroCardProps> = ({ hero, compact, onClick, selected })
           </div>
         )}
 
-        <div className="h-2 rounded-full bg-muted overflow-hidden">
+        <div className="h-2 bg-muted overflow-hidden">
           <div
-            className="h-full transition-all rounded-full"
+            className="h-full transition-all"
             style={{
               width: `${staPct}%`,
               backgroundColor: staPct > 50 ? 'hsl(var(--game-energy-green))' : 'hsl(var(--game-energy-low))',
@@ -159,7 +159,7 @@ const HeroCard: React.FC<HeroCardProps> = ({ hero, compact, onClick, selected })
 
         <div className="grid grid-cols-3 gap-1 mt-2 text-[9px]">
           {Object.entries(hero.stats).map(([key, val]) => (
-            <div key={key} className="bg-muted rounded px-1 py-1 flex items-center justify-center gap-1">
+            <div key={key} className="bg-muted px-1 py-1 flex items-center justify-center gap-1">
               {STAT_ICONS[key]}
               <span className="text-muted-foreground uppercase">{key}</span>
               <span className="text-foreground font-bold">{val}</span>
@@ -182,7 +182,7 @@ const HeroCard: React.FC<HeroCardProps> = ({ hero, compact, onClick, selected })
         {hero.state === 'resting' ? (
           <><Moon size={10} /> Au repos</>
         ) : hero.isActive ? (
-          <><Zap size={10} className="text-game-energy-green" /> Actif</>
+          <><Zap size={10} className="text-game-green" /> Actif</>
         ) : (
           <>Inactif</>
         )}

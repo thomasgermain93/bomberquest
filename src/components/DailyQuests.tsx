@@ -2,9 +2,8 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { DailyQuestData, ALL_CLAIMED_BONUS, ALL_CLAIMED_XP_BONUS } from '@/game/questSystem';
 import { Coins, Gift, Check, Clock, Star } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import DailyResetTimer from '@/components/DailyResetTimer';
+import { cn } from '@/lib/utils';
 
 interface DailyQuestsProps {
   quests: DailyQuestData;
@@ -37,13 +36,14 @@ const DailyQuests: React.FC<DailyQuestsProps> = ({ quests, onClaim, onClaimBonus
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: i * 0.1 }}
-            className={`rounded-lg p-3 border transition-all ${
+            className={cn(
+              'pixel-border p-3 transition-all',
               quest.claimed
-                ? 'bg-muted/30 border-border opacity-60'
+                ? 'opacity-60 bg-muted/30'
                 : quest.completed
-                ? 'bg-primary/10 border-primary/30 shadow-sm'
-                : 'bg-muted/50 border-border'
-            }`}
+                ? 'bg-primary/10'
+                : 'bg-muted/50',
+            )}
           >
             <div className="flex items-start gap-3">
               <span className="text-xl mt-0.5">{quest.emoji}</span>
@@ -55,30 +55,32 @@ const DailyQuests: React.FC<DailyQuestsProps> = ({ quests, onClaim, onClaimBonus
                     <span className="font-pixel text-[9px] text-game-gold">+{quest.reward}</span>
                   </div>
                 </div>
-                <p className="text-[10px] text-muted-foreground mt-0.5">{quest.description}</p>
+                <p className="font-pixel text-[7px] text-muted-foreground mt-0.5">{quest.description}</p>
                 <div className="mt-2 flex items-center gap-2">
-                  <Progress
-                    value={(quest.progress / quest.target) * 100}
-                    className="h-1.5 flex-1"
-                  />
-                  <span className="text-[9px] text-muted-foreground font-mono w-14 text-right tabular-nums min-w-[2.5rem]">
+                  {/* Barre de progression pixel art */}
+                  <div className="flex-1 h-2 bg-muted overflow-hidden">
+                    <div
+                      className="h-full bg-primary transition-all duration-300"
+                      style={{ width: `${Math.min((quest.progress / quest.target) * 100, 100)}%` }}
+                    />
+                  </div>
+                  <span className="font-pixel text-[7px] text-muted-foreground tabular-nums min-w-[2.5rem] text-right">
                     {quest.progress}/{quest.target}
                   </span>
                 </div>
               </div>
               <div className="shrink-0 mt-1">
                 {quest.claimed ? (
-                  <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center">
+                  <div className="w-7 h-7 bg-muted flex items-center justify-center">
                     <Check size={14} className="text-muted-foreground" />
                   </div>
                 ) : quest.completed ? (
-                  <Button
-                    size="sm"
+                  <button
                     onClick={() => onClaim(quest.id)}
-                    className="font-pixel text-[8px] h-7 px-2 gap-1"
+                    className="pixel-btn pixel-btn-gold font-pixel text-[7px] flex items-center gap-1 px-2 py-1 min-h-0"
                   >
-                    <Gift size={12} /> Récupérer
-                  </Button>
+                    <Gift size={10} /> Récupérer
+                  </button>
                 ) : null}
               </div>
             </div>
@@ -86,33 +88,34 @@ const DailyQuests: React.FC<DailyQuestsProps> = ({ quests, onClaim, onClaimBonus
         ))}
       </div>
 
-      {/* All quests bonus */}
+      {/* Bonus journalier */}
       <motion.div
-        className={`mt-3 rounded-lg p-3 border text-center transition-all ${
+        className={cn(
+          'mt-3 pixel-border p-3 text-center transition-all',
           quests.allClaimedBonus
-            ? 'bg-muted/30 border-border opacity-60'
+            ? 'opacity-60 bg-muted/30'
             : allCompleted
-            ? 'bg-game-gold/10 border-game-gold/30 shadow-md'
-            : 'bg-muted/30 border-dashed border-border'
-        }`}
+            ? 'bg-game-gold/10'
+            : 'bg-muted/30',
+        )}
       >
         <div className="flex items-center justify-center gap-2 mb-1">
           <Star size={14} className={allCompleted && !quests.allClaimedBonus ? 'text-game-gold fill-current' : 'text-muted-foreground'} />
           <span className="font-pixel text-[9px] text-foreground">BONUS JOURNALIER</span>
           <Star size={14} className={allCompleted && !quests.allClaimedBonus ? 'text-game-gold fill-current' : 'text-muted-foreground'} />
         </div>
-        <p className="text-[10px] text-muted-foreground mb-2">
-          Complète les 3 quêtes pour obtenir un bonus de{' '}
-          <span className="text-game-gold font-bold">{ALL_CLAIMED_BONUS} BC</span> +{' '}
-          <span className="text-primary font-bold">{ALL_CLAIMED_XP_BONUS} XP</span>
+        <p className="font-pixel text-[7px] text-muted-foreground mb-2">
+          Complète les 3 quêtes :{' '}
+          <span className="text-game-gold">{ALL_CLAIMED_BONUS} BC</span>{' '}
+          + <span className="text-primary">{ALL_CLAIMED_XP_BONUS} XP</span>
         </p>
         {allClaimed && !quests.allClaimedBonus && (
-          <Button
+          <button
             onClick={onClaimBonus}
-            className="font-pixel text-[9px] gap-1 bg-game-gold/90 hover:bg-game-gold text-background"
+            className="pixel-btn pixel-btn-gold font-pixel text-[8px] flex items-center justify-center gap-1 mx-auto"
           >
-            <Gift size={14} /> RÉCUPÉRER LE BONUS
-          </Button>
+            <Gift size={12} /> RÉCUPÉRER LE BONUS
+          </button>
         )}
         {quests.allClaimedBonus && (
           <p className="font-pixel text-[9px] text-muted-foreground flex items-center justify-center gap-1">
