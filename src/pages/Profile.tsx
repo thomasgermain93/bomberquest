@@ -7,7 +7,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { User, Loader2, AlertTriangle, LogOut, Trash2, ArrowLeft } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
@@ -221,13 +220,15 @@ export default function Profile() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Alert variant="destructive">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Attention</AlertTitle>
-                <AlertDescription>
-                  Cette action supprimera définitivement ton compte, tous tes héros et ta progression. Cette action est irréversible.
-                </AlertDescription>
-              </Alert>
+              <div className="flex gap-3 rounded-md border border-destructive/50 bg-destructive/10 p-4 text-destructive">
+                <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">Attention</p>
+                  <p className="text-sm opacity-90">
+                    Cette action supprimera définitivement ton compte, tous tes héros et ta progression. Cette action est irréversible.
+                  </p>
+                </div>
+              </div>
               
               <div className="space-y-2">
                 <label className="text-sm font-medium">
