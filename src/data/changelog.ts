@@ -14,6 +14,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: '2026-03-18',
     title: 'Mises à jour récentes',
     changes: [
+      { type: 'feature', description: 'feat(ui): Milestone B — polish visuel + nouveaux composants (PityTracker, VictoryOverlay, DailyResetTimer) (#209)' },
       { type: 'feature', description: 'feat(redesign): navigation mobile-first — BottomNav, SlimHeader, MoreDrawer (Milestone A+B) (#208)' },
       { type: 'feature', description: 'fix: shards universels non visibles dans la page Invocations (#206)' },
       { type: 'feature', description: 'fix: recyclage — shards perdus + doublons uniquement + sélection intelligente (#205)' },
