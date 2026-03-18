@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useCallback } from 'react';
 import { GameState } from '@/game/types';
 import { drawHeroSprite } from '@/game/heroRenderer';
 import { drawEnemy, drawBoss } from '@/game/enemyRenderer';
+import { getBombStyle } from '@/game/clanBombSystem';
 
 interface GameGridProps {
   gameState: GameState;
@@ -138,30 +139,45 @@ const GameGrid: React.FC<GameGridProps> = ({ gameState }) => {
       const cx = px + TILE_SIZE / 2;
       const cy = py + TILE_SIZE / 2 + 2;
 
-      ctx.fillStyle = 'rgba(0,0,0,0.4)';
+      const style = getBombStyle(bomb.family);
+
+      // Halo lumineux (uniquement pour les bombes de clan)
+      if (bomb.family) {
+        ctx.fillStyle = style.glowColor;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r * 1.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Shadow
+      ctx.fillStyle = style.shadowColor;
       ctx.beginPath();
       ctx.ellipse(cx, cy + r * 0.7, r * 0.8, r * 0.3, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.fillStyle = '#222';
+      // Main bomb body
+      ctx.fillStyle = style.bodyColor;
       ctx.beginPath();
       ctx.arc(cx, cy, r, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.fillStyle = 'rgba(255,255,255,0.15)';
+      // Highlight
+      ctx.fillStyle = style.highlightColor;
       ctx.beginPath();
       ctx.arc(cx - r * 0.3, cy - r * 0.3, r * 0.3, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.strokeStyle = '#ff8c00';
+      // Fuse
+      ctx.strokeStyle = style.fuseColor;
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.moveTo(cx, cy - r);
       ctx.quadraticCurveTo(cx + 5, cy - r - 6, cx + 3, cy - r - 10);
       ctx.stroke();
 
+      // Flame
       if (Math.sin(time / 80) > -0.3) {
-        ctx.fillStyle = '#FFD700';
+        ctx.fillStyle = style.flameColor;
         ctx.beginPath();
         ctx.arc(cx + 3, cy - r - 10, 3, 0, Math.PI * 2);
         ctx.fill();

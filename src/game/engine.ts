@@ -594,6 +594,7 @@ export function tickGame(state: GameState, deltaMs: number): GameState {
             timer: 2.0,
             power: hero.stats.pwr,
             team: 'heroes',
+            family: hero.family,
           });
           hero.currentStamina = Math.max(0, hero.currentStamina - 1);
           hero.bombCooldown = 0.5;

@@ -51,6 +51,7 @@ export interface Hero {
   icon: string; // icon key for PixelIcon
   progressionStats: HeroProgressionStats;
   isLocked?: boolean; // Verrouillé : protégé du recyclage accidentel
+  family?: HeroFamilyId; // Clan du héros
 }
 
 export const MAX_LEVEL_BY_RARITY: Record<Rarity, number> = {
@@ -72,6 +73,7 @@ export interface Bomb {
   timer: number;
   power: number;
   team: BombTeam;
+  family?: HeroFamilyId; // Clan du héros qui a placé la bombe
 }
 
 export interface Explosion {
