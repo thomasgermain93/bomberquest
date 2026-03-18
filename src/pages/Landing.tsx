@@ -328,31 +328,60 @@ const Landing: React.FC = () => {
     let isMounted = true;
     let timeoutId: ReturnType<typeof setTimeout>;
 
+    const fetchKpisViaRpc = async (): Promise<LandingKpis> => {
+      const { data, error } = await supabase.rpc('get_landing_stats');
+
+      if (error) {
+        console.error('[KPI] RPC error:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+        });
+        throw new Error(`KPI RPC failed: ${error.message}`);
+      }
+
+      const stats = data as Record<string, unknown> | null;
+      return {
+        players: typeof stats?.players === 'number' ? stats.players : null,
+        totalInvocations: typeof stats?.totalInvocations === 'number' ? stats.totalInvocations : null,
+        lastSuperLegend: typeof stats?.lastSuperLegend === 'string' ? stats.lastSuperLegend : null,
+      };
+    };
+
+    const fetchKpisViaQueries = async (): Promise<LandingKpis> => {
+      const [playersRes, heroesRes, legendRes] = await Promise.all([
+        supabase.from('profiles').select('id', { count: 'exact', head: true }),
+        supabase.from('player_heroes').select('id', { count: 'exact', head: true }),
+        supabase
+          .from('player_heroes')
+          .select('user_id, created_at')
+          .eq('rarity', 'super-legend')
+          .order('created_at', { ascending: false })
+          .limit(1),
+      ]);
+
+      let lastSuperLegend: string | null = null;
+      if (legendRes.data && legendRes.data.length > 0) {
+        const legendUserId = legendRes.data[0].user_id;
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('display_name')
+          .eq('user_id', legendUserId)
+          .single();
+        lastSuperLegend = profile?.display_name ?? null;
+      }
+
+      return {
+        players: playersRes.count ?? null,
+        totalInvocations: heroesRes.count ?? null,
+        lastSuperLegend,
+      };
+    };
+
     const loadKpis = async () => {
       setKpisLoading(true);
       try {
-        const kpiRequest = async () => {
-          const { data, error } = await supabase.rpc('get_landing_stats');
-          
-          if (error) {
-            console.error('[KPI] RPC error:', {
-              code: error.code,
-              message: error.message,
-              details: error.details,
-              hint: error.hint
-            });
-            throw new Error(`KPI RPC failed: ${error.message}`);
-          }
-
-          if (!isMounted) return null;
-
-          return {
-            players: data?.players ?? null,
-            totalInvocations: data?.totalInvocations ?? null,
-            lastSuperLegend: data?.lastSuperLegend ?? null,
-          };
-        };
-
         timeoutId = setTimeout(() => {
           if (isMounted) {
             setKpis(KPI_FALLBACK);
@@ -360,27 +389,31 @@ const Landing: React.FC = () => {
           }
         }, KPI_TIMEOUT_MS);
 
-        const result = await withRetry(
-          () => withTimeout(kpiRequest(), KPI_TIMEOUT_MS),
-          KPI_MAX_RETRIES,
-          KPI_RETRY_DELAY_MS
-        );
-        clearTimeout(timeoutId);
+        let result: LandingKpis | null = null;
 
+        // Try RPC first, fall back to direct queries
+        try {
+          result = await withRetry(
+            () => withTimeout(fetchKpisViaRpc(), KPI_TIMEOUT_MS),
+            KPI_MAX_RETRIES,
+            KPI_RETRY_DELAY_MS,
+          );
+        } catch (rpcErr) {
+          console.warn('[KPI] RPC unavailable, falling back to direct queries:', rpcErr);
+          result = await withTimeout(fetchKpisViaQueries(), KPI_TIMEOUT_MS);
+        }
+
+        clearTimeout(timeoutId);
         if (!isMounted) return;
 
-        if (result) {
-          setKpis(result);
-        } else {
-          setKpis(KPI_FALLBACK);
-        }
+        setKpis(result ?? KPI_FALLBACK);
       } catch (err) {
         if (!isMounted) return;
         const error = err instanceof Error ? err : new Error(String(err));
         console.error('[KPI] Load failed:', {
           message: error.message,
           stack: error.stack,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
         setKpis(KPI_FALLBACK);
       } finally {
