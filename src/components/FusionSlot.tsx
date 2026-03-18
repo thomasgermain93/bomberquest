@@ -68,10 +68,10 @@ const FusionSlot: React.FC<FusionSlotProps> = ({
       </div>
 
       <div className="mt-1 text-center">
-        <p className="font-pixel text-[7px] text-foreground truncate max-w-[60px]">{hero.name}</p>
+        <p className="font-pixel text-[9px] text-foreground truncate max-w-[60px]">{hero.name}</p>
         <div className="flex items-center justify-center gap-1">
           <span 
-            className="font-pixel text-[6px]" 
+            className="font-pixel text-[8px]"
             style={{ color: isMaxed ? 'hsl(var(--game-energy-green))' : `hsl(var(--game-rarity-${hero.rarity}))` }}
           >
             {hero.level}/{maxLevel}

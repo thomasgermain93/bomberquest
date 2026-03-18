@@ -87,8 +87,8 @@ const TeamPresets: React.FC<TeamPresetsProps> = ({
             <div
               key={preset.id}
               className={cn(
-                'rounded-lg border bg-black/40 p-3 flex flex-col gap-2 transition-colors',
-                isEditing ? 'border-yellow-500/60' : 'border-white/10',
+                'rounded-lg border bg-card p-3 flex flex-col gap-2 transition-colors',
+                isEditing ? 'border-yellow-500/60' : 'border-border',
               )}
             >
               {/* Nom du slot */}
@@ -96,14 +96,14 @@ const TeamPresets: React.FC<TeamPresetsProps> = ({
                 type="text"
                 value={preset.name}
                 onChange={(e) => handleNameChange(slotIndex, e.target.value)}
-                className="text-xs bg-transparent border-b border-white/20 text-white/90 font-semibold outline-none focus:border-yellow-400/60 pb-0.5 w-full"
+                className="text-xs bg-transparent border-b border-border text-foreground font-semibold outline-none focus:border-yellow-400/60 pb-0.5 w-full"
                 maxLength={24}
                 readOnly={!isEditing}
               />
 
               {/* Mini-avatars */}
               {isEmpty ? (
-                <div className="flex items-center justify-center h-16 text-white/30 text-xs">
+                <div className="flex items-center justify-center h-16 text-muted-foreground text-xs">
                   Équipe vide
                 </div>
               ) : (
@@ -120,8 +120,8 @@ const TeamPresets: React.FC<TeamPresetsProps> = ({
                         className={cn(
                           'rounded overflow-hidden border',
                           hero
-                            ? 'border-white/20'
-                            : 'border-white/5 bg-white/5',
+                            ? 'border-border'
+                            : 'border-border/30 bg-accent/50',
                         )}
                         style={{ width: 28, height: 28 }}
                       >
@@ -164,7 +164,7 @@ const TeamPresets: React.FC<TeamPresetsProps> = ({
                         'flex-1 flex items-center justify-center gap-1 text-xs py-1 rounded transition-colors',
                         isEditing
                           ? 'bg-red-600/20 hover:bg-red-600/40 text-red-300'
-                          : 'bg-white/10 hover:bg-white/20 text-white/70',
+                          : 'bg-accent hover:bg-accent/80 text-foreground/70',
                       )}
                     >
                       {isEditing ? (
@@ -194,8 +194,8 @@ const TeamPresets: React.FC<TeamPresetsProps> = ({
 
               {/* Mode édition : liste des héros */}
               {isEditing && (
-                <div className="mt-2 border-t border-white/10 pt-2">
-                  <p className="text-xs text-white/40 mb-2">
+                <div className="mt-2 border-t border-border pt-2">
+                  <p className="text-xs text-muted-foreground mb-2">
                     {preset.heroIds.length}/{MAX_HEROES_PER_TEAM} héros sélectionnés
                   </p>
                   <div className="grid grid-cols-3 gap-1 max-h-48 overflow-y-auto">
@@ -217,8 +217,8 @@ const TeamPresets: React.FC<TeamPresetsProps> = ({
                             selected
                               ? 'border-yellow-400/60 bg-yellow-500/10 text-yellow-200'
                               : disabled
-                              ? 'border-white/5 bg-white/5 text-white/20 cursor-not-allowed'
-                              : 'border-white/10 bg-white/5 hover:bg-white/10 text-white/60',
+                              ? 'border-border/30 bg-muted/50 text-muted-foreground/40 cursor-not-allowed'
+                              : 'border-border bg-accent/50 hover:bg-accent text-muted-foreground',
                           )}
                         >
                           <HeroAvatar

@@ -73,7 +73,7 @@ const DailyQuests: React.FC<DailyQuestsProps> = ({ quests, onClaim, onClaimBonus
                     onClick={() => onClaim(quest.id)}
                     className="font-pixel text-[8px] h-7 px-2 gap-1"
                   >
-                    <Gift size={12} /> Claim
+                    <Gift size={12} /> Récupérer
                   </Button>
                 ) : null}
               </div>

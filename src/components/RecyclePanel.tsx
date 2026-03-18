@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { Hero, Rarity } from '@/game/types';
 import { getRecycleValue } from '@/game/recycleSystem';
 import { Button } from '@/components/ui/button';
-import { Trash2, Lock, Unlock, RefreshCw } from 'lucide-react';
+import { Trash2, Lock, Unlock, RefreshCw, Gem } from 'lucide-react';
 
 const RARITY_RANK: Record<Rarity, number> = {
   common: 0, rare: 1, 'super-rare': 2, epic: 3, legend: 4, 'super-legend': 5,
@@ -75,12 +75,12 @@ export default function RecyclePanel({ heroes, universalShards, onRecycle, onTog
   };
 
   const rarityColors: Record<string, string> = {
-    common: 'border-gray-500',
-    rare: 'border-blue-500',
-    'super-rare': 'border-purple-500',
-    epic: 'border-orange-500',
-    legend: 'border-yellow-500',
-    'super-legend': 'border-red-500',
+    common: 'rarity-common',
+    rare: 'rarity-rare',
+    'super-rare': 'rarity-super-rare',
+    epic: 'rarity-epic',
+    legend: 'rarity-legend',
+    'super-legend': 'rarity-super-legend',
   };
 
   if (duplicateHeroes.length === 0) {
@@ -95,7 +95,7 @@ export default function RecyclePanel({ heroes, universalShards, onRecycle, onTog
     <div className="space-y-3">
       {/* Header stats */}
       <div className="flex items-center justify-between text-sm flex-wrap gap-2">
-        <span className="text-muted-foreground">💎 {universalShards} Shards · {duplicateHeroes.length} doublons</span>
+        <span className="text-muted-foreground flex items-center gap-1"><Gem size={12} className="text-blue-400 inline" /> {universalShards} Shards · {duplicateHeroes.length} doublons</span>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={selectAllKeepingBest}>
             <RefreshCw className="w-3 h-3 mr-1" />
@@ -104,7 +104,7 @@ export default function RecyclePanel({ heroes, universalShards, onRecycle, onTog
           {selectedIds.size > 0 && (
             <Button variant="destructive" size="sm" onClick={() => setShowConfirm(true)}>
               <Trash2 className="w-3 h-3 mr-1" />
-              Recycler {selectedIds.size} (+{totalShards} 💎)
+              Recycler {selectedIds.size} (+{totalShards} <Gem size={12} className="text-blue-400 inline" />)
             </Button>
           )}
         </div>
@@ -113,8 +113,8 @@ export default function RecyclePanel({ heroes, universalShards, onRecycle, onTog
       {/* Confirmation */}
       {showConfirm && (
         <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 space-y-2">
-          <p className="text-sm text-destructive font-medium">
-            Recycler {selectedIds.size} héros pour {totalShards} 💎 Shards ?
+          <p className="text-sm text-destructive font-medium flex items-center gap-1">
+            Recycler {selectedIds.size} héros pour {totalShards} <Gem size={12} className="text-blue-400 inline" /> Shards ?
           </p>
           <p className="text-xs text-muted-foreground">Cette action est irréversible.</p>
           <div className="flex gap-2">
@@ -133,7 +133,7 @@ export default function RecyclePanel({ heroes, universalShards, onRecycle, onTog
             <div
               key={hero.id}
               className={`relative border-2 rounded-md p-1.5 cursor-pointer transition-all ${
-                rarityColors[hero.rarity] || 'border-gray-500'
+                rarityColors[hero.rarity] || 'rarity-common'
               } ${selected ? 'bg-destructive/20 scale-95' : 'bg-card/50 hover:bg-card'} ${
                 hero.isLocked ? 'opacity-50 cursor-not-allowed' : ''
               }`}
@@ -141,7 +141,7 @@ export default function RecyclePanel({ heroes, universalShards, onRecycle, onTog
             >
               <div className="text-xs text-center truncate">{hero.name.split(' #')[0]}</div>
               <div className="text-[10px] text-center text-muted-foreground">Niv.{hero.level}</div>
-              <div className="text-xs text-center text-cyan-400">+{recycleVal}💎</div>
+              <div className="text-xs text-center text-cyan-400 flex items-center justify-center gap-0.5">+{recycleVal}<Gem size={10} className="text-blue-400 inline" /></div>
               <button
                 className="absolute top-0.5 right-0.5 p-0.5 rounded hover:bg-white/10"
                 onClick={e => { e.stopPropagation(); onToggleLock(hero.id); }}
@@ -158,8 +158,8 @@ export default function RecyclePanel({ heroes, universalShards, onRecycle, onTog
 
       <div className="text-xs text-muted-foreground border-t pt-2">
         <span className="font-medium">Taux : </span>
-        Common=1💎 · Rare=3💎 · Super-Rare=8💎 · Epic=20💎 · Legend=50💎 · Super-Legend=150💎
-        <span className="ml-1">(+1💎/10 levels)</span>
+        Common=1 · Rare=3 · Super-Rare=8 · Epic=20 · Legend=50 · Super-Legend=150 <Gem size={10} className="text-blue-400 inline" />
+        <span className="ml-1">(+1<Gem size={10} className="text-blue-400 inline" />/10 niveaux)</span>
       </div>
     </div>
   );
