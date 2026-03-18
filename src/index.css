@@ -64,7 +64,24 @@
     --sidebar-accent-foreground: 0 0% 95%;
     --sidebar-border: 230 20% 22%;
     --sidebar-ring: 348 80% 58%;
+
+    /* Layout nav */
+    --bottom-nav-h: 4rem;      /* 64px — hauteur BottomNav mobile */
+    --header-h: 3rem;           /* 48px — hauteur SlimHeader */
+
+    /* Surfaces (élévation) */
+    --surface-1: hsl(220 13% 9%);    /* fond principal */
+    --surface-2: hsl(220 13% 12%);   /* card */
+    --surface-3: hsl(220 13% 16%);   /* card élevée */
+    --surface-overlay: hsl(220 13% 6% / 0.8); /* overlay drawer */
   }
+}
+
+.pb-nav {
+  padding-bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom, 0px));
+}
+.pt-header {
+  padding-top: var(--header-h);
 }
 
 @layer base {
