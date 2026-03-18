@@ -1665,6 +1665,7 @@ const Index = () => {
         accountXp={getXpInCurrentLevel(player.xp).currentXp}
         xpToNextLevel={getXpInCurrentLevel(player.xp).xpNeeded}
         title={PAGE_TITLES[page]}
+        onProfileClick={user ? () => navigate("/profile") : undefined}
       />
 
       {/* Container swipeable 5 pages */}
