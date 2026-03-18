@@ -17,6 +17,7 @@ const Footer: React.FC = () => (
         <Link to="/wiki" className="font-pixel text-[7px] text-muted-foreground hover:text-foreground transition-colors">Wiki</Link>
         <Link to="/wiki/glossaire" className="font-pixel text-[7px] text-muted-foreground hover:text-foreground transition-colors">Glossaire</Link>
         <Link to="/guides" className="font-pixel text-[7px] text-muted-foreground hover:text-foreground transition-colors">Guides</Link>
+        <Link to="/leaderboard" className="font-pixel text-[7px] text-muted-foreground hover:text-foreground transition-colors">Leaderboard</Link>
         <Link to="/changelog" className="font-pixel text-[7px] text-muted-foreground hover:text-foreground transition-colors">Changelog</Link>
         <Link to="/auth" className="font-pixel text-[7px] text-muted-foreground hover:text-foreground transition-colors">Connexion</Link>
       </div>

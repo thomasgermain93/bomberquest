@@ -18,6 +18,7 @@ import Changelog from "./pages/Changelog";
 import ResetPassword from "./pages/ResetPassword";
 import Profile from "./pages/Profile";
 import Summon from "./pages/Summon";
+import Leaderboard from "./pages/Leaderboard";
 import NotFound from "./pages/NotFound";
 import UsernameRequiredDialog from "./components/UsernameRequiredDialog";
 
@@ -46,6 +47,7 @@ const App = () => (
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/summon" element={<Summon />} />
+            <Route path="/leaderboard" element={<Leaderboard />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
             </Routes>
