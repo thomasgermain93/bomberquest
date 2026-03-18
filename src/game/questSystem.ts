@@ -1,3 +1,11 @@
+export interface QuestVariant {
+  description: string;
+  target: number;
+  reward: number;
+  xp: number;
+  rewardType?: 'coins' | 'shards'; // optionnel, défaut coins
+}
+
 export interface Quest {
   id: string;
   type: QuestType;
@@ -6,6 +14,7 @@ export interface Quest {
   target: number;
   progress: number;
   reward: number;
+  rewardType: 'coins' | 'shards';
   xpReward: number;
   completed: boolean;
   claimed: boolean;
@@ -17,9 +26,10 @@ export type QuestType =
   | 'open_chests'
   | 'earn_coins'
   | 'summon_heroes'
-  | 'upgrade_hero'
+  | 'collect_shards'
   | 'destroy_blocks'
-  | 'place_bombs';
+  | 'place_bombs'
+  | 'upgrade_hero'; // @deprecated — conservé pour compat Index.tsx, ne plus générer
 
 export interface DailyQuestData {
   quests: Quest[];
@@ -31,7 +41,7 @@ const QUEST_TEMPLATES: {
   type: QuestType;
   label: string;
   emoji: string;
-  variants: { description: string; target: number; reward: number; xp: number }[];
+  variants: QuestVariant[];
 }[] = [
   {
     type: 'complete_maps', label: 'Explorateur', emoji: '🗺️',
@@ -65,10 +75,19 @@ const QUEST_TEMPLATES: {
     ],
   },
   {
-    type: 'upgrade_hero', label: 'Entraîneur', emoji: '⬆️',
+    type: 'collect_shards', label: 'Collecteur de fragments', emoji: '💎',
     variants: [
-      { description: 'Améliore 1 héros', target: 1, reward: 150, xp: 70 },
-      { description: 'Améliore 2 héros', target: 2, reward: 280, xp: 130 },
+      { description: 'Collecte 5 Shards Universels', target: 5, reward: 120, xp: 60, rewardType: 'shards' },
+      { description: 'Collecte 15 Shards Universels', target: 15, reward: 250, xp: 120, rewardType: 'shards' },
+      { description: 'Collecte 30 Shards Universels', target: 30, reward: 400, xp: 200, rewardType: 'shards' },
+    ],
+  },
+  {
+    type: 'destroy_blocks', label: 'Démolisseur', emoji: '💥',
+    variants: [
+      { description: 'Détruis 50 blocs', target: 50, reward: 80, xp: 40 },
+      { description: 'Détruis 100 blocs', target: 100, reward: 150, xp: 80 },
+      { description: 'Détruis 200 blocs', target: 200, reward: 250, xp: 120 },
     ],
   },
   {
@@ -106,9 +125,20 @@ export function generateDailyQuests(): DailyQuestData {
   const today = getTodayString();
   const rng = seededRandom(dateToSeed(today));
 
-  // Pick 3 unique quest types
+  // Mélanger les templates de façon déterministe
   const shuffled = [...QUEST_TEMPLATES].sort(() => rng() - 0.5);
-  const picked = shuffled.slice(0, 3);
+
+  // Assure au moins une quête de farm, une de combat, une de progression
+  const farmQuests = shuffled.filter(t => ['complete_maps', 'open_chests', 'earn_coins'].includes(t.type));
+  const actionQuests = shuffled.filter(t => ['place_bombs', 'destroy_blocks'].includes(t.type));
+  const progressQuests = shuffled.filter(t => ['summon_heroes', 'collect_shards'].includes(t.type));
+
+  // Prendre 1 de chaque catégorie, fallback si une catégorie est vide
+  const picked = [
+    farmQuests[0] || shuffled[0],
+    actionQuests[0] || shuffled[1],
+    progressQuests[0] || shuffled[2],
+  ].filter(Boolean).slice(0, 3);
 
   const quests: Quest[] = picked.map((template, i) => {
     const variant = template.variants[Math.floor(rng() * template.variants.length)];
@@ -120,6 +150,7 @@ export function generateDailyQuests(): DailyQuestData {
       target: variant.target,
       progress: 0,
       reward: variant.reward,
+      rewardType: variant.rewardType || 'coins',
       xpReward: variant.xp,
       completed: false,
       claimed: false,
