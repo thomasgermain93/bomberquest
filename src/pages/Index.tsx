@@ -32,11 +32,14 @@ import Achievements from '@/components/Achievements';
 import XpBar from '@/components/XpBar';
 import PixelIcon from '@/components/PixelIcon';
 import HeroAvatar from '@/components/HeroAvatar';
+import BottomNav from '@/components/BottomNav';
+import SlimHeader from '@/components/SlimHeader';
+import MoreDrawer from '@/components/MoreDrawer';
 import { Home, Users, Sparkles, Swords, Map as MapIcon, Trophy, Coins, Star, ChevronLeft, Play, Pause, DoorOpen, Check, Scroll, FastForward, BookOpen, Shield, Skull, Bomb, Lock as LockIcon, Volume2, VolumeX, User, Hammer, ArrowDown, Trash2 } from 'lucide-react';
 import { SFX, isMuted, setMuted } from '@/game/sfx';
 import { toast } from '@/hooks/use-toast';
 
-type Screen = 'hub' | 'treasure-hunt' | 'heroes' | 'codex' | 'fusion' | 'summon' | 'story' | 'story-battle' | 'achievements';
+type Screen = 'hub' | 'treasure-hunt' | 'heroes' | 'codex' | 'fusion' | 'summon' | 'story' | 'story-battle' | 'achievements' | 'combat' | 'recycle';
 
 
 const LOCAL_SAVE_TS_KEY = 'bq_last_local_save_ts';
@@ -119,6 +122,7 @@ const Index = () => {
   const [heroPickerOpen, setHeroPickerOpen] = useState(false);
   const [activeSlotIdx, setActiveSlotIdx] = useState<number | null>(null);
   const [showRecycleMode, setShowRecycleMode] = useState(false);
+  const [moreDrawerOpen, setMoreDrawerOpen] = useState(false);
   const [heroFilters, setHeroFilters] = useState<HeroFilters>(() => {
     if (typeof window === 'undefined') return DEFAULT_HERO_FILTERS;
     try {
@@ -1504,6 +1508,43 @@ const Index = () => {
 
   const isInBattle = screen === 'treasure-hunt' || screen === 'story-battle';
 
+  const handleNavigate = (newScreen: string) => {
+    if (newScreen === 'more') {
+      setMoreDrawerOpen(true);
+      return;
+    }
+    setMoreDrawerOpen(false);
+    // Mapper 'combat' → 'story' (BottomNav utilise 'combat', le jeu utilise 'story')
+    if (newScreen === 'combat') {
+      setScreen('story');
+      return;
+    }
+    if (newScreen === 'summon') {
+      navigate('/summon');
+      return;
+    }
+    setScreen(newScreen as Screen);
+  };
+
+  // Titre affiché dans le SlimHeader selon l'écran actif
+  const screenTitle = (() => {
+    switch (screen) {
+      case 'hub': return 'BomberQuest';
+      case 'heroes': return 'Héros';
+      case 'codex': return 'Codex';
+      case 'fusion': return 'Forge de Fusion';
+      case 'achievements': return 'Succès';
+      case 'story': return 'Aventure';
+      case 'story-battle': return 'Combat';
+      case 'treasure-hunt': return 'Chasse au Trésor';
+      case 'recycle': return 'Recyclage';
+      default: return 'BomberQuest';
+    }
+  })();
+
+  // Écran BottomNav actif (mapper story → combat pour la surbrillance)
+  const bottomNavScreen = screen === 'story' || screen === 'story-battle' ? 'combat' : screen;
+
   if (isCloudLoading) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
@@ -1514,91 +1555,16 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden">
-      {/* Top Bar */}
-      <header className="sticky top-0 z-40 bg-card/95 backdrop-blur border-b border-border px-2 sm:px-4 py-2 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <Bomb size={18} className="text-primary shrink-0" />
-          <h1 className="font-pixel text-[8px] sm:text-xs text-foreground tracking-wider hidden sm:block">BOMBERQUEST</h1>
-        </div>
-        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-end">
-          <button
-            onClick={toggleMute}
-            className="p-2 sm:p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground min-w-[44px] sm:min-w-[auto] min-h-[36px] sm:min-h-[auto] flex items-center justify-center"
-            title={muted ? 'Activer le son' : 'Couper le son'}
-          >
-            {muted ? <VolumeX size={16} /> : <Volume2 size={16} />}
-          </button>
-          <div className="flex items-center gap-1.5 pixel-border px-2 sm:px-3 py-1.5 bg-muted min-w-[70px] sm:min-w-[auto]">
-            <Coins size={14} className="text-game-gold shrink-0" />
-            <span className="font-pixel text-[9px] sm:text-[10px] text-game-gold tabular-nums">
-              {(player.bomberCoins + (gameState?.coinsEarned || 0)).toLocaleString()}
-              {gameState?.coinsEarned ? <span className="text-[8px] opacity-70 ml-1">(+{gameState.coinsEarned})</span> : null}
-            </span>
-          </div>
-          <div className="hidden sm:flex items-center gap-1.5 text-[10px] text-muted-foreground">
-            <Star size={12} /> Lv.{player.accountLevel}
-            <span className="text-border">|</span>
-            <Users size={12} /> {player.heroes.length}
-          </div>
-          <div className="flex sm:hidden items-center gap-1 text-[9px] text-muted-foreground tabular-nums">
-            <Star size={10} /> {player.accountLevel}
-            <Users size={10} /> {player.heroes.length}
-          </div>
-          {user && (
-            <>
-              <button
-                onClick={() => navigate('/profile')}
-                className="p-2 sm:p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground min-w-[44px] sm:min-w-[auto] min-h-[36px] sm:min-h-[auto] flex items-center justify-center"
-                title="Profil"
-              >
-                <User size={16} />
-              </button>
-              <button
-                onClick={async () => { await signOut(); navigate('/'); }}
-                className="p-2 sm:p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground min-w-[44px] sm:min-w-[auto] min-h-[36px] sm:min-h-[auto] flex items-center justify-center"
-                title="Déconnexion"
-              >
-                <DoorOpen size={16} />
-              </button>
-            </>
-          )}
-        </div>
-      </header>
+    <div className="flex flex-col h-screen bg-background overflow-x-hidden">
+      <SlimHeader
+        bomberCoins={player.bomberCoins + (gameState?.coinsEarned || 0)}
+        universalShards={player.universalShards}
+        accountLevel={player.accountLevel}
+        title={screenTitle}
+      />
 
-      {/* Navigation */}
-      {!isInBattle && (
-        <nav className="sticky top-[49px] sm:top-[49px] z-30 bg-card/90 backdrop-blur border-b border-border px-1 sm:px-2 py-1.5 flex gap-1 overflow-x-auto">
-          {[
-            { id: 'hub' as Screen, label: 'Hub', icon: <Home size={14} />, testId: 'tab-hub' },
-            { id: 'story' as Screen, label: 'Histoire', icon: <BookOpen size={14} />, testId: 'tab-story' },
-            { id: 'heroes' as Screen, label: 'Héros', icon: <Users size={14} />, testId: 'tab-heroes' },
-            { id: 'codex' as Screen, label: 'Codex', icon: <BookOpen size={14} />, testId: 'tab-codex' },
-            { id: 'fusion' as Screen, label: 'Fusion', icon: <Hammer size={14} />, testId: 'tab-fusion' },
-            { id: 'summon' as Screen, label: 'Invoquer', icon: <Sparkles size={14} />, testId: 'tab-summon' },
-            { id: 'achievements' as Screen, label: 'Succès', icon: <Trophy size={14} />, testId: 'tab-achievements' },
-          ].map(tab => (
-            <button
-              key={tab.id}
-              data-testid={tab.testId}
-              onClick={() => {
-                if (tab.id === 'summon') navigate('/summon');
-                else setScreen(tab.id);
-              }}
-              className={`font-pixel text-[7px] sm:text-[8px] px-2.5 sm:px-3 py-2.5 sm:py-2 rounded flex items-center gap-1.5 transition-all whitespace-nowrap min-h-[44px] ${
-                screen === tab.id
-                  ? 'bg-primary text-primary-foreground shadow-md'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-              }`}
-            >
-              {tab.icon}
-              {tab.label}
-            </button>
-          ))}
-        </nav>
-      )}
-
-      <main className="p-4 max-w-6xl mx-auto">
+      <main className="flex-1 overflow-y-auto pt-12 pb-16 md:pl-16">
+        <div className="p-4 max-w-6xl mx-auto">
         {/* HUB SCREEN */}
         {screen === 'hub' && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
@@ -2128,9 +2094,6 @@ const Index = () => {
               <h2 className="font-pixel text-xs text-foreground flex items-center gap-2">
                 <Users size={16} /> TOUS LES HÉROS ({player.heroes.length})
               </h2>
-              <button onClick={() => setScreen('hub')} className="pixel-btn pixel-btn-secondary font-pixel text-[8px] flex items-center gap-1">
-                <ChevronLeft size={12} /> Retour
-              </button>
             </div>
 
             <div className="pixel-border bg-card p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -2284,9 +2247,6 @@ const Index = () => {
               <h2 className="font-pixel text-xs text-foreground flex items-center gap-2">
                 <BookOpen size={16} /> HERO CODEX
               </h2>
-              <button onClick={() => setScreen('hub')} className="pixel-btn pixel-btn-secondary font-pixel text-[8px] flex items-center gap-1">
-                <ChevronLeft size={12} /> Retour
-              </button>
             </div>
 
             <div className="pixel-border bg-card p-4 space-y-2">
@@ -2355,9 +2315,6 @@ const Index = () => {
               <h2 className="font-pixel text-xs text-foreground flex items-center gap-2">
                 <Trophy size={16} /> SUCCÈS
               </h2>
-              <button onClick={() => setScreen('hub')} className="pixel-btn pixel-btn-secondary font-pixel text-[8px] flex items-center gap-1">
-                <ChevronLeft size={12} /> Retour
-              </button>
             </div>
             <Achievements 
               achievements={player.achievements} 
@@ -2395,9 +2352,6 @@ const Index = () => {
               <h2 className="font-pixel text-xs text-foreground flex items-center gap-2">
                 <Hammer size={16} /> FORGE DE FUSION
               </h2>
-              <button onClick={() => setScreen('hub')} className="pixel-btn pixel-btn-secondary font-pixel text-[8px] flex items-center gap-1">
-                <ChevronLeft size={12} /> Retour
-              </button>
             </div>
 
             {/* Recipe selector */}
@@ -2519,7 +2473,17 @@ const Index = () => {
           </motion.div>
         )}
 
+        </div>
       </main>
+
+      <BottomNav screen={bottomNavScreen} onNavigate={handleNavigate} />
+
+      <MoreDrawer
+        open={moreDrawerOpen}
+        onClose={() => setMoreDrawerOpen(false)}
+        onNavigate={(s) => { setMoreDrawerOpen(false); setScreen(s as Screen); }}
+        currentScreen={screen}
+      />
 
       <HeroUpgradeModal
         hero={upgradeHeroData}
