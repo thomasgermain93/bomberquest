@@ -60,6 +60,7 @@ export function loadPlayerData(): PlayerData {
           ...hero,
           xp: Number.isFinite(Number(hero?.xp)) ? Number(hero.xp) : 0,
           level: Number.isFinite(Number(hero?.level)) ? Math.max(1, Math.min(Number(hero.level), 120)) : 1,
+          progressionStats: hero.progressionStats ?? { chestsOpened: 0, totalDamageDealt: 0, battlesPlayed: 0, victories: 0, obtainedAt: Date.now() },
         }));
       } else {
         parsed.heroes = [];
