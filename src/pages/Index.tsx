@@ -13,7 +13,7 @@ import HeroDetailInline from '@/components/HeroDetailInline';
 import HeroPickerModal from '@/components/HeroPickerModal';
 import FusionSlot from '@/components/FusionSlot';
 import StoryMode from '@/components/StoryMode';
-import { GameState, Hero, MAP_CONFIGS, PlayerData, RARITY_CONFIG, RARITY_ORDER, sortByRarity, Rarity, HERO_NAMES, HERO_FAMILIES, HeroFamilyId, MAX_LEVEL_BY_RARITY } from '@/game/types';
+import { GameState, Hero, MAP_CONFIGS, PlayerData, RARITY_CONFIG, RARITY_ORDER, sortByRarity, Rarity, HERO_NAMES, HERO_FAMILIES, HERO_FAMILY_MAP, HeroFamilyId, MAX_LEVEL_BY_RARITY } from '@/game/types';
 import { generateMap, tickGame } from '@/game/engine';
 import { summonHero, generateHero } from '@/game/summoning';
 import { loadPlayerData, savePlayerData, getDefaultPlayerData, saveStoryProgress, loadStoryProgress } from '@/game/saveSystem';
@@ -62,11 +62,12 @@ const markHeroMutation = () => {
 };
 
 type HeroLevelFilter = 'all' | '1-20' | '21-40' | '41-60' | '61+';
+type HeroSortBy = 'rarity' | 'level';
 
 type HeroFilters = {
-  clan: 'all' | HeroFamilyId;
   rarity: 'all' | Rarity;
   level: HeroLevelFilter;
+  sortBy: HeroSortBy;
   showDuplicatesOnly?: boolean;
   showLockedOnly?: boolean;
 };
@@ -74,9 +75,9 @@ type HeroFilters = {
 const HERO_FILTERS_SESSION_KEY = 'bq_heroes_filters_v1';
 
 const DEFAULT_HERO_FILTERS: HeroFilters = {
-  clan: 'all',
   rarity: 'all',
   level: 'all',
+  sortBy: 'rarity',
   showDuplicatesOnly: false,
   showLockedOnly: false,
 };
@@ -140,21 +141,8 @@ const Index = () => {
   const [heroPickerOpen, setHeroPickerOpen] = useState(false);
   const [activeSlotIdx, setActiveSlotIdx] = useState<number | null>(null);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
-  const [heroFilters, setHeroFilters] = useState<HeroFilters>(() => {
-    if (typeof window === 'undefined') return DEFAULT_HERO_FILTERS;
-    try {
-      const raw = sessionStorage.getItem(HERO_FILTERS_SESSION_KEY);
-      if (!raw) return DEFAULT_HERO_FILTERS;
-      const parsed = JSON.parse(raw) as Partial<HeroFilters>;
-      return {
-        clan: parsed.clan && (parsed.clan === 'all' || HERO_FAMILIES.some(f => f.id === parsed.clan)) ? parsed.clan : 'all',
-        rarity: parsed.rarity && (parsed.rarity === 'all' || Object.keys(RARITY_CONFIG).includes(parsed.rarity)) ? parsed.rarity as HeroFilters['rarity'] : 'all',
-        level: parsed.level && ['all', '1-20', '21-40', '41-60', '61+'].includes(parsed.level) ? parsed.level as HeroLevelFilter : 'all',
-      };
-    } catch {
-      return DEFAULT_HERO_FILTERS;
-    }
-  });
+  const [heroFilters, setHeroFilters] = useState<HeroFilters>(DEFAULT_HERO_FILTERS);
+  const [codexClanFilter, setCodexClanFilter] = useState<'all' | HeroFamilyId>('all');
 
   // Reset fusion slots when recipe changes
   useEffect(() => {
@@ -192,13 +180,7 @@ const Index = () => {
 
     return [...player.heroes]
       .filter((hero) => {
-        if (heroFilters.clan !== 'all') {
-          if (hero.family !== heroFilters.clan) return false;
-        }
-
-        if (heroFilters.rarity !== 'all' && hero.rarity !== heroFilters.rarity) {
-          return false;
-        }
+        if (heroFilters.rarity !== 'all' && hero.rarity !== heroFilters.rarity) return false;
 
         if (heroFilters.level !== 'all') {
           if (heroFilters.level === '1-20' && !(hero.level >= 1 && hero.level <= 20)) return false;
@@ -212,13 +194,12 @@ const Index = () => {
           if ((nameCounts.get(baseName) || 0) <= 1) return false;
         }
 
-        if (heroFilters.showLockedOnly && !hero.isLocked) {
-          return false;
-        }
+        if (heroFilters.showLockedOnly && !hero.isLocked) return false;
 
         return true;
       })
       .sort((a, b) => {
+        if (heroFilters.sortBy === 'level') return b.level - a.level;
         const order = ['super-legend', 'legend', 'epic', 'super-rare', 'rare', 'common'];
         return order.indexOf(a.rarity) - order.indexOf(b.rarity);
       });
@@ -533,6 +514,8 @@ const Index = () => {
         let eventLog = [...state.eventLog];
         let enemiesKilled = state.enemiesKilled || 0;
         let coinsEarned = state.coinsEarned;
+        // heroes doit être déclaré ici pour être accessible dans la boucle d'explosions
+        let heroes = state.heroes.map(h => ({ ...h }));
 
         // Tick boss
         let newMinions: any[] = [];
@@ -653,7 +636,7 @@ const Index = () => {
           if (!activeIds.has(id)) processedExplosionsRef.current.delete(id);
         });
 
-        let heroes = state.heroes.map(h => {
+        heroes = heroes.map(h => {
           if (h.state === 'resting') return h;
           const hx = Math.round(h.position.x);
           const hy = Math.round(h.position.y);
@@ -1906,95 +1889,105 @@ const Index = () => {
                     className="flex items-center justify-between w-full p-3"
                   >
                     <span className="font-pixel text-[9px] text-foreground flex items-center gap-2">
-                      <Filter size={12} /> FILTRES
-                      {(heroFilters.clan !== 'all' || heroFilters.rarity !== 'all' || heroFilters.level !== 'all' || heroFilters.showDuplicatesOnly || heroFilters.showLockedOnly) && (
+                      <Filter size={12} /> TRIER / FILTRER
+                      {(heroFilters.rarity !== 'all' || heroFilters.level !== 'all' || heroFilters.sortBy !== 'rarity' || heroFilters.showDuplicatesOnly || heroFilters.showLockedOnly) && (
                         <span className="text-[7px] text-primary">● actifs</span>
                       )}
                     </span>
-                    <ChevronDown size={14} className={`text-muted-foreground transition-transform ${filtersExpanded ? 'rotate-180' : ''}`} />
+                    <div className="flex items-center gap-2">
+                      <span className="font-pixel text-[7px] text-muted-foreground">{filteredHeroes.length}/{player.heroes.length}</span>
+                      <ChevronDown size={14} className={`text-muted-foreground transition-transform ${filtersExpanded ? 'rotate-180' : ''}`} />
+                    </div>
                   </button>
+
                   {filtersExpanded && (
-                    <div className="px-3 pb-3 space-y-3">
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                        <label className="text-[8px] text-muted-foreground space-y-1">
-                          <span className="font-pixel">Clan</span>
-                          <select
-                            className="w-full bg-muted border border-border rounded px-2 py-2 text-[10px]"
-                            value={heroFilters.clan}
-                            onChange={(e) => setHeroFilters(prev => ({ ...prev, clan: e.target.value as HeroFilters['clan'] }))}
-                          >
-                            <option value="all">Tous les clans</option>
-                            {HERO_FAMILIES.map((family) => (
-                              <option key={family.id} value={family.id}>{family.name}</option>
-                            ))}
-                          </select>
-                        </label>
-
-                        <label className="text-[8px] text-muted-foreground space-y-1">
-                          <span className="font-pixel">Rareté</span>
-                          <select
-                            className="w-full bg-muted border border-border rounded px-2 py-2 text-[10px]"
-                            value={heroFilters.rarity}
-                            onChange={(e) => setHeroFilters(prev => ({ ...prev, rarity: e.target.value as HeroFilters['rarity'] }))}
-                          >
-                            <option value="all">Toutes les raretés</option>
-                            {(Object.keys(RARITY_CONFIG) as Rarity[]).map((rarity) => (
-                              <option key={rarity} value={rarity}>{RARITY_CONFIG[rarity].label}</option>
-                            ))}
-                          </select>
-                        </label>
-
-                        <label className="text-[8px] text-muted-foreground space-y-1">
-                          <span className="font-pixel">Niveau</span>
-                          <select
-                            className="w-full bg-muted border border-border rounded px-2 py-2 text-[10px]"
-                            value={heroFilters.level}
-                            onChange={(e) => setHeroFilters(prev => ({ ...prev, level: e.target.value as HeroLevelFilter }))}
-                          >
-                            <option value="all">Tous les niveaux</option>
-                            <option value="1-20">Niv. 1-20</option>
-                            <option value="21-40">Niv. 21-40</option>
-                            <option value="41-60">Niv. 41-60</option>
-                            <option value="61+">Niv. 61+</option>
-                          </select>
-                        </label>
+                    <div className="px-3 pb-3 space-y-3 border-t border-border">
+                      {/* Tri */}
+                      <div className="pt-2 space-y-1.5">
+                        <p className="font-pixel text-[7px] text-muted-foreground uppercase">Trier par</p>
+                        <div className="flex gap-1.5 flex-wrap">
+                          {([['rarity', 'Rareté'], ['level', 'Niveau']] as const).map(([val, label]) => (
+                            <button
+                              key={val}
+                              onClick={() => setHeroFilters(f => ({ ...f, sortBy: val }))}
+                              className={`font-pixel text-[7px] px-2.5 py-1 border transition-colors ${
+                                heroFilters.sortBy === val
+                                  ? 'border-primary text-primary bg-primary/15'
+                                  : 'border-border text-muted-foreground bg-muted/30 hover:border-primary/50'
+                              }`}
+                            >
+                              {label}
+                            </button>
+                          ))}
+                        </div>
                       </div>
 
-                      <div className="flex gap-2 flex-wrap items-center">
+                      {/* Filtre rareté */}
+                      <div className="space-y-1.5">
+                        <p className="font-pixel text-[7px] text-muted-foreground uppercase">Rareté</p>
+                        <div className="flex gap-1 flex-wrap">
+                          {(['all', ...Object.keys(RARITY_CONFIG)] as ('all' | Rarity)[]).map(r => (
+                            <button
+                              key={r}
+                              onClick={() => setHeroFilters(f => ({ ...f, rarity: r }))}
+                              className={`font-pixel text-[7px] px-2 py-0.5 border transition-colors ${
+                                heroFilters.rarity === r
+                                  ? 'border-primary text-primary bg-primary/15'
+                                  : 'border-border text-muted-foreground bg-muted/30 hover:border-primary/50'
+                              }`}
+                            >
+                              {r === 'all' ? 'Tous' : RARITY_CONFIG[r as Rarity].label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Filtre niveau */}
+                      <div className="space-y-1.5">
+                        <p className="font-pixel text-[7px] text-muted-foreground uppercase">Niveau</p>
+                        <div className="flex gap-1 flex-wrap">
+                          {(['all', '1-20', '21-40', '41-60', '61+'] as HeroLevelFilter[]).map(l => (
+                            <button
+                              key={l}
+                              onClick={() => setHeroFilters(f => ({ ...f, level: l }))}
+                              className={`font-pixel text-[7px] px-2 py-0.5 border transition-colors ${
+                                heroFilters.level === l
+                                  ? 'border-primary text-primary bg-primary/15'
+                                  : 'border-border text-muted-foreground bg-muted/30 hover:border-primary/50'
+                              }`}
+                            >
+                              {l === 'all' ? 'Tous' : `Niv.${l}`}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Toggles + reset */}
+                      <div className="flex gap-1.5 flex-wrap items-center pt-1 border-t border-border">
                         <button
-                          className={`text-xs px-2 py-1 rounded border transition-colors ${
-                            heroFilters.showDuplicatesOnly ? 'border-orange-400 text-orange-400 bg-orange-400/10' : 'border-border text-muted-foreground'
-                          }`}
                           onClick={() => setHeroFilters(f => ({ ...f, showDuplicatesOnly: !f.showDuplicatesOnly }))}
+                          className={`font-pixel text-[7px] px-2 py-1 border transition-colors ${
+                            heroFilters.showDuplicatesOnly ? 'border-orange-400 text-orange-400 bg-orange-400/15' : 'border-border text-muted-foreground bg-muted/30'
+                          }`}
                         >
                           Doublons
                         </button>
                         <button
-                          className={`text-xs px-2 py-1 rounded border transition-colors ${
-                            heroFilters.showLockedOnly ? 'border-yellow-400 text-yellow-400 bg-yellow-400/10' : 'border-border text-muted-foreground'
-                          }`}
                           onClick={() => setHeroFilters(f => ({ ...f, showLockedOnly: !f.showLockedOnly }))}
+                          className={`font-pixel text-[7px] px-2 py-1 border transition-colors ${
+                            heroFilters.showLockedOnly ? 'border-yellow-400 text-yellow-400 bg-yellow-400/15' : 'border-border text-muted-foreground bg-muted/30'
+                          }`}
                         >
                           🔒 Lockés
                         </button>
                         <button
                           onClick={() => setHeroFilters(DEFAULT_HERO_FILTERS)}
-                          className="pixel-btn pixel-btn-secondary font-pixel text-[8px] min-h-[32px] px-3 ml-auto"
-                          disabled={heroFilters.clan === 'all' && heroFilters.rarity === 'all' && heroFilters.level === 'all' && !heroFilters.showDuplicatesOnly && !heroFilters.showLockedOnly}
+                          className="pixel-btn pixel-btn-secondary font-pixel text-[7px] px-2 py-1 min-h-0 ml-auto"
                         >
                           Réinitialiser
                         </button>
                       </div>
-
-                      <p className="text-[8px] text-muted-foreground">
-                        {filteredHeroes.length} héros affichés sur {player.heroes.length}
-                      </p>
                     </div>
-                  )}
-                  {!filtersExpanded && (
-                    <p className="text-[8px] text-muted-foreground px-3 pb-3">
-                      {filteredHeroes.length} héros affichés sur {player.heroes.length}
-                    </p>
                   )}
                 </div>
 
@@ -2044,10 +2037,47 @@ const Index = () => {
                   </p>
                 </div>
 
+                {/* Filtre clan Codex — boutons toggle pixel art */}
+                <div className="pixel-border bg-card p-3 space-y-2">
+                  <p className="font-pixel text-[7px] text-muted-foreground uppercase">Filtrer par clan</p>
+                  <div className="flex gap-1.5 flex-wrap">
+                    <button
+                      onClick={() => setCodexClanFilter('all')}
+                      className={`font-pixel text-[7px] px-2.5 py-1 border transition-colors ${
+                        codexClanFilter === 'all'
+                          ? 'border-primary text-primary bg-primary/15'
+                          : 'border-border text-muted-foreground bg-muted/30 hover:border-primary/50'
+                      }`}
+                    >
+                      Tous
+                    </button>
+                    {HERO_FAMILIES.map(family => (
+                      <button
+                        key={family.id}
+                        onClick={() => setCodexClanFilter(codexClanFilter === family.id ? 'all' : family.id)}
+                        className={`font-pixel text-[7px] px-2.5 py-1 border transition-colors ${
+                          codexClanFilter === family.id
+                            ? 'border-primary text-primary bg-primary/15'
+                            : 'border-border text-muted-foreground bg-muted/30 hover:border-primary/50'
+                        }`}
+                      >
+                        {family.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 {/* Group codex entries by rarity */}
                 <div className="space-y-6">
                   {CODEX_RARITY_ORDER.map((rarity) => {
-                    const entriesForRarity = codexByName.filter(entry => entry.rarity === rarity);
+                    const entriesForRarity = codexByName.filter(entry => {
+                      if (entry.rarity !== rarity) return false;
+                      if (codexClanFilter !== 'all') {
+                        const heroFamily = HERO_FAMILY_MAP[entry.key];
+                        if (heroFamily !== codexClanFilter) return false;
+                      }
+                      return true;
+                    });
                     const unlockedCount = entriesForRarity.filter(e => e.unlocked).length;
                     const totalCount = entriesForRarity.length;
 
@@ -2443,17 +2473,11 @@ const Index = () => {
 
                 {/* Auto-farm indicator */}
                 {autoFarm && (
-                  <div className="pixel-border bg-primary/10 p-2.5 flex items-center justify-between gap-2">
-                    <span className="font-pixel text-[8px] text-primary flex items-center gap-1.5 whitespace-nowrap">
+                  <div className="pixel-border bg-primary/10 p-2.5">
+                    <span className="font-pixel text-[8px] text-primary flex items-center gap-1.5">
                       <FastForward size={12} /> AUTO-FARM ACTIF
-                      <span className="text-muted-foreground tabular-nums">• Run #{farmStats.runs + 1} • Total: {farmStats.totalCoins} BC</span>
+                      <span className="text-muted-foreground tabular-nums">• Run #{farmStats.runs + 1} • {farmStats.totalCoins} BC</span>
                     </span>
-                    <button
-                      onClick={() => { setAutoFarm(false); endTreasureHunt(); }}
-                      className="font-pixel text-[7px] px-2 py-1 rounded bg-destructive/80 text-destructive-foreground hover:bg-destructive"
-                    >
-                      Arrêter
-                    </button>
                   </div>
                 )}
 
@@ -2852,7 +2876,7 @@ const Index = () => {
 
       </motion.div>
 
-      <MainNav page={page} onNavigate={setPage} />
+      {!isInBattle && <MainNav page={page} onNavigate={setPage} />}
 
 
       {/* HeroUpgradeModal désactivé — détail héros rendu inline dans la Page 1 */}
