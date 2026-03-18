@@ -94,11 +94,21 @@ export function applyShardRewards(
   rewards: ShardReward[]
 ): Record<Rarity, number> {
   const newShards = { ...currentShards };
-  
+
   for (const reward of rewards) {
     newShards[reward.rarity] = (newShards[reward.rarity] || 0) + reward.quantity;
   }
-  
+
   return newShards;
+}
+
+export function generateUniversalShardReward(mapIndex: number): number {
+  // Montant en universalShards selon le tier de carte
+  const tier = getFarmTier(mapIndex);
+  const amounts: Record<FarmTier, number> = { low: 3, medium: 6, high: 12 };
+  const base = amounts[tier];
+  // +0 à +50% bonus aléatoire
+  const bonus = Math.floor(base * Math.random() * 0.5);
+  return base + bonus;
 }
 

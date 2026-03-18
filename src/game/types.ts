@@ -141,7 +141,9 @@ export interface PlayerData {
   };
   totalHeroesOwned: number;
   mapsCompleted: number;
+  /** @deprecated Migré vers universalShards */
   shards: Record<Rarity, number>;
+  universalShards: number;
   huntSpeed?: number;
   achievements: AchievementState;
 }

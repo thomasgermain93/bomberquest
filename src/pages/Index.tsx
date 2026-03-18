@@ -21,7 +21,7 @@ import { StoryProgress, StoryStage, BOSS_LEVEL_BY_TYPE, BOSS_RARITY_REWARD, Boss
 import { spawnEnemy, spawnBoss, tickEnemies, tickBoss, damageEnemiesFromExplosion, damageBossFromExplosion, checkEnemyHeroCollision, checkBossHeroCollision } from '@/game/enemyAI';
 import { STORY_REGIONS } from '@/game/storyData';
 import { getExplosionTiles } from '@/game/engine';
-import { generateShardRewards, applyShardRewards, ShardReward } from '@/game/shardRewardSystem';
+import { generateShardRewards, applyShardRewards, ShardReward, generateUniversalShardReward } from '@/game/shardRewardSystem';
 import DailyQuests from '@/components/DailyQuests';
 import Achievements from '@/components/Achievements';
 import XpBar from '@/components/XpBar';
@@ -741,14 +741,12 @@ const Index = () => {
     Object.assign(newAchievements, chestState);
     newAchievementUnlocks.push(...chestUnlocks);
 
-    let newShards = player.shards;
-    let currentShardRewards: ShardReward[] = [];
+    let universalShardsGained = 0;
     if (completed && !gameState.isStoryMode) {
-      currentShardRewards = generateShardRewards(selectedMap);
-      newShards = applyShardRewards(player.shards, currentShardRewards);
-      setLastShardRewards(currentShardRewards);
+      universalShardsGained = generateUniversalShardReward(selectedMap);
+      setLastShardRewards([{ rarity: 'common', quantity: universalShardsGained }]);
     }
-    
+
     setPlayer(prev => ({
       ...prev,
       bomberCoins: prev.bomberCoins + earned,
@@ -756,7 +754,7 @@ const Index = () => {
       xp: prev.xp + earned,
       heroes: updatedHeroes,
       achievements: newAchievements,
-      shards: newShards,
+      universalShards: prev.universalShards + universalShardsGained,
     }));
     
     for (const achievement of newAchievementUnlocks) {

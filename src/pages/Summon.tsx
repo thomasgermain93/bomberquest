@@ -11,7 +11,7 @@ import { trackSummon, trackRarityUnlock, trackHeroCount } from '@/game/achieveme
 import { toast } from '@/hooks/use-toast';
 import { ArrowLeft, Sparkles, Star, Coins, Gem, ArrowRight } from 'lucide-react';
 
-const SHARD_COSTS: Record<Rarity, number> = {
+const UNIVERSAL_SHARD_COSTS: Record<Rarity, number> = {
   common: 10,
   rare: 50,
   'super-rare': 150,
@@ -217,11 +217,8 @@ const Summon: React.FC = () => {
     Object.assign(newAchievements, heroCountState);
     newAchievementUnlocks.push(...heroCountUnlocks);
 
-    const newShards = { ...player.shards };
     const rarities: Rarity[] = ['common', 'rare', 'super-rare', 'epic', 'legend', 'super-legend'];
-    for (const hero of batch) {
-      newShards[hero.rarity] = (newShards[hero.rarity] || 0) + (rarities.indexOf(hero.rarity) + 1);
-    }
+    const universalShardsBonus = batch.reduce((acc, hero) => acc + (rarities.indexOf(hero.rarity) + 1), 0);
 
     setPlayer(prev => ({
       ...prev,
@@ -230,7 +227,7 @@ const Summon: React.FC = () => {
       pityCounters: currentPity,
       totalHeroesOwned: mergedHeroes.length,
       achievements: newAchievements,
-      shards: newShards,
+      universalShards: prev.universalShards + universalShardsBonus,
     }));
 
     for (const achievement of newAchievementUnlocks) {
@@ -257,7 +254,7 @@ const Summon: React.FC = () => {
       pityCounters: currentPity,
       totalHeroesOwned: mergedHeroes.length,
       achievements: newAchievements,
-      shards: newShards,
+      universalShards: player.universalShards + universalShardsBonus,
     };
     savePlayerData(updatedData);
     if (canWriteCloud) {
@@ -267,13 +264,12 @@ const Summon: React.FC = () => {
   };
 
   const handleSummonShards = () => {
-    const cost = SHARD_COSTS[selectedShardRarity];
-    const currentShards = player.shards[selectedShardRarity] || 0;
-    
-    if (currentShards < cost) {
-      toast({ 
-        title: 'Fragments insuffisants', 
-        description: `Il te faut ${cost} fragments ${selectedShardRarity} pour cette invocation.` 
+    const cost = UNIVERSAL_SHARD_COSTS[selectedShardRarity];
+
+    if (player.universalShards < cost) {
+      toast({
+        title: 'Fragments insuffisants',
+        description: `Il te faut ${cost} Shards Universels pour cette invocation.`,
       });
       return;
     }
@@ -281,9 +277,6 @@ const Summon: React.FC = () => {
     setAnimating(true);
     setShowResult(false);
     setShowExplosion(false);
-
-    const newShards = { ...player.shards };
-    newShards[selectedShardRarity] = currentShards - cost;
 
     const newHero = generateHero(selectedShardRarity);
     const newHeroes = [...player.heroes, newHero];
@@ -294,7 +287,7 @@ const Summon: React.FC = () => {
     const newTotalSummons = player.totalHeroesOwned + 1;
     const newAchievements = { ...player.achievements };
     const newAchievementUnlocks: any[] = [];
-    
+
     const { newState: summonState, unlocked: summonUnlocks } = trackSummon(player.achievements, newTotalSummons);
     Object.assign(newAchievements, summonState);
     newAchievementUnlocks.push(...summonUnlocks);
@@ -308,7 +301,7 @@ const Summon: React.FC = () => {
       heroes: newHeroes,
       totalHeroesOwned: newHeroes.length,
       achievements: newAchievements,
-      shards: newShards,
+      universalShards: prev.universalShards - cost,
     }));
 
     for (const achievement of newAchievementUnlocks) {
@@ -331,7 +324,7 @@ const Summon: React.FC = () => {
       heroes: newHeroes,
       totalHeroesOwned: newHeroes.length,
       achievements: newAchievements,
-      shards: newShards,
+      universalShards: player.universalShards - cost,
     };
     savePlayerData(updatedData);
     if (canWriteCloud) {
@@ -397,13 +390,17 @@ const Summon: React.FC = () => {
               <div className="flex items-center gap-2">
                 <Gem size={16} className="text-secondary" />
                 <span className="font-pixel text-[8px] text-muted-foreground">
-                  {player.shards[selectedShardRarity] || 0} / {SHARD_COSTS[selectedShardRarity]} {selectedShardRarity}
+                  💎 {player.universalShards} Shards Universels
                 </span>
               </div>
             </div>
 
             {activeTab === 'shards' && (
               <div className="mb-4">
+                <div className="flex items-center justify-center gap-2 mb-3 p-2 rounded bg-secondary/10 border border-secondary/30">
+                  <Gem size={14} className="text-secondary" />
+                  <span className="font-pixel text-[8px] text-secondary">💎 {player.universalShards} Shards Universels</span>
+                </div>
                 <p className="font-pixel text-[7px] text-muted-foreground mb-2">Sélectionne la rareté:</p>
                 <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
                   {(['rare', 'super-rare', 'epic', 'legend', 'super-legend'] as Rarity[]).map((r) => (
@@ -425,7 +422,7 @@ const Summon: React.FC = () => {
                           {RARITY_CONFIG[r].label}
                         </span>
                         <span className="font-pixel text-[5px] text-muted-foreground block mt-0.5">
-                          {SHARD_COSTS[r]}
+                          {UNIVERSAL_SHARD_COSTS[r]}
                         </span>
                       </div>
                     </button>
@@ -595,7 +592,7 @@ const Summon: React.FC = () => {
 
                     <button
                       onClick={handleSummonShards}
-                      disabled={animating || (player.shards[selectedShardRarity] || 0) < SHARD_COSTS[selectedShardRarity]}
+                      disabled={animating || player.universalShards < UNIVERSAL_SHARD_COSTS[selectedShardRarity]}
                       className="pixel-btn w-full text-center disabled:opacity-40"
                       style={{ background: `linear-gradient(135deg, hsl(var(--game-rarity-${selectedShardRarity})), hsl(var(--game-rarity-${selectedShardRarity}) / 0.7))` }}
                     >
@@ -605,7 +602,7 @@ const Summon: React.FC = () => {
                         <ArrowRight size={14} />
                       </div>
                       <div className="font-pixel text-[8px] text-white/80 mt-0.5">
-                        Coût: {SHARD_COSTS[selectedShardRarity]} fragments {selectedShardRarity}
+                        Coût: {UNIVERSAL_SHARD_COSTS[selectedShardRarity]} Shards Universels
                       </div>
                     </button>
                   </div>
