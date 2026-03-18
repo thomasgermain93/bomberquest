@@ -17,7 +17,7 @@ import { loadPlayerData, savePlayerData, getDefaultPlayerData, saveStoryProgress
 import { getUpgradeCost, upgradeHero, ascendHero, getAscensionCost, countDuplicates } from '@/game/upgradeSystem';
 import { trackSummon, trackCombatVictory, trackLevelUp, trackRarityUnlock, trackChestsOpened, trackBossDefeated, trackHeroCount, claimAchievementReward, AchievementDefinition } from '@/game/achievements';
 import { DailyQuestData, loadDailyQuests, saveDailyQuests, generateDailyQuests, updateQuestProgress, ALL_CLAIMED_BONUS, ALL_CLAIMED_XP_BONUS } from '@/game/questSystem';
-import { StoryProgress, StoryStage, BOSS_LEVEL_BY_TYPE, BOSS_RARITY_REWARD, BossType } from '@/game/storyTypes';
+import { StoryProgress, StoryStage, BOSS_LEVEL_BY_TYPE, BossType } from '@/game/storyTypes';
 import { spawnEnemy, spawnBoss, tickEnemies, tickBoss, damageEnemiesFromExplosion, damageBossFromExplosion, checkEnemyHeroCollision, checkBossHeroCollision } from '@/game/enemyAI';
 import { STORY_REGIONS } from '@/game/storyData';
 import { getExplosionTiles } from '@/game/engine';
@@ -1086,16 +1086,15 @@ const Index = () => {
     const stateSnapshot = gameState;
 
     if (stateSnapshot) {
-      let newHero: Hero | null = null;
-      let rewardedRarity: Rarity | null = null;
+      // Shards pour boss first clear
+      let bossFirstClearShards = 0;
 
       if (stateSnapshot.mapCompleted && stageSnapshot.boss) {
         const bossLevel = BOSS_LEVEL_BY_TYPE[stageSnapshot.boss as BossType];
-        const rarity = BOSS_RARITY_REWARD[bossLevel];
-        
-        if (bossLevel && rarity && !storyProgress.bossFirstClearRewards.includes(bossLevel)) {
-          newHero = generateHero(rarity);
-          rewardedRarity = rarity;
+        if (bossLevel && !storyProgress.bossFirstClearRewards.includes(bossLevel)) {
+          // Plus de héros direct — donner des shards à la place
+          const bossShards = [0, 10, 15, 20, 25, 30][bossLevel] || 10;
+          bossFirstClearShards = bossShards;
         }
       }
 
@@ -1115,14 +1114,12 @@ const Index = () => {
         };
       });
 
-      if (newHero && rewardedRarity) {
-        const rarityLabel = RARITY_CONFIG[rewardedRarity].label;
+      if (bossFirstClearShards > 0) {
         toast({
-          title: "🎉 Héros garanti!",
-          description: `Vous avez reçu un héros ${rarityLabel} pour votre première victoire contre ce boss!`,
+          title: "🎉 Boss vaincu!",
+          description: `Première victoire! Tu reçois ${bossFirstClearShards} Shards Universels!`,
           duration: 6000,
         });
-        storyUpdatedHeroes.push(newHero);
       }
 
       const newAchievements = { ...player.achievements };
@@ -1153,7 +1150,7 @@ const Index = () => {
         xp: prev.xp + (stateSnapshot.mapCompleted ? stageSnapshot.xpReward : 0),
         heroes: storyUpdatedHeroes,
         achievements: newAchievements,
-        totalHeroesOwned: prev.totalHeroesOwned + (newHero ? 1 : 0),
+        universalShards: (prev.universalShards || 0) + bossFirstClearShards + (stateSnapshot.mapCompleted ? (stageSnapshot.shardReward || 0) : 0),
       }));
 
       for (const achievement of newAchievementUnlocks) {

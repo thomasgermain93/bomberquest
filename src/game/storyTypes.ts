@@ -74,6 +74,7 @@ export interface StoryStage {
   xpReward: number;
   unlockLevel: number;
   icon: string;
+  shardReward?: number; // Universal Shards donnés à la complétion (en plus de la récompense en coins)
 }
 
 export interface StoryRegion {
