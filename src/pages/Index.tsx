@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { pixelFade } from '@/lib/animations';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCloudSave } from '@/hooks/useCloudSave';
@@ -1875,7 +1876,7 @@ const Index = () => {
 
             {/* Tab Collection */}
             {heroesTab === 'collection' && (
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+              <motion.div variants={pixelFade} initial="hidden" animate="visible" className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h2 className="font-pixel text-xs text-foreground flex items-center gap-2">
                     <Users size={16} /> TOUS LES HÉROS ({player.heroes.length})
@@ -2015,7 +2016,7 @@ const Index = () => {
 
             {/* Tab Codex */}
             {heroesTab === 'codex' && (
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+              <motion.div variants={pixelFade} initial="hidden" animate="visible" className="space-y-4">
                 <div className="pixel-border bg-card p-4 space-y-2">
                   <div className="flex items-center justify-between gap-3">
                     <p className="font-pixel text-[9px] text-foreground flex items-center gap-2">
@@ -2183,7 +2184,7 @@ const Index = () => {
 
             {/* Sélecteur carte + équipe (hors bataille, onglet chasse au trésor) */}
             {!isInBattle && combatTab === 'treasure' && (
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+              <motion.div variants={pixelFade} initial="hidden" animate="visible" className="space-y-6">
 
                 {/* Treasure Hunt Launcher */}
                 <div className="pixel-border bg-card p-4">
@@ -2640,7 +2641,7 @@ const Index = () => {
             />
 
             {/* Achievements */}
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+            <motion.div variants={pixelFade} initial="hidden" animate="visible" className="space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="font-pixel text-xs text-foreground flex items-center gap-2">
                   <Trophy size={16} /> SUCCÈS
@@ -2720,7 +2721,7 @@ const Index = () => {
 
             {/* Fusion */}
             {forgeTab === 'fusion' && (
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+              <motion.div variants={pixelFade} initial="hidden" animate="visible" className="space-y-4">
                 {/* Recipe selector */}
                 <div className="pixel-border bg-card p-4">
                   <h3 className="font-pixel text-[9px] text-foreground mb-3 flex items-center gap-2">
@@ -2861,7 +2862,7 @@ const Index = () => {
 
             {/* Recyclage */}
             {forgeTab === 'recycle' && (
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+              <motion.div variants={pixelFade} initial="hidden" animate="visible" className="space-y-4">
                 <div className="pixel-border bg-card p-3 sm:p-4">
                   <RecyclePanel
                     heroes={player.heroes}

@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Coins, Gem, Trophy, FastForward } from 'lucide-react';
+import { overlayBackdrop, overlayContent } from '@/lib/animations';
 
 interface VictoryOverlayProps {
   show: boolean;
@@ -28,16 +29,14 @@ export function VictoryOverlay({
       {show && (
         <motion.div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
+          variants={overlayBackdrop}
+          initial="hidden"
+          animate="visible"
+          exit="exit"
         >
           <motion.div
             className="pixel-border bg-card p-8 flex flex-col items-center gap-6 min-w-[280px] max-w-sm w-full mx-4"
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.8, opacity: 0 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 24 }}
+            variants={overlayContent}
           >
             {/* Titre */}
             <h2

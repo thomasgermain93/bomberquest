@@ -2,6 +2,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sword, DoorOpen } from 'lucide-react';
 import { Hero } from '@/game/types';
+import { overlayBackdrop, overlayContent } from '@/lib/animations';
 
 interface DefeatOverlayProps {
   show: boolean;
@@ -21,16 +22,14 @@ export function DefeatOverlay({
       {show && (
         <motion.div
           className="fixed inset-0 z-50 flex items-center justify-center bg-destructive/20 backdrop-blur-sm"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
+          variants={overlayBackdrop}
+          initial="hidden"
+          animate="visible"
+          exit="exit"
         >
           <motion.div
             className="pixel-border bg-card p-6 flex flex-col items-center gap-4 max-w-sm w-full mx-4 space-y-4"
-            initial={{ opacity: 0, scale: 0.85 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.85 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 24 }}
+            variants={overlayContent}
           >
             {/* Titre */}
             <h2 className="font-pixel text-lg text-destructive">
