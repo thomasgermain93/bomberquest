@@ -7,6 +7,7 @@ import { Hero, RARITY_CONFIG } from '@/game/types';
 import PixelIcon from '@/components/PixelIcon';
 import { X, AlertCircle, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { pixelPop } from '@/lib/animations';
 
 interface HeroPickerModalProps {
   isOpen: boolean;
@@ -82,9 +83,10 @@ const HeroPickerModal: React.FC<HeroPickerModalProps> = ({
                   return (
                     <motion.button
                       key={hero.id}
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.9 }}
+                      variants={pixelPop}
+                      initial="hidden"
+                      animate="visible"
+                      exit="exit"
                       onClick={() => eligibility.isEligible && onSelect(hero)}
                       disabled={!eligibility.isEligible}
                       className={`pixel-border p-3 flex flex-col items-center gap-2 transition-all relative ${
