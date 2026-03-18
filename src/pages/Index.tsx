@@ -12,7 +12,7 @@ import HeroUpgradeModal from '@/components/HeroUpgradeModal';
 import HeroPickerModal from '@/components/HeroPickerModal';
 import FusionSlot from '@/components/FusionSlot';
 import StoryMode from '@/components/StoryMode';
-import { GameState, Hero, MAP_CONFIGS, PlayerData, RARITY_CONFIG, RARITY_ORDER, sortByRarity, Rarity, HERO_NAMES, HERO_FAMILIES, HERO_FAMILY_MAP, HeroFamilyId } from '@/game/types';
+import { GameState, Hero, MAP_CONFIGS, PlayerData, RARITY_CONFIG, RARITY_ORDER, sortByRarity, Rarity, HERO_NAMES, HERO_FAMILIES, HeroFamilyId } from '@/game/types';
 import { generateMap, tickGame } from '@/game/engine';
 import { summonHero, generateHero } from '@/game/summoning';
 import { loadPlayerData, savePlayerData, getDefaultPlayerData, saveStoryProgress, loadStoryProgress } from '@/game/saveSystem';
@@ -32,7 +32,7 @@ import Achievements from '@/components/Achievements';
 import XpBar from '@/components/XpBar';
 import PixelIcon from '@/components/PixelIcon';
 import HeroAvatar from '@/components/HeroAvatar';
-import { Home, Users, Sparkles, Swords, Map, Trophy, Coins, Star, ChevronLeft, Play, Pause, DoorOpen, Check, Scroll, FastForward, BookOpen, Shield, Skull, Bomb, Lock as LockIcon, Volume2, VolumeX, User, Hammer, ArrowDown, Trash2 } from 'lucide-react';
+import { Home, Users, Sparkles, Swords, Map as MapIcon, Trophy, Coins, Star, ChevronLeft, Play, Pause, DoorOpen, Check, Scroll, FastForward, BookOpen, Shield, Skull, Bomb, Lock as LockIcon, Volume2, VolumeX, User, Hammer, ArrowDown, Trash2 } from 'lucide-react';
 import { SFX, isMuted, setMuted } from '@/game/sfx';
 import { toast } from '@/hooks/use-toast';
 
@@ -172,9 +172,7 @@ const Index = () => {
     return [...player.heroes]
       .filter((hero) => {
         if (heroFilters.clan !== 'all') {
-          const baseHeroName = hero.name.split('#')[0].trim().toLowerCase();
-          const heroFamily = HERO_FAMILY_MAP[baseHeroName];
-          if (heroFamily !== heroFilters.clan) return false;
+          if (hero.family !== heroFilters.clan) return false;
         }
 
         if (heroFilters.rarity !== 'all' && hero.rarity !== heroFilters.rarity) {
@@ -1617,7 +1615,7 @@ const Index = () => {
               {[
                 { label: 'BomberCoins', value: player.bomberCoins.toLocaleString(), icon: <Coins size={20} className="text-game-gold" />, glow: 'glow-gold' },
                 { label: 'Héros', value: `${player.heroes.length}`, icon: <Users size={20} className="text-primary" />, glow: '' },
-                { label: 'Cartes', value: `${player.mapsCompleted}`, icon: <Map size={20} className="text-game-neon-blue" />, glow: '' },
+                { label: 'Cartes', value: `${player.mapsCompleted}`, icon: <MapIcon size={20} className="text-game-neon-blue" />, glow: '' },
                 { label: 'Niveau', value: `${player.accountLevel}`, icon: <Trophy size={20} className="text-game-gold" />, glow: '' },
               ].map(stat => (
                 <div key={stat.label} className={`pixel-border bg-card p-3 text-center ${stat.glow}`}>
@@ -1650,7 +1648,7 @@ const Index = () => {
             {/* Treasure Hunt Launcher */}
             <div className="pixel-border bg-card p-4">
               <h3 className="font-pixel text-xs text-foreground mb-1 flex items-center gap-2">
-                <Map size={16} /> CHASSE AU TRÉSOR
+                <MapIcon size={16} /> CHASSE AU TRÉSOR
               </h3>
               <p className="text-[8px] text-muted-foreground mb-3 flex items-center gap-1">
                 <Trophy size={10} /> {player.mapsCompleted} cartes complétées
