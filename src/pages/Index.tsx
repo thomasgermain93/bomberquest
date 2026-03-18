@@ -62,6 +62,16 @@ const DEFAULT_HERO_FILTERS: HeroFilters = {
   level: 'all',
 };
 
+// Merge system - ratios from issue #93
+// Declared at module level to avoid TDZ when used in useEffect before const declaration inside component
+const MERGE_RECIPES: { from: Rarity; to: Rarity; count: number }[] = [
+  { from: 'common', to: 'rare', count: 2 },
+  { from: 'rare', to: 'super-rare', count: 3 },
+  { from: 'super-rare', to: 'epic', count: 4 },
+  { from: 'epic', to: 'legend', count: 5 },
+  { from: 'legend', to: 'super-legend', count: 6 },
+];
+
 const Index = () => {
   const { user, session, loading: authLoading, signOut } = useAuth();
   const navigate = useNavigate();
@@ -790,14 +800,7 @@ const Index = () => {
     }
   }, [autoFarm, gameState?.mapCompleted, collectAndContinue]);
 
-  // Merge system - ratios from issue #93
-  const MERGE_RECIPES: { from: Rarity; to: Rarity; count: number }[] = [
-    { from: 'common', to: 'rare', count: 2 },
-    { from: 'rare', to: 'super-rare', count: 3 },
-    { from: 'super-rare', to: 'epic', count: 4 },
-    { from: 'epic', to: 'legend', count: 5 },
-    { from: 'legend', to: 'super-legend', count: 6 },
-  ];
+  // MERGE_RECIPES is now declared at module level (above) to prevent TDZ crash
 
   const isHeroEligibleForMerge = (hero: Hero, rarity: Rarity, requiredCount: number): { eligible: boolean; reason: string } => {
     const maxLevel = RARITY_CONFIG[rarity].maxLevel;
