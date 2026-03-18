@@ -15,7 +15,7 @@ import { GameState, Hero, MAP_CONFIGS, PlayerData, RARITY_CONFIG, RARITY_ORDER, 
 import { generateMap, tickGame } from '@/game/engine';
 import { summonHero, generateHero } from '@/game/summoning';
 import { loadPlayerData, savePlayerData, getDefaultPlayerData, saveStoryProgress, loadStoryProgress } from '@/game/saveSystem';
-import { getUpgradeCost, upgradeHero, ascendHero, getAscensionCost, countDuplicates } from '@/game/upgradeSystem';
+import { getUpgradeCost, upgradeHero, ascendHero, getAscensionCost, countDuplicates, upgradeSkillWithDuplicate } from '@/game/upgradeSystem';
 import { trackSummon, trackCombatVictory, trackLevelUp, trackRarityUnlock, trackChestsOpened, trackBossDefeated, trackHeroCount, claimAchievementReward, AchievementDefinition } from '@/game/achievements';
 import { DailyQuestData, loadDailyQuests, saveDailyQuests, generateDailyQuests, updateQuestProgress, ALL_CLAIMED_BONUS, ALL_CLAIMED_XP_BONUS } from '@/game/questSystem';
 import { StoryProgress, StoryStage, BOSS_LEVEL_BY_TYPE, BossType } from '@/game/storyTypes';
@@ -1397,6 +1397,25 @@ const Index = () => {
       removeHeroesFromCloud(removedIds);
       saveHeroesToCloud([ascended]);
     }
+  };
+
+  const handleSkillUpgrade = (heroId: string, skillIndex: number) => {
+    const result = upgradeSkillWithDuplicate(player.heroes, heroId, skillIndex);
+    if (!result.success) {
+      toast({ title: 'Impossible', description: result.message, variant: 'destructive' });
+      return;
+    }
+    setPlayer(prev => ({
+      ...prev,
+      heroes: result.updatedHeroes,
+    }));
+    if (canWriteCloud) {
+      saveHeroesToCloud(result.updatedHeroes.filter(h => h.id === heroId));
+      if (result.removedIds.length > 0) {
+        removeHeroesFromCloud(result.removedIds);
+      }
+    }
+    toast({ title: '⚡ Compétence améliorée!', description: result.message });
   };
 
   const handleRecycle = (ids: string[], shardsGained: number) => {

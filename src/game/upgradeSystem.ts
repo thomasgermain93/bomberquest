@@ -1,4 +1,4 @@
-import { Hero, HeroStats, Rarity, RARITY_CONFIG, MAX_LEVEL_BY_RARITY } from './types';
+import { Hero, HeroStats, Rarity, Skill, RARITY_CONFIG, MAX_LEVEL_BY_RARITY } from './types';
 
 /** XP required per level (level 1 requires 0 XP, level 2 requires XP_FOR_LEVEL[1], etc.) */
 export const XP_FOR_LEVEL: Record<number, number> = {
@@ -398,4 +398,108 @@ export function isHeroMaxLevel(hero: Hero): boolean {
 /** Count how many duplicates of a given hero's rarity exist (excluding the hero itself) */
 export function countDuplicates(heroes: Hero[], heroId: string, rarity: Rarity): number {
   return heroes.filter(h => h.id !== heroId && h.rarity === rarity).length;
+}
+
+// Coût en nombre de doublons par level de skill (index = level actuel)
+const SKILL_UPGRADE_COST = [0, 1, 2, 3, 5]; // Pour passer du level 1→2, 2→3, 3→4, 4→5
+
+// Niveau max d'un skill selon la rareté du héros
+export const MAX_SKILL_LEVEL_BY_RARITY: Record<Rarity, number> = {
+  common: 1,
+  rare: 2,
+  'super-rare': 3,
+  epic: 4,
+  legend: 5,
+  'super-legend': 5,
+};
+
+// Retourne la description d'un skill avec son niveau si > 1
+export function getSkillDescription(skill: Skill): string {
+  const level = skill.skillLevel || 1;
+  const levelSuffix = level > 1 ? ` (Niveau ${level})` : '';
+  return skill.description + levelSuffix;
+}
+
+// Vérifie si un héros peut avoir un skill amélioré via un doublon
+export function canUpgradeSkill(
+  hero: Hero,
+  skillIndex: number,
+  duplicates: Hero[]
+): { canUpgrade: boolean; reason: string; duplicatesNeeded: number } {
+  if (!hero.skills || hero.skills.length === 0) {
+    return { canUpgrade: false, reason: "Ce héros n'a pas de compétences", duplicatesNeeded: 0 };
+  }
+
+  const skill = hero.skills[skillIndex];
+  if (!skill) {
+    return { canUpgrade: false, reason: 'Compétence introuvable', duplicatesNeeded: 0 };
+  }
+
+  const currentLevel = skill.skillLevel || 1;
+  const maxLevel = MAX_SKILL_LEVEL_BY_RARITY[hero.rarity];
+
+  if (currentLevel >= maxLevel) {
+    return { canUpgrade: false, reason: 'Niveau maximum atteint', duplicatesNeeded: 0 };
+  }
+
+  const needed = SKILL_UPGRADE_COST[currentLevel] || 1;
+  const heroBaseName = hero.name.split(' #')[0];
+  const availableDuplicates = duplicates.filter(
+    d => d.id !== hero.id && d.name.split(' #')[0] === heroBaseName && !d.isLocked
+  ).length;
+
+  if (availableDuplicates < needed) {
+    return {
+      canUpgrade: false,
+      reason: `${needed - availableDuplicates} doublon(s) manquant(s)`,
+      duplicatesNeeded: needed,
+    };
+  }
+
+  return { canUpgrade: true, reason: '', duplicatesNeeded: needed };
+}
+
+// Applique l'upgrade : supprime les doublons consommés, améliore le skill
+export function upgradeSkillWithDuplicate(
+  heroes: Hero[],
+  heroId: string,
+  skillIndex: number
+): { updatedHeroes: Hero[]; success: boolean; message: string; removedIds: string[] } {
+  const hero = heroes.find(h => h.id === heroId);
+  if (!hero) {
+    return { updatedHeroes: heroes, success: false, message: 'Héros introuvable', removedIds: [] };
+  }
+
+  const check = canUpgradeSkill(hero, skillIndex, heroes);
+  if (!check.canUpgrade) {
+    return { updatedHeroes: heroes, success: false, message: check.reason, removedIds: [] };
+  }
+
+  // Trouver les doublons à consommer (même nom de base, non verrouillés)
+  const heroBaseName = hero.name.split(' #')[0];
+  const duplicatesToConsume = heroes
+    .filter(d => d.id !== heroId && d.name.split(' #')[0] === heroBaseName && !d.isLocked)
+    .slice(0, check.duplicatesNeeded);
+
+  const removedIds = duplicatesToConsume.map(d => d.id);
+  const newLevel = (hero.skills[skillIndex].skillLevel || 1) + 1;
+
+  // Améliorer le skill du héros
+  const updatedHero: Hero = {
+    ...hero,
+    skills: hero.skills.map((s, i) =>
+      i === skillIndex ? { ...s, skillLevel: newLevel } : s
+    ),
+  };
+
+  const updatedHeroes = heroes
+    .filter(h => !removedIds.includes(h.id))
+    .map(h => h.id === heroId ? updatedHero : h);
+
+  return {
+    updatedHeroes,
+    success: true,
+    message: `${hero.skills[skillIndex].name} amélioré au niveau ${newLevel}!`,
+    removedIds,
+  };
 }
