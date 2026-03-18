@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sword, DoorOpen } from 'lucide-react';
+import { Sword, DoorOpen, Skull } from 'lucide-react';
 import { Hero } from '@/game/types';
 import { overlayBackdrop, overlayContent } from '@/lib/animations';
 
@@ -32,8 +32,8 @@ export function DefeatOverlay({
             variants={overlayContent}
           >
             {/* Titre */}
-            <h2 className="font-pixel text-lg text-destructive">
-              💀 DÉFAITE
+            <h2 className="font-pixel text-lg text-destructive flex items-center gap-2">
+              <Skull size={18} /> DÉFAITE
             </h2>
 
             {/* Sous-titre */}

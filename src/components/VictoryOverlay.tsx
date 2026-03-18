@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Coins, Gem, Trophy, FastForward } from 'lucide-react';
+import { Coins, Gem, Trophy, FastForward, Swords } from 'lucide-react';
 import { overlayBackdrop, overlayContent } from '@/lib/animations';
 
 interface VictoryOverlayProps {
@@ -61,10 +61,10 @@ export function VictoryOverlay({
               {shardsEarned !== undefined && shardsEarned > 0 && (
                 <div className="flex items-center justify-between px-2">
                   <span className="font-pixel text-[9px] text-muted-foreground flex items-center gap-2">
-                    <Gem size={14} className="text-game-blue" />
+                    <Gem size={14} className="text-game-neon-blue" />
                     Shards gagnés
                   </span>
-                  <span className="font-pixel text-[9px] text-game-blue">+{shardsEarned}</span>
+                  <span className="font-pixel text-[9px] text-game-neon-blue">+{shardsEarned}</span>
                 </div>
               )}
 
@@ -78,7 +78,7 @@ export function VictoryOverlay({
 
               <div className="flex items-center justify-between px-2">
                 <span className="font-pixel text-[9px] text-muted-foreground flex items-center gap-2">
-                  <span className="text-[12px]">⚔️</span>
+                  <Swords size={14} className="text-primary" />
                   Héros actifs
                 </span>
                 <span className="font-pixel text-[9px] text-foreground">{heroesActive}</span>
