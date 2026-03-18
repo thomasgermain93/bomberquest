@@ -1539,8 +1539,10 @@ const Index = () => {
     }
   })();
 
-  // Écran BottomNav actif (mapper story/treasure-hunt/battle → combat pour la surbrillance)
-  const bottomNavScreen = ['story', 'story-battle', 'treasure-hunt'].includes(screen) ? 'combat' : screen;
+  // Écran BottomNav actif
+  const bottomNavScreen = screen === 'story-battle' ? 'story'
+    : screen === 'treasure-hunt' ? 'combat'
+    : screen;
 
   if (isCloudLoading) {
     return (
@@ -2323,6 +2325,25 @@ const Index = () => {
                 }
               }}
             />
+          </motion.div>
+        )}
+
+        {/* RECYCLE SCREEN */}
+        {screen === 'recycle' && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="font-pixel text-xs text-foreground flex items-center gap-2">
+                <Trash2 size={16} /> RECYCLAGE
+              </h2>
+            </div>
+            <div className="pixel-border bg-card p-3 sm:p-4">
+              <RecyclePanel
+                heroes={player.heroes}
+                universalShards={player.universalShards}
+                onRecycle={handleRecycle}
+                onToggleLock={handleToggleLock}
+              />
+            </div>
           </motion.div>
         )}
 

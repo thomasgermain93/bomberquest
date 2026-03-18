@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Book, Zap, Trophy, RefreshCw, Map, X } from 'lucide-react';
+import { Book, Zap, Trophy, RefreshCw, Sparkles, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface MoreDrawerProps {
@@ -11,12 +11,12 @@ interface MoreDrawerProps {
 }
 
 const DRAWER_ITEMS = [
+  { id: 'summon', label: 'Invoquer', icon: Sparkles },
   { id: 'codex', label: 'Codex des héros', icon: Book },
   { id: 'fusion', label: 'Fusion', icon: Zap },
   { id: 'achievements', label: 'Succès', icon: Trophy },
   { id: 'recycle', label: 'Recyclage', icon: RefreshCw },
-  { id: 'story', label: 'Aventure', icon: Map },
-] as const;
+];
 
 export function MoreDrawer({
   open,

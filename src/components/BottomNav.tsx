@@ -1,22 +1,22 @@
 import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Home, Swords, Users, Sparkles, MoreHorizontal } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Home, Swords, Users, BookOpen, MoreHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-type BottomNavScreen = 'hub' | 'combat' | 'heroes' | 'summon' | 'more';
+type BottomNavScreen = 'hub' | 'combat' | 'story' | 'heroes' | 'more';
 
 interface BottomNavProps {
-  screen: BottomNavScreen | string; // string pour les sous-écrans mappés (codex → more, etc.)
+  screen: BottomNavScreen | string;
   onNavigate: (screen: BottomNavScreen) => void;
 }
 
-const NAV_ITEMS = [
+const NAV_ITEMS: { id: BottomNavScreen; label: string; icon: React.ComponentType<{ size?: number; className?: string }> }[] = [
   { id: 'hub', label: 'Hub', icon: Home },
   { id: 'combat', label: 'Combat', icon: Swords },
+  { id: 'story', label: 'Histoire', icon: BookOpen },
   { id: 'heroes', label: 'Héros', icon: Users },
-  { id: 'summon', label: 'Invoquer', icon: Sparkles },
   { id: 'more', label: 'Plus', icon: MoreHorizontal },
-] as const;
+];
 
 export function BottomNav({ screen, onNavigate }: BottomNavProps) {
   return (
