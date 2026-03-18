@@ -46,11 +46,20 @@ function insertIntoUnreleased(src) {
   const unreleasedIndex = src.indexOf("version: 'Unreleased'");
   if (unreleasedIndex === -1) return null;
 
-  const changesIndex = src.indexOf('changes: [', unreleasedIndex);
+  // Met à jour la date du bloc Unreleased à la date du jour
+  const today = new Date().toISOString().slice(0, 10);
+  const datePattern = /date: '[^']*'(?=[\s\S]*?title: 'Mises à jour récentes')/;
+  let updated = src;
+  const blockEnd = src.indexOf('  },', unreleasedIndex);
+  const block = src.slice(unreleasedIndex, blockEnd);
+  const updatedBlock = block.replace(/date: '[^']*'/, `date: '${today}'`);
+  updated = src.slice(0, unreleasedIndex) + updatedBlock + src.slice(blockEnd);
+
+  const changesIndex = updated.indexOf('changes: [', unreleasedIndex);
   if (changesIndex === -1) return null;
 
   const insertPos = changesIndex + 'changes: [\n'.length;
-  return src.slice(0, insertPos) + changeLine + src.slice(insertPos);
+  return updated.slice(0, insertPos) + changeLine + updated.slice(insertPos);
 }
 
 function insertNewUnreleased(src) {
