@@ -14,6 +14,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: '2026-03-15',
     title: 'Mises à jour récentes',
     changes: [
+      { type: 'feature', description: 'bug: ReferenceError \'et\' before initialization crashes gameplay (Chasse au Trésor & Mode Histoire) (#178)' },
       { type: 'feature', description: 'refactor(landing): redesign landing page (style recordly.dev) (#177)' },
       { type: 'feature', description: 'Add RPC fallback for KPI loading with direct database queries (#176)' },
       { type: 'feature', description: 'Add shard reward system for farming maps (#175)' },
