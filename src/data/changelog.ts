@@ -14,6 +14,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: '2026-03-18',
     title: 'Mises à jour récentes',
     changes: [
+      { type: 'feature', description: 'fix: recyclage — shards perdus + doublons uniquement + sélection intelligente (#205)' },
       { type: 'feature', description: 'fix: page noire au clic héros — progressionStats manquant (#204)' },
       { type: 'feature', description: 'fix: page noire — collision Map (Lucide) vs Map (JS) (#203)' },
       { type: 'feature', description: 'Docs: mise à jour complète du wiki / guides in-game (v1.1 + v1.2) (#201)' },
