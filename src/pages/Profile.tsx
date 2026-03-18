@@ -74,34 +74,28 @@ export default function Profile() {
     setDeleting(true);
     
     try {
-      const userId = user.id;
-      
-      await supabase.from('player_saves').delete().eq('user_id', userId);
-      await supabase.from('player_heroes').delete().eq('user_id', userId);
-      await supabase.from('profiles').delete().eq('user_id', userId);
-      
-      const { error: deleteAuthError } = await supabase.auth.admin.deleteUser(userId);
-      
-      if (deleteAuthError) {
-        console.error('Error deleting auth user:', deleteAuthError);
-        toast({ 
-          title: 'Erreur', 
-          description: 'Impossible de supprimer le compte. Veuillez réessayer.', 
-          variant: 'destructive' 
+      const { error: deleteError } = await supabase.rpc('delete_user_account');
+
+      if (deleteError) {
+        console.error('Error deleting account:', deleteError);
+        toast({
+          variant: 'destructive',
+          title: 'Erreur',
+          description: 'Impossible de supprimer le compte. Veuillez réessayer.',
         });
         setDeleting(false);
         return;
       }
-      
+
       await signOut();
       toast({ title: 'Compte supprimé', description: 'Ton compte a été supprimé avec succès.' });
       navigate('/');
     } catch (err) {
       console.error('Error deleting account:', err);
-      toast({ 
-        title: 'Erreur', 
-        description: 'Une erreur est survenue lors de la suppression du compte.', 
-        variant: 'destructive' 
+      toast({
+        title: 'Erreur',
+        description: 'Une erreur est survenue lors de la suppression du compte.',
+        variant: 'destructive'
       });
       setDeleting(false);
     }
