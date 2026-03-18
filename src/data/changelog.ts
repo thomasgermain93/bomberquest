@@ -14,6 +14,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: '2026-03-18',
     title: 'Mises à jour récentes',
     changes: [
+      { type: 'feature', description: 'Économie: passer à une monnaie unique Universal Hero Shards + invocation ciblée (#150)' },
       { type: 'feature', description: 'Bugfix Critical: réparer la suppression de compte non fonctionnelle (#161)' },
       { type: 'feature', description: 'fix: changelog — plus de vUnreleased, dates et versions correctes (#185)' },
     ],
