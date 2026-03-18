@@ -1,5 +1,6 @@
 import { GameState, GameMap, Hero, Bomb, Explosion, Chest, TileType, CHEST_CONFIG, ChestTier } from './types';
 import { addXp, getMaxLevel } from './upgradeSystem';
+import { getActiveClanSkills } from './clanSystem';
 
 let nextId = 1;
 const genId = () => `id_${nextId++}`;
@@ -421,7 +422,12 @@ export function tickGame(state: GameState, deltaMs: number): GameState {
         const chest = { ...map.chests[chestIdx] };
         chest.hp = Math.max(0, chest.hp - bomb.power);
         if (chest.hp <= 0) {
-          coinsEarned += chest.reward;
+          // Bonus coin_bonus (shadow-core clan skill)
+          const activeSkillsForCoins = getActiveClanSkills(heroes);
+          const coinBonus = activeSkillsForCoins
+            .filter(s => s.effect.type === 'coin_bonus')
+            .reduce((acc, s) => acc + s.effect.value, 0);
+          coinsEarned += Math.round(chest.reward * (1 + coinBonus));
           chestsOpened++;
           eventLog.push(`Coffre ${chest.tier} ouvert! +${chest.reward} BC`);
           if (bomb.heroId && bomb.team === 'heroes') {
@@ -569,7 +575,12 @@ export function tickGame(state: GameState, deltaMs: number): GameState {
           }
         }
       } else {
-        const speed = hero.stats.spd * (hero.currentStamina < hero.maxStamina * 0.5 ? 0.75 : 1.0);
+        // Bonus move_speed (wild-pack clan skill)
+        const activeSkillsForSpeed = getActiveClanSkills(heroes);
+        const speedBonus = activeSkillsForSpeed
+          .filter(s => s.effect.type === 'move_speed')
+          .reduce((acc, s) => acc + s.effect.value, 0);
+        const speed = hero.stats.spd * (hero.currentStamina < hero.maxStamina * 0.5 ? 0.75 : 1.0) * (1 + speedBonus);
         if (Math.abs(dx) > 0.05) {
           hero.position.x += Math.sign(dx) * Math.min(Math.abs(dx), speed * dt);
         } else if (Math.abs(dy) > 0.05) {
@@ -586,12 +597,20 @@ export function tickGame(state: GameState, deltaMs: number): GameState {
         const bx = Math.round(hero.position.x);
         const by = Math.round(hero.position.y);
         if (!bombs.some(b => b.position.x === bx && b.position.y === by)) {
+          // Calculer les bonus de clan skills actifs
+          const activeSkills = getActiveClanSkills(heroes);
+          const rangBonus = activeSkills
+            .filter(s => s.effect.type === 'bomb_range')
+            .reduce((acc, s) => acc + s.effect.value, 0);
+          const timerBonus = activeSkills
+            .filter(s => s.effect.type === 'bomb_timer')
+            .reduce((acc, s) => acc + s.effect.value, 0);
           bombs.push({
             id: genId(),
             heroId: hero.id,
             position: { x: bx, y: by },
-            range: hero.stats.rng,
-            timer: 2.0,
+            range: hero.stats.rng + rangBonus,
+            timer: Math.max(0.8, 2.0 + timerBonus),
             power: hero.stats.pwr,
             team: 'heroes',
           });
