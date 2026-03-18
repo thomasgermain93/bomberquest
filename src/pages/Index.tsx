@@ -1620,7 +1620,7 @@ const Index = () => {
 
       {/* Container swipeable 5 pages */}
       <motion.div
-        className="flex flex-1 pt-12"
+        className="flex flex-1 min-h-0 pt-12"
         style={{ width: '500%' }}
         animate={{ x: `${-page * 20}%` }}
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
