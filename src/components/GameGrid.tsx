@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useCallback } from 'react';
 import { GameState } from '@/game/types';
 import { drawHeroSprite } from '@/game/heroRenderer';
 import { drawEnemy, drawBoss } from '@/game/enemyRenderer';
-import { getBombStyle } from '@/game/clanBombSystem';
+import { getBombStyle, getExplosionEffect } from '@/game/clanBombSystem';
 
 interface GameGridProps {
   gameState: GameState;
@@ -114,6 +114,16 @@ const GameGrid: React.FC<GameGridProps> = ({ gameState }) => {
     // Draw explosions
     for (const exp of explosions) {
       const alpha = Math.min(1, exp.timer * 3);
+      const effect = getExplosionEffect(exp.family);
+
+      // Convertir une couleur hex en composantes RGB pour les gradients
+      const hexToRgb = (hex: string): [number, number, number] => {
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+        return [r, g, b];
+      };
+
       for (const tile of exp.tiles) {
         const px = tile.x * TILE_SIZE;
         const py = tile.y * TILE_SIZE;
@@ -121,12 +131,34 @@ const GameGrid: React.FC<GameGridProps> = ({ gameState }) => {
           px + TILE_SIZE / 2, py + TILE_SIZE / 2, 0,
           px + TILE_SIZE / 2, py + TILE_SIZE / 2, TILE_SIZE * 0.6
         );
-        grad.addColorStop(0, `rgba(255, 255, 220, ${alpha})`);
-        grad.addColorStop(0.3, `rgba(255, 180, 0, ${alpha * 0.9})`);
-        grad.addColorStop(0.7, `rgba(255, 80, 0, ${alpha * 0.6})`);
-        grad.addColorStop(1, `rgba(200, 30, 0, ${alpha * 0.2})`);
+
+        if (effect) {
+          // Explosion colorée selon le clan
+          const [r, g, b] = hexToRgb(effect.color);
+          grad.addColorStop(0, `rgba(255, 255, 220, ${alpha})`);
+          grad.addColorStop(0.3, `rgba(${r}, ${g}, ${b}, ${alpha * 0.95})`);
+          grad.addColorStop(0.7, `rgba(${Math.round(r * 0.6)}, ${Math.round(g * 0.6)}, ${Math.round(b * 0.6)}, ${alpha * 0.7})`);
+          grad.addColorStop(1, `rgba(${Math.round(r * 0.3)}, ${Math.round(g * 0.3)}, ${Math.round(b * 0.3)}, ${alpha * 0.2})`);
+        } else {
+          // Couleur par défaut orange/rouge classique
+          grad.addColorStop(0, `rgba(255, 255, 220, ${alpha})`);
+          grad.addColorStop(0.3, `rgba(255, 180, 0, ${alpha * 0.9})`);
+          grad.addColorStop(0.7, `rgba(255, 80, 0, ${alpha * 0.6})`);
+          grad.addColorStop(1, `rgba(200, 30, 0, ${alpha * 0.2})`);
+        }
+
         ctx.fillStyle = grad;
         ctx.fillRect(px - 2, py - 2, TILE_SIZE + 4, TILE_SIZE + 4);
+
+        // Particule centrale colorée pour les clans
+        if (effect) {
+          const cx = px + TILE_SIZE / 2;
+          const cy = py + TILE_SIZE / 2;
+          ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.5})`;
+          ctx.beginPath();
+          ctx.arc(cx, cy, TILE_SIZE * 0.2 * alpha, 0, Math.PI * 2);
+          ctx.fill();
+        }
       }
     }
 

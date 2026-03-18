@@ -74,3 +74,56 @@ export function getBombStyle(family?: HeroFamilyId): ClanBombStyle {
   if (!family) return DEFAULT_BOMB_STYLE;
   return CLAN_BOMB_STYLES[family] || DEFAULT_BOMB_STYLE;
 }
+
+// ─── Effets élémentaires d'explosion ───────────────────────────────────────
+
+export interface ClanExplosionEffect {
+  type: 'burn' | 'chain_arc' | 'shockwave' | 'void_drain' | 'mana_pulse' | 'vine_snare' | 'none';
+  color: string;       // Couleur principale des particules d'effet
+  description: string; // Description pour tooltip
+  duration: number;    // Durée de l'effet visuel (ms)
+}
+
+export const CLAN_EXPLOSION_EFFECTS: Record<HeroFamilyId, ClanExplosionEffect> = {
+  'ember-clan': {
+    type: 'burn',
+    color: '#FF4500',
+    description: 'Brûlure : les ennemis dans la zone subissent des dégâts continus',
+    duration: 800,
+  },
+  'storm-riders': {
+    type: 'chain_arc',
+    color: '#00BFFF',
+    description: 'Arc électrique : se propage à un ennemi adjacent',
+    duration: 600,
+  },
+  'forge-guard': {
+    type: 'shockwave',
+    color: '#CD7F32',
+    description: 'Onde de choc : repousse légèrement les ennemis proches',
+    duration: 500,
+  },
+  'shadow-core': {
+    type: 'void_drain',
+    color: '#8A2BE2',
+    description: "Vol de vie : récupère un peu de stamina par ennemi touché",
+    duration: 700,
+  },
+  'arcane-circuit': {
+    type: 'mana_pulse',
+    color: '#00CED1',
+    description: 'Pulse arcanique : réduit le cooldown de bombe',
+    duration: 600,
+  },
+  'wild-pack': {
+    type: 'vine_snare',
+    color: '#6B8E23',
+    description: 'Entrave : ralentit les ennemis dans la zone',
+    duration: 900,
+  },
+};
+
+export function getExplosionEffect(family?: HeroFamilyId): ClanExplosionEffect | null {
+  if (!family) return null;
+  return CLAN_EXPLOSION_EFFECTS[family] || null;
+}
