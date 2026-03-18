@@ -13,12 +13,12 @@ import HeroDetailInline from '@/components/HeroDetailInline';
 import HeroPickerModal from '@/components/HeroPickerModal';
 import FusionSlot from '@/components/FusionSlot';
 import StoryMode from '@/components/StoryMode';
-import { GameState, Hero, MAP_CONFIGS, PlayerData, RARITY_CONFIG, RARITY_ORDER, sortByRarity, Rarity, HERO_NAMES, HERO_FAMILIES, HeroFamilyId } from '@/game/types';
+import { GameState, Hero, MAP_CONFIGS, PlayerData, RARITY_CONFIG, RARITY_ORDER, sortByRarity, Rarity, HERO_NAMES, HERO_FAMILIES, HeroFamilyId, MAX_LEVEL_BY_RARITY } from '@/game/types';
 import { generateMap, tickGame } from '@/game/engine';
 import { summonHero, generateHero } from '@/game/summoning';
 import { loadPlayerData, savePlayerData, getDefaultPlayerData, saveStoryProgress, loadStoryProgress } from '@/game/saveSystem';
 import { getUpgradeCost, upgradeHero, ascendHero, getAscensionCost, countDuplicates, upgradeSkillWithDuplicate } from '@/game/upgradeSystem';
-import { trackSummon, trackCombatVictory, trackLevelUp, trackRarityUnlock, trackChestsOpened, trackBossDefeated, trackHeroCount, claimAchievementReward, AchievementDefinition } from '@/game/achievements';
+import { trackSummon, trackCombatVictory, trackLevelUp, trackRarityUnlock, trackChestsOpened, trackBossDefeated, trackHeroCount, claimAchievementReward, AchievementDefinition, ACHIEVEMENTS } from '@/game/achievements';
 import { DailyQuestData, loadDailyQuests, saveDailyQuests, generateDailyQuests, updateQuestProgress, ALL_CLAIMED_BONUS, ALL_CLAIMED_XP_BONUS } from '@/game/questSystem';
 import { StoryProgress, StoryStage, BOSS_LEVEL_BY_TYPE, BossType, EnemyType } from '@/game/storyTypes';
 import { getHeroFamily, getClanAffinityMultiplier, getActiveClanSkills } from '@/game/clanSystem';
@@ -30,6 +30,7 @@ import { recycleHeroes } from '@/game/recycleSystem';
 import RecyclePanel from '@/components/RecyclePanel';
 import DailyQuests from '@/components/DailyQuests';
 import Achievements from '@/components/Achievements';
+import PlayerStats from '@/components/PlayerStats';
 import XpBar from '@/components/XpBar';
 import PixelIcon from '@/components/PixelIcon';
 import HeroAvatar from '@/components/HeroAvatar';
@@ -39,6 +40,7 @@ import TeamPresets, { TeamPreset } from '@/components/TeamPresets';
 import { Users, Sparkles, Swords, Map as MapIcon, Trophy, Coins, Play, Pause, DoorOpen, Check, Scroll, FastForward, BookOpen, Shield, Skull, Lock as LockIcon, Hammer, ArrowDown, Gem, Filter, ChevronDown, Zap } from 'lucide-react';
 import PityTracker from '@/components/PityTracker';
 import VictoryOverlay from '@/components/VictoryOverlay';
+import DefeatOverlay from '@/components/DefeatOverlay';
 import DailyResetTimer from '@/components/DailyResetTimer';
 import { SFX, isMuted, setMuted } from '@/game/sfx';
 import { toast } from '@/hooks/use-toast';
@@ -134,6 +136,7 @@ const Index = () => {
   // Fusion UI state
   const [selectedRecipeIdx, setSelectedRecipeIdx] = useState<number>(0);
   const [fusionSlots, setFusionSlots] = useState<(Hero | null)[]>([null, null]);
+  const [lastFusedHero, setLastFusedHero] = useState<Hero | null>(null);
   const [heroPickerOpen, setHeroPickerOpen] = useState(false);
   const [activeSlotIdx, setActiveSlotIdx] = useState<number | null>(null);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
@@ -954,6 +957,8 @@ const Index = () => {
       removeHeroesFromCloud(removedIds);
     }
 
+    setLastFusedHero(newHero);
+
     toast({
       title: "Fusion réussie!",
       description: `${RARITY_CONFIG[recipe.from].label} → ${RARITY_CONFIG[recipe.to].label}`,
@@ -1295,6 +1300,17 @@ const Index = () => {
   const endStoryBattle = () => finalizeStoryBattle(false);
 
   const [summonedBatch, setSummonedBatch] = useState<Hero[]>([]);
+  const [showSummonFlash, setShowSummonFlash] = useState(false);
+  const prevSummonedBatchRef = useRef<Hero[]>([]);
+
+  useEffect(() => {
+    if (summonedBatch.length > 0 && summonedBatch !== prevSummonedBatchRef.current) {
+      prevSummonedBatchRef.current = summonedBatch;
+      setShowSummonFlash(true);
+      const t = setTimeout(() => setShowSummonFlash(false), 200);
+      return () => clearTimeout(t);
+    }
+  }, [summonedBatch]);
 
   const handleSummon = (type: 'single' | 'x10' | 'x100') => {
     const cost = type === 'single' ? 1000 : type === 'x10' ? 9000 : 80000;
@@ -1551,6 +1567,25 @@ const Index = () => {
     return getActiveClanSkills(activeHeroes);
   }, [player.heroes, selectedHeroes]);
 
+  // Codex rarity grouping constants
+  const CODEX_RARITY_ORDER: Rarity[] = ['super-legend', 'legend', 'epic', 'super-rare', 'rare', 'common'];
+  const CODEX_RARITY_LABEL: Record<Rarity, string> = {
+    'super-legend': 'Super Légende',
+    'legend': 'Légende',
+    'epic': 'Épique',
+    'super-rare': 'Super Rare',
+    'rare': 'Rare',
+    'common': 'Commun',
+  };
+  const CODEX_RARITY_COLOR: Record<Rarity, string> = {
+    'super-legend': 'text-purple-400',
+    'legend': 'text-yellow-400',
+    'epic': 'text-orange-400',
+    'super-rare': 'text-blue-400',
+    'rare': 'text-green-400',
+    'common': 'text-muted-foreground',
+  };
+
   const heroRarityOrder: Rarity[] = ['common', 'rare', 'super-rare', 'epic', 'legend', 'super-legend'];
   const codexByName = HERO_NAMES.map((heroName) => {
     const normalized = heroName.toLowerCase();
@@ -1718,30 +1753,110 @@ const Index = () => {
 
             {/* Dernière invocation */}
             {lastSummoned && (
-              <div className="pixel-border bg-card p-4">
+              <div className="pixel-border bg-card p-4 relative overflow-hidden">
+                {/* Flash de fond blanc au nouveau batch */}
+                <AnimatePresence>
+                  {showSummonFlash && (
+                    <motion.div
+                      key="summon-flash"
+                      initial={{ opacity: 1 }}
+                      animate={{ opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute inset-0 bg-white pointer-events-none z-10"
+                    />
+                  )}
+                </AnimatePresence>
                 <h3 className="font-pixel text-[9px] text-foreground mb-3">DERNIÈRE INVOCATION</h3>
-                {summonedBatch.length > 1 ? (
-                  <div className="grid grid-cols-5 gap-1">
-                    {summonedBatch.slice(0, 10).map((h, i) => (
-                      <motion.div
-                        key={h.id}
-                        initial={{ opacity: 0, scale: 0.5 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: i * 0.05, type: 'spring', stiffness: 400 }}
-                        className="flex flex-col items-center gap-1 p-1"
-                      >
-                        <HeroAvatar heroId={h.id} heroName={h.name} rarity={h.rarity} size={36} />
-                        <p className="font-pixel text-[6px] truncate w-full text-center" style={{ color: `hsl(var(--game-rarity-${h.rarity}))` }}>{RARITY_CONFIG[h.rarity].label}</p>
-                      </motion.div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center gap-2">
-                    <HeroAvatar heroId={lastSummoned.id} heroName={lastSummoned.name} rarity={lastSummoned.rarity} size={64} />
-                    <p className="font-pixel text-[9px] text-foreground">{lastSummoned.name}</p>
-                    <p className="font-pixel text-[8px]" style={{ color: `hsl(var(--game-rarity-${lastSummoned.rarity}))` }}>{RARITY_CONFIG[lastSummoned.rarity].label}</p>
-                  </div>
-                )}
+                {(() => {
+                  const RARITY_BADGE_COLORS: Record<string, string> = {
+                    common: 'text-muted-foreground',
+                    rare: 'text-green-400',
+                    'super-rare': 'text-blue-400',
+                    epic: 'text-orange-400',
+                    legend: 'text-yellow-400',
+                    'super-legend': 'text-purple-400',
+                  };
+                  const RARITY_GLOW_COLORS: Record<string, string> = {
+                    'super-rare': 'rgba(100,160,255,0.5)',
+                    epic: 'rgba(255,136,0,0.55)',
+                    legend: 'rgba(255,200,0,0.6)',
+                    'super-legend': 'rgba(200,80,255,0.65)',
+                  };
+                  const HIGH_RARITIES = ['epic', 'legend', 'super-legend'];
+                  const GLOW_RARITIES = ['super-rare', 'epic', 'legend', 'super-legend'];
+
+                  if (summonedBatch.length > 1) {
+                    return (
+                      <div className="grid grid-cols-5 gap-1">
+                        <AnimatePresence>
+                          {summonedBatch.slice(0, 10).map((h, i) => {
+                            const isHigh = HIGH_RARITIES.includes(h.rarity);
+                            const isGlow = GLOW_RARITIES.includes(h.rarity);
+                            const glowColor = RARITY_GLOW_COLORS[h.rarity];
+                            return (
+                              <motion.div
+                                key={h.id}
+                                initial={{ opacity: 0, y: 20, scale: 0.8 }}
+                                animate={isGlow ? {
+                                  opacity: 1, y: 0, scale: 1,
+                                  boxShadow: [
+                                    `0 0 6px ${glowColor}`,
+                                    `0 0 14px ${glowColor}`,
+                                    `0 0 6px ${glowColor}`,
+                                  ],
+                                } : { opacity: 1, y: 0, scale: 1 }}
+                                transition={isGlow ? {
+                                  opacity: { delay: i * 0.08, duration: 0.3 },
+                                  y: { delay: i * 0.08, duration: 0.3 },
+                                  scale: { delay: i * 0.08, duration: 0.3 },
+                                  boxShadow: { delay: i * 0.08 + 0.3, duration: 1.2, repeat: Infinity, ease: 'easeInOut' },
+                                } : { delay: i * 0.08, duration: 0.3 }}
+                                className={`flex flex-col items-center gap-1 p-1 rounded-md ${isHigh ? 'ring-2 ring-game-gold/60' : ''}`}
+                              >
+                                <HeroAvatar heroId={h.id} heroName={h.name} rarity={h.rarity} size={36} />
+                                <p className={`font-pixel text-[6px] truncate w-full text-center ${RARITY_BADGE_COLORS[h.rarity] || 'text-muted-foreground'}`}>
+                                  {RARITY_CONFIG[h.rarity].label}
+                                </p>
+                              </motion.div>
+                            );
+                          })}
+                        </AnimatePresence>
+                      </div>
+                    );
+                  }
+
+                  const h = lastSummoned;
+                  const isHigh = HIGH_RARITIES.includes(h.rarity);
+                  const isGlow = GLOW_RARITIES.includes(h.rarity);
+                  const glowColor = RARITY_GLOW_COLORS[h.rarity];
+                  return (
+                    <motion.div
+                      key={h.id}
+                      initial={{ opacity: 0, y: 20, scale: 0.8 }}
+                      animate={isGlow ? {
+                        opacity: 1, y: 0, scale: 1,
+                        boxShadow: [
+                          `0 0 8px ${glowColor}`,
+                          `0 0 20px ${glowColor}`,
+                          `0 0 8px ${glowColor}`,
+                        ],
+                      } : { opacity: 1, y: 0, scale: 1 }}
+                      transition={isGlow ? {
+                        opacity: { duration: 0.3 },
+                        y: { duration: 0.3 },
+                        scale: { duration: 0.3 },
+                        boxShadow: { delay: 0.3, duration: 1.4, repeat: Infinity, ease: 'easeInOut' },
+                      } : { duration: 0.3 }}
+                      className={`flex flex-col items-center gap-2 p-2 rounded-md ${isHigh ? 'ring-2 ring-game-gold/60' : ''}`}
+                    >
+                      <HeroAvatar heroId={h.id} heroName={h.name} rarity={h.rarity} size={64} />
+                      <p className="font-pixel text-[9px] text-foreground">{h.name}</p>
+                      <p className={`font-pixel text-[8px] ${RARITY_BADGE_COLORS[h.rarity] || 'text-muted-foreground'}`}>
+                        {RARITY_CONFIG[h.rarity].label}
+                      </p>
+                    </motion.div>
+                  );
+                })()}
               </div>
             )}
           </div>
@@ -1929,38 +2044,59 @@ const Index = () => {
                   </p>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                  {codexByName.map((entry) => (
-                    <div
-                      key={entry.key}
-                      className={`pixel-border p-3 transition-all ${
-                        entry.unlocked ? `bg-card rarity-${entry.rarity}` : 'bg-muted/30'
-                      }`}
-                    >
-                      <div className="relative flex justify-center mb-2">
-                        <div className={entry.unlocked ? '' : 'opacity-35 grayscale blur-[0.8px]'}>
-                          <HeroAvatar heroId={entry.heroPreviewId} rarity={entry.rarity} size={48} />
-                        </div>
-                        {!entry.unlocked && (
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="px-2 py-0.5 rounded bg-background/80 border border-border flex items-center gap-1">
-                              <LockIcon size={10} className="text-muted-foreground" />
-                              <span className="font-pixel text-[7px] text-muted-foreground">LOCKED</span>
+                {/* Group codex entries by rarity */}
+                <div className="space-y-6">
+                  {CODEX_RARITY_ORDER.map((rarity) => {
+                    const entriesForRarity = codexByName.filter(entry => entry.rarity === rarity);
+                    const unlockedCount = entriesForRarity.filter(e => e.unlocked).length;
+                    const totalCount = entriesForRarity.length;
+
+                    if (totalCount === 0) return null;
+
+                    return (
+                      <div key={rarity} className="space-y-2">
+                        {/* Rarity header */}
+                        <p className={`font-pixel text-[8px] ${CODEX_RARITY_COLOR[rarity]}`}>
+                          {CODEX_RARITY_LABEL[rarity]} ({unlockedCount}/{totalCount})
+                        </p>
+
+                        {/* Grid for this rarity */}
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                          {entriesForRarity.map((entry) => (
+                            <div
+                              key={entry.key}
+                              className={`pixel-border p-3 transition-all ${
+                                entry.unlocked ? `bg-card rarity-${entry.rarity}` : 'bg-muted/30'
+                              }`}
+                            >
+                              <div className="relative flex justify-center mb-2">
+                                <div className={entry.unlocked ? '' : 'opacity-35 grayscale blur-[0.8px]'}>
+                                  <HeroAvatar heroId={entry.heroPreviewId} rarity={entry.rarity} size={48} />
+                                </div>
+                                {!entry.unlocked && (
+                                  <div className="absolute inset-0 flex items-center justify-center">
+                                    <div className="px-2 py-0.5 rounded bg-background/80 border border-border flex items-center gap-1">
+                                      <LockIcon size={10} className="text-muted-foreground" />
+                                      <span className="font-pixel text-[7px] text-muted-foreground">LOCKED</span>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                              <p className="font-pixel text-[8px] text-center text-foreground truncate">
+                                {entry.unlocked ? entry.displayName : '???'}
+                              </p>
+                              <p className="text-[8px] text-center mt-1" style={{ color: `hsl(var(--game-rarity-${entry.rarity}))` }}>
+                                {entry.unlocked ? RARITY_CONFIG[entry.rarity].label : 'Inconnu'}
+                              </p>
+                              <p className="text-[8px] text-center text-muted-foreground mt-1 tabular-nums">
+                                {entry.unlocked ? `Possédés: ${entry.ownedCount}` : 'À invoquer'}
+                              </p>
                             </div>
-                          </div>
-                        )}
+                          ))}
+                        </div>
                       </div>
-                      <p className="font-pixel text-[8px] text-center text-foreground truncate">
-                        {entry.unlocked ? entry.displayName : '???'}
-                      </p>
-                      <p className="text-[8px] text-center mt-1" style={{ color: `hsl(var(--game-rarity-${entry.rarity}))` }}>
-                        {entry.unlocked ? RARITY_CONFIG[entry.rarity].label : 'Inconnu'}
-                      </p>
-                      <p className="text-[8px] text-center text-muted-foreground mt-1 tabular-nums">
-                        {entry.unlocked ? `Possédés: ${entry.ownedCount}` : 'À invoquer'}
-                      </p>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </motion.div>
             )}
@@ -2405,41 +2541,17 @@ const Index = () => {
                 )}
                 </AnimatePresence>
 
-                {/* Defeat banner */}
-                <AnimatePresence>
-                {gameState.isStoryMode && gameState.storyFailed && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    transition={{ type: 'spring', damping: 12 }}
-                    className="pixel-border bg-card p-5 text-center border-destructive/50"
-                  >
-                    <p className="font-pixel text-sm sm:text-base text-destructive flex items-center justify-center gap-2">
-                      <Skull size={22} /> 💀 DÉFAITE!
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Tous vos héros sont KO
-                    </p>
-                    <div className="flex gap-2 mt-4 justify-center">
-                      <button
-                        onClick={() => {
-                          if (currentStoryStage) startStoryStage(currentStoryStage);
-                        }}
-                        className="pixel-btn font-pixel text-xs flex items-center gap-2"
-                      >
-                        <Play size={14} /> Réessayer
-                      </button>
-                      <button
-                        onClick={endStoryBattle}
-                        className="pixel-btn pixel-btn-secondary font-pixel text-xs flex items-center gap-2"
-                      >
-                        <DoorOpen size={14} /> Quitter
-                      </button>
-                    </div>
-                  </motion.div>
+                {/* Defeat Overlay */}
+                {gameState && (
+                  <DefeatOverlay
+                    show={gameState.isStoryMode && gameState.storyFailed}
+                    heroesKO={gameState.heroes.filter(h => h.currentStamina === 0)}
+                    onRetry={() => {
+                      if (currentStoryStage) startStoryStage(currentStoryStage);
+                    }}
+                    onQuit={endStoryBattle}
+                  />
                 )}
-                </AnimatePresence>
 
                 {/* Grid */}
                 <div className="flex justify-center flex-col items-center">
@@ -2484,6 +2596,17 @@ const Index = () => {
         {/* PAGE 3 — Social */}
         <div className="w-1/5 h-full overflow-y-auto pb-nav md:pl-16">
           <div className="p-4 max-w-2xl mx-auto space-y-6">
+            {/* Player Stats */}
+            <PlayerStats
+              mapsCompleted={player.mapsCompleted}
+              heroesTotal={player.heroes.length}
+              achievementsUnlocked={ACHIEVEMENTS.filter(a => player.achievements[a.id]?.unlocked).length}
+              achievementsTotal={ACHIEVEMENTS.length}
+              storyHighestStage={storyProgress.highestStage}
+              bossesDefeated={storyProgress.bossesDefeated?.length ?? 0}
+              heroesAtMax={player.heroes.filter(h => h.level >= MAX_LEVEL_BY_RARITY[h.rarity]).length}
+            />
+
             {/* Daily Quests */}
             <DailyQuests
               quests={dailyQuests}
@@ -2642,25 +2765,43 @@ const Index = () => {
                     </div>
 
                     <div className="w-full max-w-md mb-6">
-                      <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
-                        {fusionSlots.map((hero, idx) => {
-                          const recipe = MERGE_RECIPES[selectedRecipeIdx];
-                          const eligibility = hero
-                            ? isHeroEligibleForMerge(hero, recipe.from, recipe.count)
-                            : { eligible: true, reason: '' };
-                          return (
-                            <FusionSlot
-                              key={idx}
-                              hero={hero}
-                              index={idx}
-                              onClick={() => handleSlotClick(idx)}
-                              onClear={hero ? () => handleSlotClear(idx) : undefined}
-                              isEligible={eligibility.eligible}
-                              ineligibleReason={eligibility.reason}
-                            />
-                          );
-                        })}
-                      </div>
+                      {lastFusedHero ? (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          className="pixel-border bg-card p-4 flex flex-col items-center gap-3 text-center"
+                        >
+                          <div className="font-pixel text-[8px] text-game-gold">✨ FUSION RÉUSSIE !</div>
+                          <HeroAvatar heroId={lastFusedHero.id} heroName={lastFusedHero.name} rarity={lastFusedHero.rarity} size={48} />
+                          <div className="font-pixel text-[9px] text-foreground">{lastFusedHero.name}</div>
+                          <div className={`font-pixel text-[8px] ${CODEX_RARITY_COLOR[lastFusedHero.rarity]}`}>
+                            {lastFusedHero.rarity.toUpperCase()} · Niv.{lastFusedHero.level}
+                          </div>
+                          <button onClick={() => setLastFusedHero(null)} className="pixel-btn pixel-btn-secondary font-pixel text-[8px] px-3 py-1 min-h-0">
+                            Continuer
+                          </button>
+                        </motion.div>
+                      ) : (
+                        <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
+                          {fusionSlots.map((hero, idx) => {
+                            const recipe = MERGE_RECIPES[selectedRecipeIdx];
+                            const eligibility = hero
+                              ? isHeroEligibleForMerge(hero, recipe.from, recipe.count)
+                              : { eligible: true, reason: '' };
+                            return (
+                              <FusionSlot
+                                key={idx}
+                                hero={hero}
+                                index={idx}
+                                onClick={() => handleSlotClick(idx)}
+                                onClear={hero ? () => handleSlotClear(idx) : undefined}
+                                isEligible={eligibility.eligible}
+                                ineligibleReason={eligibility.reason}
+                              />
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex flex-col gap-2 w-full max-w-xs">
