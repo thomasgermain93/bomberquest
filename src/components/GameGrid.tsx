@@ -216,7 +216,7 @@ const GameGrid: React.FC<GameGridProps> = ({ gameState }) => {
       style={{ 
         backgroundColor: 'hsl(var(--game-bg-deep))',
         border: '3px solid hsl(230, 20%, 22%)',
-        boxShadow: '0 0 30px rgba(0,0,0,0.5),inset 0 0 20px rgba(0,0,0,0.3)',
+        boxShadow: '0 0 30px rgba(0,0,0,0.5), 0 4px 20px rgba(0,0,0,0.3)',
         aspectRatio: gameState ? `${gameState.map.width} / ${gameState.map.height}` : '13/9'
       }}
     >
