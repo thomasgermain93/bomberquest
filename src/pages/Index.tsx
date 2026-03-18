@@ -176,7 +176,7 @@ const Index = () => {
   const huntSpeedRef = useRef(1);
   const gameLoopRef = useRef<number>();
   const cloudLoadedRef = useRef(false);
-  const lastLocalSaveRef = useRef<number>(Date.now());
+  const lastLocalSaveRef = useRef<number>(0);
   const isInitialMountRef = useRef(true);
   const localHeroCountRef = useRef(0);
 
