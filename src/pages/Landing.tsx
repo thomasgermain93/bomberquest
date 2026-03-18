@@ -2,6 +2,7 @@ import React from 'react';
 import Navbar from '@/components/landing/Navbar';
 import HeroSection from '@/components/landing/HeroSection';
 import CoreFeatures from '@/components/landing/CoreFeatures';
+import StatsSection from '@/components/landing/StatsSection';
 import BenefitsGrid from '@/components/landing/BenefitsGrid';
 import FaqSection from '@/components/landing/FaqSection';
 import CtaSection from '@/components/landing/CtaSection';
@@ -16,6 +17,7 @@ const Landing: React.FC = () => {
       <Navbar />
       <HeroSection />
       <CoreFeatures />
+      <StatsSection kpis={kpis} kpisLoading={kpisLoading} />
       <BenefitsGrid kpis={kpis} kpisLoading={kpisLoading} />
       <FaqSection />
       <CtaSection />
