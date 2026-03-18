@@ -14,6 +14,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: '2026-03-18',
     title: 'Mises à jour récentes',
     changes: [
+      { type: 'feature', description: 'fix: restaurer l\'accès à la page profil (pseudo, suppression compte) (#237)' },
       { type: 'ui', description: '[H-1] Animations Framer Motion : transitions cohérentes partout (#229)' },
       { type: 'feature', description: 'feat(ui): Milestones D→H — harmonisation pixel art complète (#235)' },
       { type: 'feature', description: 'feat(ui): Milestone C — UX fixes, TDZ bug, nouvelles fonctionnalités gameplay (#234)' },
