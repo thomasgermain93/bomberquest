@@ -14,6 +14,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: '2026-03-18',
     title: 'Mises à jour récentes',
     changes: [
+      { type: 'feature', description: 'Combat Design: compétences de clan/faction (synergies d’équipe) (#153)' },
       { type: 'feature', description: 'Gameplay: élargir le pool de compétences (actives/passives) + synergies clan (#156)' },
       { type: 'feature', description: 'Architecture: Clan Bomb System (data model + intégration combat/render/UI) (#169)' },
       { type: 'feature', description: 'Progression héros: amélioration de compétences via doublons (#149)' },
