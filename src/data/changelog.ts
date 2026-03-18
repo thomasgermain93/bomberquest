@@ -10,8 +10,8 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
-    version: 'Unreleased',
-    date: '2026-03-15',
+    version: '1.7.0',
+    date: '2026-03-18',
     title: 'Mises à jour récentes',
     changes: [
       { type: 'feature', description: 'ui: audit UI/UX — 42 violations (animations, UX laws, typography, audio) (#183)' },

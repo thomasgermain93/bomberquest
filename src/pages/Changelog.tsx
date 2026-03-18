@@ -93,8 +93,12 @@ const Changelog: React.FC = () => {
                   <div className="pixel-border bg-card p-5">
                     {/* Version header */}
                     <div className="flex flex-wrap items-center gap-3 mb-3">
-                      <span className="font-pixel text-[10px] text-primary text-glow-red">v{entry.version}</span>
-                      <span className="text-[10px] text-muted-foreground">{formatDate(entry.date)}</span>
+                      <span className="font-pixel text-[10px] text-primary text-glow-red">
+                        {entry.version === 'Unreleased' ? 'En cours' : `v${entry.version}`}
+                      </span>
+                      {entry.date && entry.date !== 'Unreleased' && (
+                        <span className="text-[10px] text-muted-foreground">{formatDate(entry.date)}</span>
+                      )}
                     </div>
                     <h2 className="font-pixel text-[9px] text-foreground mb-4">{entry.title}</h2>
 
