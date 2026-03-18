@@ -764,6 +764,7 @@ const Index = () => {
       coinsEarned: 0,
       bombsPlaced: 0,
       chestsOpened: 0,
+      blocksDestroyed: 0,
       isRunning: true,
       isPaused: false,
       speed: huntSpeedRef.current,
@@ -842,6 +843,7 @@ const Index = () => {
       if (earned > 0) q = updateQuestProgress(q, 'earn_coins', earned);
       if (gameState.bombsPlaced > 0) q = updateQuestProgress(q, 'place_bombs', gameState.bombsPlaced);
       if (gameState.chestsOpened > 0) q = updateQuestProgress(q, 'open_chests', gameState.chestsOpened);
+      if ((gameState.blocksDestroyed ?? 0) > 0) q = updateQuestProgress(q, 'destroy_blocks', gameState.blocksDestroyed ?? 0);
       return q;
     });
 
@@ -1121,6 +1123,7 @@ const Index = () => {
       coinsEarned: 0,
       bombsPlaced: 0,
       chestsOpened: 0,
+      blocksDestroyed: 0,
       isRunning: true,
       isPaused: false,
       speed: huntSpeedRef.current,
@@ -1267,6 +1270,7 @@ const Index = () => {
         if (stateSnapshot.coinsEarned > 0) q = updateQuestProgress(q, 'earn_coins', stateSnapshot.coinsEarned);
         if (stateSnapshot.bombsPlaced > 0) q = updateQuestProgress(q, 'place_bombs', stateSnapshot.bombsPlaced);
         if (stateSnapshot.chestsOpened > 0) q = updateQuestProgress(q, 'open_chests', stateSnapshot.chestsOpened);
+        if ((stateSnapshot.blocksDestroyed ?? 0) > 0) q = updateQuestProgress(q, 'destroy_blocks', stateSnapshot.blocksDestroyed ?? 0);
         return q;
       });
     }
@@ -2199,81 +2203,79 @@ const Index = () => {
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
                 {/* Game HUD */}
                 <div className="pixel-border bg-card p-2.5 space-y-2">
-                  {/* Top row: stats + controls */}
-                  <div className="flex items-center justify-between gap-2 flex-wrap">
-                    {/* Stats */}
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-muted min-w-[60px]">
-                        <Coins size={12} className="text-game-gold" />
-                        <span className="font-pixel text-[9px] text-game-gold tabular-nums">+{gameState.coinsEarned}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-muted min-w-[40px]">
-                        <span className="text-[10px]">💣</span>
-                        <span className="font-pixel text-[9px] text-muted-foreground tabular-nums">{gameState.bombsPlaced}</span>
-                      </div>
-                      {!gameState.isStoryMode && (
-                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-primary/15 min-w-[50px]">
-                          <span className="text-[10px]">📦</span>
-                          <span className="font-pixel text-[9px] text-primary tabular-nums">
-                            {gameState.chestsOpened}/{gameState.map.chests.length}
-                          </span>
-                        </div>
-                      )}
-                      {gameState.isStoryMode && (
-                        <>
-                          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-destructive/15 min-w-[70px]">
-                            <Skull size={12} className="text-destructive shrink-0" />
-                            <span className="font-pixel text-[9px] text-destructive tabular-nums whitespace-nowrap">
-                              {gameState.enemies?.filter(e => e.hp > 0).length || 0} restants
-                            </span>
-                          </div>
-                          {(gameState.enemiesKilled || 0) > 0 && (
-                            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-primary/15 min-w-[50px]">
-                              <Swords size={12} className="text-primary shrink-0" />
-                              <span className="font-pixel text-[9px] text-primary tabular-nums">{gameState.enemiesKilled} tué(s)</span>
-                            </div>
-                          )}
-                        </>
-                      )}
+                  {/* Stats + Controls — grille 3 cols mobile / 6 cols desktop */}
+                  <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
+                    {/* Stat 1 — Coins */}
+                    <div className="flex flex-col items-center justify-center gap-0.5 px-2 py-1.5 rounded bg-muted border border-border/50">
+                      <Coins size={14} className="text-game-gold" />
+                      <span className="font-pixel text-[8px] text-game-gold tabular-nums leading-none">+{gameState.coinsEarned}</span>
                     </div>
 
-                    {/* Controls */}
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        onClick={() => {
-                          const nextSpeed = gameState.speed === 1 ? 2 : gameState.speed === 2 ? 3 : 1;
-                          huntSpeedRef.current = nextSpeed;
-                          if (user) {
-                            setPlayer(prev => ({ ...prev, huntSpeed: nextSpeed }));
-                          } else {
-                            localStorage.setItem('hunt-speed', String(nextSpeed));
-                          }
-                          setGameState(prev => (prev ? { ...prev, speed: nextSpeed } : prev));
-                        }}
-                        className="font-pixel text-[8px] sm:text-[7px] px-3 py-2.5 sm:py-1.5 rounded transition-all bg-primary text-primary-foreground shadow-md min-w-[44px] sm:min-w-[38px] min-h-[44px] sm:min-h-[auto] tabular-nums"
-                        title="Vitesse de chasse"
-                      >
-                        x{gameState.speed}
-                      </button>
-                      <div className="w-px h-5 bg-border mx-0.5 hidden sm:block" />
-                      <button
-                        onClick={() => setGameState(prev => (prev ? { ...prev, isPaused: !prev.isPaused } : prev))}
-                        className="font-pixel text-[8px] px-3 py-2.5 sm:py-1.5 rounded bg-secondary text-secondary-foreground hover:bg-secondary/80 flex items-center gap-1 min-h-[44px] sm:min-h-[auto]"
-                      >
-                        {gameState.isPaused ? <Play size={14} className="sm:size-[10px]" /> : <Pause size={14} className="sm:size-[10px]" />}
-                        <span className="hidden sm:inline">{gameState.isPaused ? 'Reprendre' : 'Pause'}</span>
-                      </button>
-                      <button
-                        onClick={gameState.isStoryMode ? endStoryBattle : endTreasureHunt}
-                        className={`font-pixel text-[8px] px-3 py-2.5 sm:py-1.5 rounded flex items-center gap-1 min-h-[44px] sm:min-h-[auto] ${
-                          gameState.mapCompleted
-                            ? 'bg-game-gold text-background font-bold animate-pulse'
-                            : 'bg-destructive/80 text-destructive-foreground hover:bg-destructive'
-                        }`}
-                      >
-                        {gameState.mapCompleted ? <><Check size={14} className="sm:size-[10px]" /> <span className="hidden sm:inline">Récupérer!</span></> : <><DoorOpen size={14} className="sm:size-[10px]" /> <span className="hidden sm:inline">Quitter</span></>}
-                      </button>
+                    {/* Stat 2 — Bombes */}
+                    <div className="flex flex-col items-center justify-center gap-0.5 px-2 py-1.5 rounded bg-muted border border-border/50">
+                      <span className="text-[14px] leading-none">💣</span>
+                      <span className="font-pixel text-[8px] text-muted-foreground tabular-nums leading-none">{gameState.bombsPlaced}</span>
                     </div>
+
+                    {/* Stat 3 — Coffres (Trésor) ou Ennemis (Histoire) */}
+                    {!gameState.isStoryMode ? (
+                      <div className="flex flex-col items-center justify-center gap-0.5 px-2 py-1.5 rounded bg-primary/15 border border-primary/30">
+                        <span className="text-[14px] leading-none">📦</span>
+                        <span className="font-pixel text-[8px] text-primary tabular-nums leading-none">
+                          {gameState.chestsOpened}/{gameState.map.chests.length}
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center gap-0.5 px-2 py-1.5 rounded bg-destructive/15 border border-destructive/30">
+                        <Skull size={14} className="text-destructive" />
+                        <span className="font-pixel text-[8px] text-destructive tabular-nums leading-none whitespace-nowrap">
+                          {gameState.enemies?.filter(e => e.hp > 0).length || 0} rest.
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Contrôle 1 — Vitesse */}
+                    <button
+                      onClick={() => {
+                        const nextSpeed = gameState.speed === 1 ? 2 : gameState.speed === 2 ? 3 : 1;
+                        huntSpeedRef.current = nextSpeed;
+                        if (user) {
+                          setPlayer(prev => ({ ...prev, huntSpeed: nextSpeed }));
+                        } else {
+                          localStorage.setItem('hunt-speed', String(nextSpeed));
+                        }
+                        setGameState(prev => (prev ? { ...prev, speed: nextSpeed } : prev));
+                      }}
+                      className="pixel-btn pixel-btn-secondary font-pixel text-[9px] flex flex-col items-center justify-center gap-0.5 px-2 py-1.5 min-h-0 tabular-nums"
+                      title="Vitesse de jeu"
+                    >
+                      <span className="text-[14px] leading-none">⚡</span>
+                      <span className="leading-none">x{gameState.speed}</span>
+                    </button>
+
+                    {/* Contrôle 2 — Pause */}
+                    <button
+                      onClick={() => setGameState(prev => (prev ? { ...prev, isPaused: !prev.isPaused } : prev))}
+                      className="pixel-btn pixel-btn-secondary font-pixel text-[9px] flex flex-col items-center justify-center gap-0.5 px-2 py-1.5 min-h-0"
+                    >
+                      {gameState.isPaused
+                        ? <><Play size={14} className="shrink-0" /><span className="leading-none">Reprise</span></>
+                        : <><Pause size={14} className="shrink-0" /><span className="leading-none">Pause</span></>}
+                    </button>
+
+                    {/* Contrôle 3 — Quitter / Récupérer */}
+                    <button
+                      onClick={gameState.isStoryMode ? endStoryBattle : endTreasureHunt}
+                      className={`pixel-btn font-pixel text-[9px] flex flex-col items-center justify-center gap-0.5 px-2 py-1.5 min-h-0 ${
+                        gameState.mapCompleted
+                          ? 'pixel-btn-gold animate-pulse'
+                          : 'bg-destructive/80 text-destructive-foreground border-destructive/80 hover:bg-destructive'
+                      }`}
+                    >
+                      {gameState.mapCompleted
+                        ? <><Check size={14} className="shrink-0" /><span className="leading-none">Récup!</span></>
+                        : <><DoorOpen size={14} className="shrink-0" /><span className="leading-none">Quitter</span></>}
+                    </button>
                   </div>
 
                 </div>
@@ -2520,6 +2522,32 @@ const Index = () => {
                       description: `${reward.amount} ${reward.type === 'coins' ? 'pièces' : reward.rarity ? `shards ${reward.rarity}` : 'shards universels'}`,
                     });
                   }
+                }}
+                onClaimAll={(ids: string[]) => {
+                  let currentAchievements = player.achievements;
+                  let totalCoins = 0;
+                  let totalShards = 0;
+                  for (const id of ids) {
+                    const { newState, claimed, reward } = claimAchievementReward(currentAchievements, id);
+                    if (claimed && reward) {
+                      currentAchievements = newState;
+                      if (reward.type === 'coins') totalCoins += reward.amount;
+                      else totalShards += reward.amount;
+                    }
+                  }
+                  setPlayer(prev => ({
+                    ...prev,
+                    bomberCoins: prev.bomberCoins + totalCoins,
+                    universalShards: (prev.universalShards || 0) + totalShards,
+                    achievements: currentAchievements,
+                  }));
+                  toast({
+                    title: `${ids.length} succès récupérés !`,
+                    description: [
+                      totalCoins > 0 ? `${totalCoins} pièces` : '',
+                      totalShards > 0 ? `${totalShards} shards` : '',
+                    ].filter(Boolean).join(' · '),
+                  });
                 }}
               />
             </motion.div>
