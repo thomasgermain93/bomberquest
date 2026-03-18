@@ -14,6 +14,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: '2026-03-18',
     title: 'Mises à jour récentes',
     changes: [
+      { type: 'feature', description: 'Balancing: passe globale progression early-game après refonte récompenses (#147)' },
       { type: 'feature', description: 'Box management: outils anti-encombrement et nettoyage massif des doublons (#151)' },
       { type: 'feature', description: 'Progression: intégrer des Hero Shards dans les succès + nouveaux succès (#144)' },
       { type: 'feature', description: 'Collection: système de recyclage de héros en Universal Shards (single + batch) (#148)' },
