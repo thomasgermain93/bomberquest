@@ -58,19 +58,19 @@ export function MoreDrawer({
             )}
           >
             {/* Header du drawer */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-              <span className="font-semibold text-foreground">Plus</span>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+              <span className="font-pixel text-[9px] text-foreground">MENU</span>
               <button
                 onClick={onClose}
-                className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                className="p-1 text-muted-foreground hover:text-foreground transition-colors"
                 aria-label="Fermer"
               >
-                <X size={18} />
+                <X size={16} />
               </button>
             </div>
 
             {/* Liste des items */}
-            <nav className="flex-1 overflow-y-auto py-2">
+            <nav className="flex-1 overflow-y-auto py-1">
               {DRAWER_ITEMS.map(({ id, label, icon: Icon }) => {
                 const isActive = currentScreen === id;
                 return (
@@ -78,15 +78,15 @@ export function MoreDrawer({
                     key={id}
                     onClick={() => handleNavigate(id)}
                     className={cn(
-                      'flex items-center gap-3 w-full px-6 py-4',
-                      'hover:bg-accent cursor-pointer transition-colors duration-150',
+                      'flex items-center gap-3 w-full px-4 py-3',
+                      'cursor-pointer transition-colors duration-150',
                       isActive
-                        ? 'text-primary font-medium'
-                        : 'text-foreground',
+                        ? 'bg-primary/10 text-primary border-l-2 border-primary'
+                        : 'text-foreground hover:bg-accent border-l-2 border-transparent',
                     )}
                   >
-                    <Icon size={18} className={cn(isActive ? 'text-primary' : 'text-muted-foreground')} />
-                    <span className="text-sm">{label}</span>
+                    <Icon size={16} className={cn(isActive ? 'text-primary' : 'text-muted-foreground')} />
+                    <span className="font-pixel text-[8px]">{label}</span>
                   </button>
                 );
               })}

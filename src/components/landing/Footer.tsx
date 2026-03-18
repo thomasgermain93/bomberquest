@@ -10,20 +10,20 @@ const Footer: React.FC = () => (
           <PixelIcon icon="bomb" size={16} color="hsl(var(--primary))" />
           <span className="font-pixel text-[8px] text-foreground">BOMBERQUEST</span>
         </div>
-        <p className="text-xs text-muted-foreground">RPG Idle Bomber — pixel art</p>
+        <p className="font-pixel text-[7px] text-muted-foreground">RPG Idle Bomber — pixel art</p>
       </div>
 
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-        <Link to="/wiki" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Wiki</Link>
-        <Link to="/wiki/glossaire" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Glossaire</Link>
-        <Link to="/guides" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Guides</Link>
-        <Link to="/changelog" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Changelog</Link>
-        <Link to="/auth" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Connexion</Link>
+        <Link to="/wiki" className="font-pixel text-[7px] text-muted-foreground hover:text-foreground transition-colors">Wiki</Link>
+        <Link to="/wiki/glossaire" className="font-pixel text-[7px] text-muted-foreground hover:text-foreground transition-colors">Glossaire</Link>
+        <Link to="/guides" className="font-pixel text-[7px] text-muted-foreground hover:text-foreground transition-colors">Guides</Link>
+        <Link to="/changelog" className="font-pixel text-[7px] text-muted-foreground hover:text-foreground transition-colors">Changelog</Link>
+        <Link to="/auth" className="font-pixel text-[7px] text-muted-foreground hover:text-foreground transition-colors">Connexion</Link>
       </div>
     </div>
 
     <div className="max-w-6xl mx-auto mt-6 pt-4 border-t border-border/50">
-      <p className="text-[10px] text-muted-foreground">© 2026 BomberQuest — RPG Idle Bomber</p>
+      <p className="font-pixel text-[7px] text-muted-foreground">© 2026 BomberQuest — RPG Idle Bomber</p>
     </div>
   </footer>
 );

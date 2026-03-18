@@ -355,7 +355,7 @@ const Summon: React.FC = () => {
       <header className="sticky top-0 z-40 bg-card/95 backdrop-blur border-b border-border px-4 py-3 flex items-center justify-between">
         <button onClick={() => navigate('/game')} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
           <ArrowLeft size={16} />
-          <span className="text-sm">Retour au jeu</span>
+          <span className="font-pixel text-[8px]">Retour</span>
         </button>
         <div className="flex items-center gap-2">
           <PixelIcon icon="bomb" size={18} color="hsl(var(--primary))" />
@@ -392,7 +392,7 @@ const Summon: React.FC = () => {
             </button>
           </div>
 
-          <div className="pixel-border bg-card p-4 rounded-lg mb-4">
+          <div className="pixel-border bg-card p-4 mb-4">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <Coins size={16} className="text-primary" />
@@ -408,7 +408,7 @@ const Summon: React.FC = () => {
 
             {activeTab === 'shards' && (
               <div className="mb-4">
-                <div className="flex items-center justify-center gap-2 mb-3 p-2 rounded bg-secondary/10 border border-secondary/30">
+                <div className="flex items-center justify-center gap-2 mb-3 p-2 bg-secondary/10 border border-secondary/30">
                   <Gem size={14} className="text-secondary" />
                   <span className="font-pixel text-[8px] text-secondary">💎 {player.universalShards} Shards Universels</span>
                 </div>
@@ -418,7 +418,7 @@ const Summon: React.FC = () => {
                     <button
                       key={r}
                       onClick={() => setSelectedShardRarity(r)}
-                      className={`p-2 rounded pixel-border transition-all ${
+                      className={`p-2 pixel-border transition-all ${
                         selectedShardRarity === r 
                           ? 'bg-primary/20 border-primary' 
                           : 'bg-muted/50 border-border hover:border-primary/50'
@@ -452,7 +452,7 @@ const Summon: React.FC = () => {
               >
                 {activeTab === 'coins' ? (
                   <div>
-                    <div className="min-h-[180px] flex items-center justify-center mb-4 relative overflow-hidden rounded-lg bg-muted/50 p-4">
+                    <div className="min-h-[180px] flex items-center justify-center mb-4 relative overflow-hidden bg-muted/50 p-4">
                       {showExplosion && <SummonExplosion onComplete={() => {}} />}
                       
                       {animating && (
@@ -488,9 +488,9 @@ const Summon: React.FC = () => {
                             <div className="flex flex-col items-center">
                               <HeroRevealCard hero={sortedBatch[0]} index={0} total={1} />
                               <div className="grid grid-cols-3 gap-1 mt-3 text-[9px]">
-                                <span className="bg-muted px-2 py-1 rounded text-foreground text-center">PWR {sortedBatch[0].stats.pwr}</span>
-                                <span className="bg-muted px-2 py-1 rounded text-foreground text-center">SPD {sortedBatch[0].stats.spd}</span>
-                                <span className="bg-muted px-2 py-1 rounded text-foreground text-center">RNG {sortedBatch[0].stats.rng}</span>
+                                <span className="bg-muted px-2 py-1 font-pixel text-[8px] text-foreground text-center">PWR {sortedBatch[0].stats.pwr}</span>
+                                <span className="bg-muted px-2 py-1 font-pixel text-[8px] text-foreground text-center">SPD {sortedBatch[0].stats.spd}</span>
+                                <span className="bg-muted px-2 py-1 font-pixel text-[8px] text-foreground text-center">RNG {sortedBatch[0].stats.rng}</span>
                               </div>
                             </div>
                           ) : (
@@ -547,7 +547,7 @@ const Summon: React.FC = () => {
                   </div>
                 ) : (
                   <div>
-                    <div className="min-h-[180px] flex items-center justify-center mb-4 relative overflow-hidden rounded-lg bg-muted/50 p-4">
+                    <div className="min-h-[180px] flex items-center justify-center mb-4 relative overflow-hidden bg-muted/50 p-4">
                       {showExplosion && <SummonExplosion onComplete={() => {}} />}
                       
                       {animating && (
@@ -582,9 +582,9 @@ const Summon: React.FC = () => {
                           <div className="flex flex-col items-center">
                             <HeroRevealCard hero={sortedBatch[0]} index={0} total={1} />
                             <div className="grid grid-cols-3 gap-1 mt-3 text-[9px]">
-                              <span className="bg-muted px-2 py-1 rounded text-foreground text-center">PWR {sortedBatch[0].stats.pwr}</span>
-                              <span className="bg-muted px-2 py-1 rounded text-foreground text-center">SPD {sortedBatch[0].stats.spd}</span>
-                              <span className="bg-muted px-2 py-1 rounded text-foreground text-center">RNG {sortedBatch[0].stats.rng}</span>
+                              <span className="bg-muted px-2 py-1 font-pixel text-[8px] text-foreground text-center">PWR {sortedBatch[0].stats.pwr}</span>
+                              <span className="bg-muted px-2 py-1 font-pixel text-[8px] text-foreground text-center">SPD {sortedBatch[0].stats.spd}</span>
+                              <span className="bg-muted px-2 py-1 font-pixel text-[8px] text-foreground text-center">RNG {sortedBatch[0].stats.rng}</span>
                             </div>
                           </div>
                         </div>
@@ -622,7 +622,7 @@ const Summon: React.FC = () => {
             </AnimatePresence>
           </div>
 
-          <div className="pixel-border bg-card p-4 rounded-lg">
+          <div className="pixel-border bg-card p-4">
             <h3 className="font-pixel text-[8px] text-foreground mb-3 flex items-center gap-2">
               <Star size={12} className="text-primary" /> COMPTEURS DE PITY
             </h3>

@@ -41,11 +41,11 @@ export function MainNav({ page, onNavigate }: MainNavProps) {
                 )}
               >
                 <Icon size={20} />
-                <span className="text-[10px] font-medium leading-none">{label}</span>
+                <span className="font-pixel text-[7px] leading-none">{label}</span>
                 {isActive && (
                   <motion.div
                     layoutId="page-indicator"
-                    className="absolute bottom-0 h-0.5 w-8 rounded-full bg-primary"
+                    className="absolute bottom-0 h-0.5 w-8 bg-primary"
                     transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                   />
                 )}
@@ -73,7 +73,7 @@ export function MainNav({ page, onNavigate }: MainNavProps) {
               title={label}
               className={cn(
                 'relative flex items-center justify-center',
-                'w-12 h-12 rounded-lg transition-colors duration-150',
+                'w-12 h-12 transition-colors duration-150',
                 isActive
                   ? 'text-primary'
                   : 'text-muted-foreground hover:text-foreground',
@@ -82,7 +82,7 @@ export function MainNav({ page, onNavigate }: MainNavProps) {
               {isActive && (
                 <motion.div
                   layoutId="page-indicator-desktop"
-                  className="absolute -left-0.5 top-1/2 -translate-y-1/2 w-0.5 h-8 rounded-full bg-primary"
+                  className="absolute -left-0.5 top-1/2 -translate-y-1/2 w-0.5 h-8 bg-primary"
                   transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                 />
               )}

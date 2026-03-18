@@ -22,7 +22,7 @@ const BenefitsGrid: React.FC<BenefitsGridProps> = ({ kpis, kpisLoading }) => {
   const cards: BenefitCard[] = [
     {
       icon: <Clock size={24} />,
-      iconColor: 'text-blue-400',
+      iconColor: 'text-game-blue',
       title: 'Mode Idle',
       description: 'Tes héros progressent même quand tu n\'es pas connecté. Reviens récolter tes récompenses.',
     },
@@ -34,13 +34,13 @@ const BenefitsGrid: React.FC<BenefitsGridProps> = ({ kpis, kpisLoading }) => {
     },
     {
       icon: <Swords size={24} />,
-      iconColor: 'text-red-400',
+      iconColor: 'text-primary',
       title: '5 Régions',
       description: 'Forêt, Cavernes, Ruines, Forteresse, Enfer — 25 étapes avec des boss à chaque fin de région.',
     },
     {
       icon: <Users size={24} />,
-      iconColor: 'text-green-400',
+      iconColor: 'text-game-green',
       title: 'Joueurs actifs',
       description: 'Une communauté grandissante de joueurs.',
       kpiValue: kpis.players !== null ? formatKpi(kpis.players) : null,
@@ -48,7 +48,7 @@ const BenefitsGrid: React.FC<BenefitsGridProps> = ({ kpis, kpisLoading }) => {
     },
     {
       icon: <Layers size={24} />,
-      iconColor: 'text-purple-400',
+      iconColor: 'text-rarity-super-rare',
       title: 'Collection',
       description: 'Invoque, améliore et fusionne des dizaines de héros aux capacités variées.',
       kpiValue: kpis.totalInvocations !== null ? formatKpi(kpis.totalInvocations) + ' invocations' : null,
@@ -56,7 +56,7 @@ const BenefitsGrid: React.FC<BenefitsGridProps> = ({ kpis, kpisLoading }) => {
     },
     {
       icon: <Skull size={24} />,
-      iconColor: 'text-orange-400',
+      iconColor: 'text-rarity-epic',
       title: 'Boss Épiques',
       description: 'Des boss géants avec des patterns tactiques uniques — chaque victoire débloque de nouvelles récompenses.',
     },
@@ -91,7 +91,7 @@ const BenefitsGrid: React.FC<BenefitsGridProps> = ({ kpis, kpisLoading }) => {
               <div className={`mb-4 ${card.iconColor}`}>{card.icon}</div>
               <h3 className="font-pixel text-[9px] text-foreground mb-2">{card.title}</h3>
               {card.kpiLoading ? (
-                <div className="h-5 w-1/2 rounded bg-muted animate-pulse mb-2" aria-hidden="true" />
+                <div className="h-5 w-1/2 bg-muted animate-pulse mb-2" aria-hidden="true" />
               ) : card.kpiValue ? (
                 <p className="font-pixel text-sm text-game-gold mb-2">{card.kpiValue}</p>
               ) : null}

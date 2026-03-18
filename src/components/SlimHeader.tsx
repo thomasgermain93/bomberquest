@@ -37,7 +37,7 @@ export function SlimHeader({
         <div className="flex items-center gap-2 min-w-0">
           <PixelIcon icon="bomb" size={18} />
           {title && (
-            <span className="text-sm font-semibold truncate text-foreground">
+            <span className="font-pixel text-[8px] truncate text-foreground">
               {title}
             </span>
           )}
@@ -45,17 +45,16 @@ export function SlimHeader({
 
         {/* Droite : niveau + ressources */}
         <div className="flex items-center gap-2 shrink-0">
-          <div className="flex items-center gap-1 text-xs font-medium text-foreground" title={`${accountXp} / ${xpToNextLevel} XP`}>
-            <Crown size={13} className="text-primary" />
-            <span className="text-[11px]">{accountLevel}</span>
-            <span className="text-[9px] text-muted-foreground hidden sm:inline">XP</span>
+          <div className="flex items-center gap-1 font-pixel text-[8px] text-foreground" title={`${accountXp} / ${xpToNextLevel} XP`}>
+            <Crown size={12} className="text-primary" />
+            <span>{accountLevel}</span>
           </div>
-          <div className="flex items-center gap-1 text-xs font-medium text-foreground">
-            <Coins size={14} className="text-yellow-400" />
+          <div className="flex items-center gap-1 font-pixel text-[8px] text-game-gold">
+            <Coins size={13} className="text-game-gold" />
             <span>{bomberCoins.toLocaleString('fr-FR')}</span>
           </div>
-          <div className="flex items-center gap-1 text-xs font-medium text-foreground">
-            <Gem size={14} className="text-blue-400" />
+          <div className="flex items-center gap-1 font-pixel text-[8px]" style={{ color: 'hsl(var(--game-rarity-rare))' }}>
+            <Gem size={13} style={{ color: 'hsl(var(--game-rarity-rare))' }} />
             <span>{universalShards.toLocaleString('fr-FR')}</span>
           </div>
         </div>

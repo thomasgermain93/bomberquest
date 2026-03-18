@@ -1,7 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Coins, Gem, Trophy, FastForward } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 
 interface VictoryOverlayProps {
   show: boolean;
@@ -63,10 +62,10 @@ export function VictoryOverlay({
               {shardsEarned !== undefined && shardsEarned > 0 && (
                 <div className="flex items-center justify-between px-2">
                   <span className="font-pixel text-[9px] text-muted-foreground flex items-center gap-2">
-                    <Gem size={14} className="text-blue-400" />
+                    <Gem size={14} className="text-game-blue" />
                     Shards gagnés
                   </span>
-                  <span className="font-pixel text-[9px] text-blue-400">+{shardsEarned}</span>
+                  <span className="font-pixel text-[9px] text-game-blue">+{shardsEarned}</span>
                 </div>
               )}
 
@@ -90,25 +89,27 @@ export function VictoryOverlay({
             {/* Boutons */}
             <div className="flex flex-col gap-2 w-full">
               {onViewRewards && (
-                <Button
-                  variant="outline"
+                <button
                   onClick={onViewRewards}
-                  className="font-pixel text-[8px] w-full"
+                  className="pixel-btn pixel-btn-secondary w-full font-pixel text-[8px]"
                 >
                   Voir les récompenses
-                </Button>
+                </button>
               )}
               {onAutoFarm && (
-                <button onClick={onAutoFarm} className="pixel-btn pixel-btn-secondary font-pixel text-[8px] flex items-center justify-center gap-2">
+                <button
+                  onClick={onAutoFarm}
+                  className="pixel-btn pixel-btn-secondary font-pixel text-[8px] flex items-center justify-center gap-2 w-full"
+                >
                   <FastForward size={12} /> AUTO-FARM
                 </button>
               )}
-              <Button
+              <button
                 onClick={onContinue}
-                className="font-pixel text-[8px] w-full bg-game-gold/90 hover:bg-game-gold text-background"
+                className="pixel-btn pixel-btn-gold w-full font-pixel text-[8px]"
               >
                 Continuer
-              </Button>
+              </button>
             </div>
           </motion.div>
         </motion.div>
