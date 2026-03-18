@@ -44,7 +44,7 @@ export function SlimHeader({
         </div>
 
         {/* Droite : niveau + ressources */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
           <div className="flex items-center gap-1 font-pixel text-[8px] text-foreground" title={`${accountXp} / ${xpToNextLevel} XP`}>
             <Crown size={12} className="text-primary" />
             <span>{accountLevel}</span>
