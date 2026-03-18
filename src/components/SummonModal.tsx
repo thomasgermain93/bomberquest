@@ -110,7 +110,7 @@ const HeroRevealCard: React.FC<{ hero: Hero; index: number; total: number }> = (
     <motion.div
       initial={{ scale: 0, rotateY: 180, opacity: 0 }}
       animate={{ scale: 1, rotateY: 0, opacity: 1 }}
-      transition={{ type: 'spring', stiffness: 200, delay: total > 1 ? index * 0.08 : 0 }}
+      transition={{ type: 'spring', stiffness: 200, delay: total > 1 ? Math.min(index * 0.04, 0.4) : 0 }}
       className="flex flex-col items-center"
     >
       <div
@@ -151,8 +151,8 @@ const SummonModal: React.FC<SummonModalProps> = ({ isOpen, onClose, onSummon, co
       setTimeout(() => {
         setShowResult(true);
         setShowExplosion(false);
-      }, 600);
-    }, type === 'x100' ? 500 : 1500);
+      }, 300);
+    }, type === 'x100' ? 300 : 400);
   };
 
   const displayBatch = summonedBatch.length > 0 ? summonedBatch : lastSummoned ? [lastSummoned] : [];
@@ -165,10 +165,9 @@ const SummonModal: React.FC<SummonModalProps> = ({ isOpen, onClose, onSummon, co
 
   const bestRarity = sortedBatch.length > 0 ? sortedBatch[0].rarity : 'common';
 
-  if (!isOpen) return null;
-
   return (
     <AnimatePresence>
+      {isOpen && (
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -180,7 +179,7 @@ const SummonModal: React.FC<SummonModalProps> = ({ isOpen, onClose, onSummon, co
         <motion.div
           initial={{ scale: 0.8, y: 20 }}
           animate={{ scale: 1, y: 0 }}
-          exit={{ scale: 0.8, y: 20 }}
+          exit={{ opacity: 0, scale: 0.95, y: 10 }}
           className="pixel-border bg-card p-3 sm:p-5 max-w-lg w-full max-h-[90vh] overflow-y-auto rounded-none sm:rounded-lg"
           onClick={e => e.stopPropagation()}
         >
@@ -246,7 +245,7 @@ const SummonModal: React.FC<SummonModalProps> = ({ isOpen, onClose, onSummon, co
                       transition={{ 
                         duration: 0.8, 
                         repeat: Infinity, 
-                        delay: i * 0.15 
+                        delay: i * 0.04
                       }}
                       className="w-2 h-2 rounded-full"
                       style={{ 
@@ -284,7 +283,7 @@ const SummonModal: React.FC<SummonModalProps> = ({ isOpen, onClose, onSummon, co
                       scale: [0, 1, 0],
                       opacity: [1, 1, 0]
                     }}
-                    transition={{ duration: 0.8, ease: "easeOut" }}
+                    transition={{ duration: 0.8, ease: "easeIn" }}
                     className="absolute pointer-events-none z-10"
                   >
                     <Star 
@@ -406,6 +405,7 @@ const SummonModal: React.FC<SummonModalProps> = ({ isOpen, onClose, onSummon, co
           </button>
         </motion.div>
       </motion.div>
+      )}
     </AnimatePresence>
   );
 };
