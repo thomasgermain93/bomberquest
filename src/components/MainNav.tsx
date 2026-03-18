@@ -11,7 +11,7 @@ const PAGES = [
   { icon: Sparkles, label: 'Invoquer' },
   { icon: Users, label: 'Héros' },
   { icon: Swords, label: 'Combat' },
-  { icon: Trophy, label: 'Social' },
+  { icon: Trophy, label: 'Progression' },
   { icon: Flame, label: 'Forge' },
 ];
 

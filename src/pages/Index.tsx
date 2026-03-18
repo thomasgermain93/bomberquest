@@ -9,6 +9,7 @@ import HeroCard from '@/components/HeroCard';
 import HeroCollectionStats from '@/components/HeroCollectionStats';
 import SummonModal from '@/components/SummonModal';
 import HeroUpgradeModal from '@/components/HeroUpgradeModal';
+import HeroDetailInline from '@/components/HeroDetailInline';
 import HeroPickerModal from '@/components/HeroPickerModal';
 import FusionSlot from '@/components/FusionSlot';
 import StoryMode from '@/components/StoryMode';
@@ -35,7 +36,10 @@ import HeroAvatar from '@/components/HeroAvatar';
 import SlimHeader from '@/components/SlimHeader';
 import MainNav from '@/components/MainNav';
 import TeamPresets, { TeamPreset } from '@/components/TeamPresets';
-import { Users, Sparkles, Swords, Map as MapIcon, Trophy, Coins, Play, Pause, DoorOpen, Check, Scroll, FastForward, BookOpen, Shield, Skull, Lock as LockIcon, Hammer, ArrowDown, Trash2, Gem } from 'lucide-react';
+import { Users, Sparkles, Swords, Map as MapIcon, Trophy, Coins, Play, Pause, DoorOpen, Check, Scroll, FastForward, BookOpen, Shield, Skull, Lock as LockIcon, Hammer, ArrowDown, Gem, Filter, ChevronDown, Zap } from 'lucide-react';
+import PityTracker from '@/components/PityTracker';
+import VictoryOverlay from '@/components/VictoryOverlay';
+import DailyResetTimer from '@/components/DailyResetTimer';
 import { SFX, isMuted, setMuted } from '@/game/sfx';
 import { toast } from '@/hooks/use-toast';
 
@@ -91,6 +95,7 @@ const Index = () => {
   const [screen, setScreen] = useState<Screen>('hub');
   const [page, setPage] = useState(2); // page Combat par défaut
   const [heroesTab, setHeroesTab] = useState<'collection' | 'codex' | 'equipes'>('collection');
+  const [combatTab, setCombatTab] = useState<'treasure' | 'story'>('treasure');
   const [forgeTab, setForgeTab] = useState<'fusion' | 'recycle'>('fusion');
   const [teamPresets, setTeamPresets] = useState<TeamPreset[]>([
     { id: 'team-1', name: 'Équipe 1', heroIds: [] },
@@ -131,7 +136,7 @@ const Index = () => {
   const [fusionSlots, setFusionSlots] = useState<(Hero | null)[]>([null, null]);
   const [heroPickerOpen, setHeroPickerOpen] = useState(false);
   const [activeSlotIdx, setActiveSlotIdx] = useState<number | null>(null);
-  const [showRecycleMode, setShowRecycleMode] = useState(false);
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [heroFilters, setHeroFilters] = useState<HeroFilters>(() => {
     if (typeof window === 'undefined') return DEFAULT_HERO_FILTERS;
     try {
@@ -416,6 +421,19 @@ const Index = () => {
       xpNeeded = level * 100;
     }
     return level;
+  };
+
+  // Retourne { currentXp, xpNeeded } pour le niveau actuel
+  const getXpInCurrentLevel = (xp: number): { currentXp: number; xpNeeded: number } => {
+    let level = 1;
+    let xpNeeded = 100;
+    let totalXp = xp;
+    while (totalXp >= xpNeeded) {
+      totalXp -= xpNeeded;
+      level++;
+      xpNeeded = level * 100;
+    }
+    return { currentXp: totalXp, xpNeeded };
   };
 
   // Update account level when XP changes
@@ -746,6 +764,7 @@ const Index = () => {
       coinsEarned: 0,
       bombsPlaced: 0,
       chestsOpened: 0,
+      blocksDestroyed: 0,
       isRunning: true,
       isPaused: false,
       speed: huntSpeedRef.current,
@@ -824,6 +843,7 @@ const Index = () => {
       if (earned > 0) q = updateQuestProgress(q, 'earn_coins', earned);
       if (gameState.bombsPlaced > 0) q = updateQuestProgress(q, 'place_bombs', gameState.bombsPlaced);
       if (gameState.chestsOpened > 0) q = updateQuestProgress(q, 'open_chests', gameState.chestsOpened);
+      if ((gameState.blocksDestroyed ?? 0) > 0) q = updateQuestProgress(q, 'destroy_blocks', gameState.blocksDestroyed ?? 0);
       return q;
     });
 
@@ -1103,6 +1123,7 @@ const Index = () => {
       coinsEarned: 0,
       bombsPlaced: 0,
       chestsOpened: 0,
+      blocksDestroyed: 0,
       isRunning: true,
       isPaused: false,
       speed: huntSpeedRef.current,
@@ -1249,6 +1270,7 @@ const Index = () => {
         if (stateSnapshot.coinsEarned > 0) q = updateQuestProgress(q, 'earn_coins', stateSnapshot.coinsEarned);
         if (stateSnapshot.bombsPlaced > 0) q = updateQuestProgress(q, 'place_bombs', stateSnapshot.bombsPlaced);
         if (stateSnapshot.chestsOpened > 0) q = updateQuestProgress(q, 'open_chests', stateSnapshot.chestsOpened);
+        if ((stateSnapshot.blocksDestroyed ?? 0) > 0) q = updateQuestProgress(q, 'destroy_blocks', stateSnapshot.blocksDestroyed ?? 0);
         return q;
       });
     }
@@ -1524,6 +1546,11 @@ const Index = () => {
 
   const upgradeHeroData = upgradeHeroId ? player.heroes.find(h => h.id === upgradeHeroId) ?? null : null;
 
+  const activeClanSkills = useMemo(() => {
+    const activeHeroes = player.heroes.filter(h => selectedHeroes.has(h.id));
+    return getActiveClanSkills(activeHeroes);
+  }, [player.heroes, selectedHeroes]);
+
   const heroRarityOrder: Rarity[] = ['common', 'rare', 'super-rare', 'epic', 'legend', 'super-legend'];
   const codexByName = HERO_NAMES.map((heroName) => {
     const normalized = heroName.toLowerCase();
@@ -1615,6 +1642,8 @@ const Index = () => {
         bomberCoins={player.bomberCoins + (gameState?.coinsEarned || 0)}
         universalShards={player.universalShards}
         accountLevel={player.accountLevel}
+        accountXp={getXpInCurrentLevel(player.xp).currentXp}
+        xpToNextLevel={getXpInCurrentLevel(player.xp).xpNeeded}
         title={PAGE_TITLES[page]}
       />
 
@@ -1631,20 +1660,6 @@ const Index = () => {
         {/* PAGE 0 — Invoquer */}
         <div className="w-1/5 h-full overflow-y-auto pb-nav md:pl-16">
           <div className="p-4 max-w-2xl mx-auto space-y-4">
-            {/* Ressources */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="pixel-border bg-card p-3 text-center glow-gold">
-                <Coins size={20} className="text-game-gold mx-auto mb-1" />
-                <p className="font-pixel text-[10px] text-foreground">{player.bomberCoins.toLocaleString('fr-FR')}</p>
-                <p className="text-[9px] text-muted-foreground">BomberCoins</p>
-              </div>
-              <div className="pixel-border bg-card p-3 text-center">
-                <Gem size={20} className="text-blue-400 mx-auto mb-1" />
-                <p className="font-pixel text-[10px] text-foreground">{player.universalShards.toLocaleString('fr-FR')}</p>
-                <p className="text-[9px] text-muted-foreground">Fragments</p>
-              </div>
-            </div>
-
             {/* Tabs BC / Shards */}
             <div className="flex gap-2">
               <button onClick={() => setSummonTab('coins')} className={`flex-1 pixel-btn font-pixel text-[8px] flex items-center justify-center gap-2 ${summonTab === 'coins' ? 'pixel-btn-gold' : 'pixel-btn-secondary'}`}>
@@ -1668,19 +1683,12 @@ const Index = () => {
                     </button>
                   ))}
                 </div>
-                <div className="grid grid-cols-2 gap-1 mt-2">
-                  {[
-                    { label: 'Rare', count: player.pityCounters.rare, max: 10 },
-                    { label: 'Super-Rare', count: player.pityCounters.superRare, max: 30 },
-                    { label: 'Epic', count: player.pityCounters.epic, max: 50 },
-                    { label: 'Legend', count: player.pityCounters.legend, max: 200 },
-                  ].map(({ label, count, max }) => (
-                    <div key={label} className="text-[8px] text-muted-foreground flex justify-between items-center px-2 py-1 bg-muted/30 rounded">
-                      <span>{label}</span>
-                      <span className="font-pixel text-[7px] text-foreground">{count}/{max}</span>
-                    </div>
-                  ))}
-                </div>
+                <PityTracker pitiCounts={{
+                  rare: player.pityCounters.rare,
+                  superRare: player.pityCounters.superRare,
+                  epic: player.pityCounters.epic,
+                  legend: player.pityCounters.legend,
+                }} />
               </div>
             )}
 
@@ -1714,11 +1722,17 @@ const Index = () => {
                 <h3 className="font-pixel text-[9px] text-foreground mb-3">DERNIÈRE INVOCATION</h3>
                 {summonedBatch.length > 1 ? (
                   <div className="grid grid-cols-5 gap-1">
-                    {summonedBatch.slice(0, 10).map(h => (
-                      <div key={h.id} className="flex flex-col items-center gap-1 p-1">
-                        <HeroAvatar heroId={h.id} heroName={h.name} rarity={h.rarity} size={32} />
+                    {summonedBatch.slice(0, 10).map((h, i) => (
+                      <motion.div
+                        key={h.id}
+                        initial={{ opacity: 0, scale: 0.5 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: i * 0.05, type: 'spring', stiffness: 400 }}
+                        className="flex flex-col items-center gap-1 p-1"
+                      >
+                        <HeroAvatar heroId={h.id} heroName={h.name} rarity={h.rarity} size={36} />
                         <p className="font-pixel text-[6px] truncate w-full text-center" style={{ color: `hsl(var(--game-rarity-${h.rarity}))` }}>{RARITY_CONFIG[h.rarity].label}</p>
-                      </div>
+                      </motion.div>
                     ))}
                   </div>
                 ) : (
@@ -1736,6 +1750,18 @@ const Index = () => {
         {/* PAGE 1 — Héros */}
         <div className="w-1/5 h-full overflow-y-auto pb-nav md:pl-16">
           <div className="p-4 max-w-6xl mx-auto">
+            {upgradeHeroId && upgradeHeroData ? (
+              /* VUE DÉTAIL HÉROS — pleine page */
+              <HeroDetailInline
+                hero={upgradeHeroData}
+                coins={player.bomberCoins}
+                allHeroes={player.heroes}
+                onBack={() => setUpgradeHeroId(null)}
+                onUpgrade={handleUpgrade}
+                onAscend={handleAscend}
+              />
+            ) : (
+              <>
             {/* Sub-tabs */}
             <div className="flex gap-1 mb-4 sticky top-0 bg-background/95 backdrop-blur py-2 z-10">
               {(['collection', 'codex', 'equipes'] as const).map(tab => (
@@ -1759,108 +1785,103 @@ const Index = () => {
 
                 <HeroCollectionStats heroes={player.heroes} />
 
-                <div className="pixel-border bg-card p-3 sm:p-4 space-y-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <h3 className="font-pixel text-[9px] text-foreground">FILTRES</h3>
-                    <button
-                      onClick={() => setHeroFilters(DEFAULT_HERO_FILTERS)}
-                      className="pixel-btn pixel-btn-secondary font-pixel text-[8px] min-h-[36px] px-3"
-                      disabled={heroFilters.clan === 'all' && heroFilters.rarity === 'all' && heroFilters.level === 'all' && !heroFilters.showDuplicatesOnly && !heroFilters.showLockedOnly}
-                    >
-                      Réinitialiser
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    <label className="text-[8px] text-muted-foreground space-y-1">
-                      <span className="font-pixel">Clan</span>
-                      <select
-                        className="w-full bg-muted border border-border rounded px-2 py-2 text-[10px]"
-                        value={heroFilters.clan}
-                        onChange={(e) => setHeroFilters(prev => ({ ...prev, clan: e.target.value as HeroFilters['clan'] }))}
-                      >
-                        <option value="all">Tous les clans</option>
-                        {HERO_FAMILIES.map((family) => (
-                          <option key={family.id} value={family.id}>{family.name}</option>
-                        ))}
-                      </select>
-                    </label>
-
-                    <label className="text-[8px] text-muted-foreground space-y-1">
-                      <span className="font-pixel">Rareté</span>
-                      <select
-                        className="w-full bg-muted border border-border rounded px-2 py-2 text-[10px]"
-                        value={heroFilters.rarity}
-                        onChange={(e) => setHeroFilters(prev => ({ ...prev, rarity: e.target.value as HeroFilters['rarity'] }))}
-                      >
-                        <option value="all">Toutes les raretés</option>
-                        {(Object.keys(RARITY_CONFIG) as Rarity[]).map((rarity) => (
-                          <option key={rarity} value={rarity}>{RARITY_CONFIG[rarity].label}</option>
-                        ))}
-                      </select>
-                    </label>
-
-                    <label className="text-[8px] text-muted-foreground space-y-1">
-                      <span className="font-pixel">Niveau</span>
-                      <select
-                        className="w-full bg-muted border border-border rounded px-2 py-2 text-[10px]"
-                        value={heroFilters.level}
-                        onChange={(e) => setHeroFilters(prev => ({ ...prev, level: e.target.value as HeroLevelFilter }))}
-                      >
-                        <option value="all">Tous les niveaux</option>
-                        <option value="1-20">Niv. 1-20</option>
-                        <option value="21-40">Niv. 21-40</option>
-                        <option value="41-60">Niv. 41-60</option>
-                        <option value="61+">Niv. 61+</option>
-                      </select>
-                    </label>
-                  </div>
-
-                  <div className="flex gap-2 flex-wrap">
-                    <button
-                      className={`text-xs px-2 py-1 rounded border transition-colors ${
-                        heroFilters.showDuplicatesOnly ? 'border-orange-400 text-orange-400 bg-orange-400/10' : 'border-border text-muted-foreground'
-                      }`}
-                      onClick={() => setHeroFilters(f => ({ ...f, showDuplicatesOnly: !f.showDuplicatesOnly }))}
-                    >
-                      Doublons
-                    </button>
-                    <button
-                      className={`text-xs px-2 py-1 rounded border transition-colors ${
-                        heroFilters.showLockedOnly ? 'border-yellow-400 text-yellow-400 bg-yellow-400/10' : 'border-border text-muted-foreground'
-                      }`}
-                      onClick={() => setHeroFilters(f => ({ ...f, showLockedOnly: !f.showLockedOnly }))}
-                    >
-                      🔒 Lockés
-                    </button>
-                  </div>
-
-                  <p className="text-[8px] text-muted-foreground">
-                    {filteredHeroes.length} héros affichés sur {player.heroes.length}
-                  </p>
-                </div>
-
-                {/* Toggle mode recyclage */}
-                <div className="flex justify-end mb-2">
+                <div className="pixel-border bg-card">
                   <button
-                    className={`pixel-btn font-pixel text-[8px] flex items-center gap-1 ${showRecycleMode ? 'pixel-btn-primary' : 'pixel-btn-secondary'}`}
-                    onClick={() => setShowRecycleMode(r => !r)}
+                    onClick={() => setFiltersExpanded(p => !p)}
+                    className="flex items-center justify-between w-full p-3"
                   >
-                    <Trash2 size={12} />
-                    {showRecycleMode ? 'Terminer recyclage' : 'Recycler des héros'}
+                    <span className="font-pixel text-[9px] text-foreground flex items-center gap-2">
+                      <Filter size={12} /> FILTRES
+                      {(heroFilters.clan !== 'all' || heroFilters.rarity !== 'all' || heroFilters.level !== 'all' || heroFilters.showDuplicatesOnly || heroFilters.showLockedOnly) && (
+                        <span className="text-[7px] text-primary">● actifs</span>
+                      )}
+                    </span>
+                    <ChevronDown size={14} className={`text-muted-foreground transition-transform ${filtersExpanded ? 'rotate-180' : ''}`} />
                   </button>
-                </div>
+                  {filtersExpanded && (
+                    <div className="px-3 pb-3 space-y-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <label className="text-[8px] text-muted-foreground space-y-1">
+                          <span className="font-pixel">Clan</span>
+                          <select
+                            className="w-full bg-muted border border-border rounded px-2 py-2 text-[10px]"
+                            value={heroFilters.clan}
+                            onChange={(e) => setHeroFilters(prev => ({ ...prev, clan: e.target.value as HeroFilters['clan'] }))}
+                          >
+                            <option value="all">Tous les clans</option>
+                            {HERO_FAMILIES.map((family) => (
+                              <option key={family.id} value={family.id}>{family.name}</option>
+                            ))}
+                          </select>
+                        </label>
 
-                {showRecycleMode && (
-                  <div className="pixel-border bg-card p-3 sm:p-4">
-                    <RecyclePanel
-                      heroes={player.heroes}
-                      universalShards={player.universalShards}
-                      onRecycle={handleRecycle}
-                      onToggleLock={handleToggleLock}
-                    />
-                  </div>
-                )}
+                        <label className="text-[8px] text-muted-foreground space-y-1">
+                          <span className="font-pixel">Rareté</span>
+                          <select
+                            className="w-full bg-muted border border-border rounded px-2 py-2 text-[10px]"
+                            value={heroFilters.rarity}
+                            onChange={(e) => setHeroFilters(prev => ({ ...prev, rarity: e.target.value as HeroFilters['rarity'] }))}
+                          >
+                            <option value="all">Toutes les raretés</option>
+                            {(Object.keys(RARITY_CONFIG) as Rarity[]).map((rarity) => (
+                              <option key={rarity} value={rarity}>{RARITY_CONFIG[rarity].label}</option>
+                            ))}
+                          </select>
+                        </label>
+
+                        <label className="text-[8px] text-muted-foreground space-y-1">
+                          <span className="font-pixel">Niveau</span>
+                          <select
+                            className="w-full bg-muted border border-border rounded px-2 py-2 text-[10px]"
+                            value={heroFilters.level}
+                            onChange={(e) => setHeroFilters(prev => ({ ...prev, level: e.target.value as HeroLevelFilter }))}
+                          >
+                            <option value="all">Tous les niveaux</option>
+                            <option value="1-20">Niv. 1-20</option>
+                            <option value="21-40">Niv. 21-40</option>
+                            <option value="41-60">Niv. 41-60</option>
+                            <option value="61+">Niv. 61+</option>
+                          </select>
+                        </label>
+                      </div>
+
+                      <div className="flex gap-2 flex-wrap items-center">
+                        <button
+                          className={`text-xs px-2 py-1 rounded border transition-colors ${
+                            heroFilters.showDuplicatesOnly ? 'border-orange-400 text-orange-400 bg-orange-400/10' : 'border-border text-muted-foreground'
+                          }`}
+                          onClick={() => setHeroFilters(f => ({ ...f, showDuplicatesOnly: !f.showDuplicatesOnly }))}
+                        >
+                          Doublons
+                        </button>
+                        <button
+                          className={`text-xs px-2 py-1 rounded border transition-colors ${
+                            heroFilters.showLockedOnly ? 'border-yellow-400 text-yellow-400 bg-yellow-400/10' : 'border-border text-muted-foreground'
+                          }`}
+                          onClick={() => setHeroFilters(f => ({ ...f, showLockedOnly: !f.showLockedOnly }))}
+                        >
+                          🔒 Lockés
+                        </button>
+                        <button
+                          onClick={() => setHeroFilters(DEFAULT_HERO_FILTERS)}
+                          className="pixel-btn pixel-btn-secondary font-pixel text-[8px] min-h-[32px] px-3 ml-auto"
+                          disabled={heroFilters.clan === 'all' && heroFilters.rarity === 'all' && heroFilters.level === 'all' && !heroFilters.showDuplicatesOnly && !heroFilters.showLockedOnly}
+                        >
+                          Réinitialiser
+                        </button>
+                      </div>
+
+                      <p className="text-[8px] text-muted-foreground">
+                        {filteredHeroes.length} héros affichés sur {player.heroes.length}
+                      </p>
+                    </div>
+                  )}
+                  {!filtersExpanded && (
+                    <p className="text-[8px] text-muted-foreground px-3 pb-3">
+                      {filteredHeroes.length} héros affichés sur {player.heroes.length}
+                    </p>
+                  )}
+                </div>
 
                 {filteredHeroes.length === 0 ? (
                   <div className="pixel-border bg-card p-6 text-center space-y-3">
@@ -1956,14 +1977,30 @@ const Index = () => {
                 }}
               />
             )}
+              </>
+            )}
           </div>
         </div>
 
         {/* PAGE 2 — Combat */}
         <div className="w-1/5 h-full overflow-y-auto pb-nav md:pl-16">
           <div className="p-4 max-w-6xl mx-auto">
+            {/* Tabs Chasse au Trésor / Mode Histoire */}
+            {!isInBattle && (
+              <div className="flex gap-1 mb-4 sticky top-0 bg-background/95 backdrop-blur py-2 z-10">
+                {(['treasure', 'story'] as const).map(tab => (
+                  <button key={tab} onClick={() => setCombatTab(tab)}
+                    className={`flex-1 font-pixel text-[8px] py-2 rounded transition-colors ${
+                      combatTab === tab ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                    }`}>
+                    {tab === 'treasure' ? '⚔ CHASSE AU TRÉSOR' : '📖 MODE HISTOIRE'}
+                  </button>
+                ))}
+              </div>
+            )}
+
             {/* Mode Histoire */}
-            {screen === 'story' && (
+            {!isInBattle && combatTab === 'story' && (
               <StoryMode
                 player={player}
                 storyProgress={storyProgress}
@@ -1977,17 +2014,9 @@ const Index = () => {
               />
             )}
 
-            {/* Sélecteur carte + équipe (hors bataille, hors story) */}
-            {!isInBattle && screen !== 'story' && (
+            {/* Sélecteur carte + équipe (hors bataille, onglet chasse au trésor) */}
+            {!isInBattle && combatTab === 'treasure' && (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-                {/* Story Mode CTA */}
-                <button
-                  onClick={() => setScreen('story')}
-                  className="pixel-btn w-full font-pixel text-xs flex items-center justify-center gap-2 glow-red"
-                >
-                  <BookOpen size={16} /> MODE HISTOIRE
-                  <span className="text-[8px] opacity-70">({storyProgress.completedStages.length} étapes)</span>
-                </button>
 
                 {/* Treasure Hunt Launcher */}
                 <div className="pixel-border bg-card p-4">
@@ -2107,6 +2136,31 @@ const Index = () => {
                       })}
                     </div>
 
+                    {/* Charger un preset */}
+                    <div className="pixel-border bg-muted/20 rounded p-3">
+                      <p className="font-pixel text-[8px] text-muted-foreground mb-2 flex items-center gap-1.5">
+                        <Play size={10} /> Charger une équipe sauvegardée
+                      </p>
+                      {teamPresets.some(p => p.heroIds.length > 0) ? (
+                        <div className="flex gap-2 flex-wrap">
+                          {teamPresets.filter(p => p.heroIds.length > 0).map(preset => (
+                            <button
+                              key={preset.id}
+                              onClick={() => {
+                                setSelectedHeroes(new Set(preset.heroIds));
+                                toast({ title: `${preset.name} chargée !` });
+                              }}
+                              className="pixel-btn pixel-btn-secondary font-pixel text-[7px] px-2 py-1 flex items-center gap-1"
+                            >
+                              <Play size={10} /> {preset.name} ({preset.heroIds.length})
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="font-pixel text-[8px] text-muted-foreground/60">Aucun preset — sauvegarde une équipe dans l'onglet Héros &gt; Équipes</p>
+                      )}
+                    </div>
+
                     <details className="pixel-border bg-muted/20 rounded">
                       <summary className="font-pixel text-[8px] text-muted-foreground cursor-pointer px-3 py-2 flex items-center gap-1.5 hover:text-foreground transition-colors">
                         <Users size={10} /> Choisir manuellement ({player.heroes.length} héros disponibles)
@@ -2125,6 +2179,18 @@ const Index = () => {
                     </details>
                   </div>
 
+                  {/* Synergies actives */}
+                  {activeClanSkills.length > 0 && (
+                    <div className="pixel-border bg-primary/5 p-3 space-y-1 mb-3">
+                      <p className="font-pixel text-[8px] text-primary mb-2">✨ SYNERGIES ACTIVES</p>
+                      {activeClanSkills.map((skill, i) => (
+                        <p key={i} className="text-[8px] text-foreground flex items-center gap-1.5">
+                          <span className="text-primary">▸</span> {skill.name} — {skill.description}
+                        </p>
+                      ))}
+                    </div>
+                  )}
+
                   <button onClick={startTreasureHunt} className="pixel-btn pixel-btn-gold w-full font-pixel text-xs flex items-center justify-center gap-2">
                     <Swords size={16} /> LANCER LA CHASSE !
                   </button>
@@ -2137,107 +2203,81 @@ const Index = () => {
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
                 {/* Game HUD */}
                 <div className="pixel-border bg-card p-2.5 space-y-2">
-                  {/* Top row: stats + controls */}
-                  <div className="flex items-center justify-between gap-2 flex-wrap">
-                    {/* Stats */}
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-muted min-w-[60px]">
-                        <Coins size={12} className="text-game-gold" />
-                        <span className="font-pixel text-[9px] text-game-gold tabular-nums">+{gameState.coinsEarned}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-muted min-w-[40px]">
-                        <span className="text-[10px]">💣</span>
-                        <span className="font-pixel text-[9px] text-muted-foreground tabular-nums">{gameState.bombsPlaced}</span>
-                      </div>
-                      {!gameState.isStoryMode && (
-                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-primary/15 min-w-[50px]">
-                          <span className="text-[10px]">📦</span>
-                          <span className="font-pixel text-[9px] text-primary tabular-nums">
-                            {gameState.chestsOpened}/{gameState.map.chests.length}
-                          </span>
-                        </div>
-                      )}
-                      {gameState.isStoryMode && (
-                        <>
-                          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-destructive/15 min-w-[70px]">
-                            <Skull size={12} className="text-destructive shrink-0" />
-                            <span className="font-pixel text-[9px] text-destructive tabular-nums whitespace-nowrap">
-                              {gameState.enemies?.filter(e => e.hp > 0).length || 0} restants
-                            </span>
-                          </div>
-                          {(gameState.enemiesKilled || 0) > 0 && (
-                            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-primary/15 min-w-[50px]">
-                              <Swords size={12} className="text-primary shrink-0" />
-                              <span className="font-pixel text-[9px] text-primary tabular-nums">{gameState.enemiesKilled} tué(s)</span>
-                            </div>
-                          )}
-                        </>
-                      )}
+                  {/* Stats + Controls — grille 3 cols mobile / 6 cols desktop */}
+                  <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
+                    {/* Stat 1 — Coins */}
+                    <div className="flex flex-col items-center justify-center gap-0.5 px-2 py-1.5 rounded bg-muted border border-border/50">
+                      <Coins size={14} className="text-game-gold" />
+                      <span className="font-pixel text-[8px] text-game-gold tabular-nums leading-none">+{gameState.coinsEarned}</span>
                     </div>
 
-                    {/* Controls */}
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        onClick={() => {
-                          const nextSpeed = gameState.speed === 1 ? 2 : gameState.speed === 2 ? 3 : 1;
-                          huntSpeedRef.current = nextSpeed;
-                          if (user) {
-                            setPlayer(prev => ({ ...prev, huntSpeed: nextSpeed }));
-                          } else {
-                            localStorage.setItem('hunt-speed', String(nextSpeed));
-                          }
-                          setGameState(prev => (prev ? { ...prev, speed: nextSpeed } : prev));
-                        }}
-                        className="font-pixel text-[8px] sm:text-[7px] px-3 py-2.5 sm:py-1.5 rounded transition-all bg-primary text-primary-foreground shadow-md min-w-[44px] sm:min-w-[38px] min-h-[44px] sm:min-h-[auto] tabular-nums"
-                        title="Vitesse de chasse"
-                      >
-                        x{gameState.speed}
-                      </button>
-                      <div className="w-px h-5 bg-border mx-0.5 hidden sm:block" />
-                      <button
-                        onClick={() => setGameState(prev => (prev ? { ...prev, isPaused: !prev.isPaused } : prev))}
-                        className="font-pixel text-[8px] px-3 py-2.5 sm:py-1.5 rounded bg-secondary text-secondary-foreground hover:bg-secondary/80 flex items-center gap-1 min-h-[44px] sm:min-h-[auto]"
-                      >
-                        {gameState.isPaused ? <Play size={14} className="sm:size-[10px]" /> : <Pause size={14} className="sm:size-[10px]" />}
-                        <span className="hidden sm:inline">{gameState.isPaused ? 'Reprendre' : 'Pause'}</span>
-                      </button>
-                      <button
-                        onClick={gameState.isStoryMode ? endStoryBattle : endTreasureHunt}
-                        className={`font-pixel text-[8px] px-3 py-2.5 sm:py-1.5 rounded flex items-center gap-1 min-h-[44px] sm:min-h-[auto] ${
-                          gameState.mapCompleted
-                            ? 'bg-game-gold text-background font-bold animate-pulse'
-                            : 'bg-destructive/80 text-destructive-foreground hover:bg-destructive'
-                        }`}
-                      >
-                        {gameState.mapCompleted ? <><Check size={14} className="sm:size-[10px]" /> <span className="hidden sm:inline">Récupérer!</span></> : <><DoorOpen size={14} className="sm:size-[10px]" /> <span className="hidden sm:inline">Quitter</span></>}
-                      </button>
+                    {/* Stat 2 — Bombes */}
+                    <div className="flex flex-col items-center justify-center gap-0.5 px-2 py-1.5 rounded bg-muted border border-border/50">
+                      <span className="text-[14px] leading-none">💣</span>
+                      <span className="font-pixel text-[8px] text-muted-foreground tabular-nums leading-none">{gameState.bombsPlaced}</span>
                     </div>
+
+                    {/* Stat 3 — Coffres (Trésor) ou Ennemis (Histoire) */}
+                    {!gameState.isStoryMode ? (
+                      <div className="flex flex-col items-center justify-center gap-0.5 px-2 py-1.5 rounded bg-primary/15 border border-primary/30">
+                        <span className="text-[14px] leading-none">📦</span>
+                        <span className="font-pixel text-[8px] text-primary tabular-nums leading-none">
+                          {gameState.chestsOpened}/{gameState.map.chests.length}
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center gap-0.5 px-2 py-1.5 rounded bg-destructive/15 border border-destructive/30">
+                        <Skull size={14} className="text-destructive" />
+                        <span className="font-pixel text-[8px] text-destructive tabular-nums leading-none whitespace-nowrap">
+                          {gameState.enemies?.filter(e => e.hp > 0).length || 0} rest.
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Contrôle 1 — Vitesse */}
+                    <button
+                      onClick={() => {
+                        const nextSpeed = gameState.speed === 1 ? 2 : gameState.speed === 2 ? 3 : 1;
+                        huntSpeedRef.current = nextSpeed;
+                        if (user) {
+                          setPlayer(prev => ({ ...prev, huntSpeed: nextSpeed }));
+                        } else {
+                          localStorage.setItem('hunt-speed', String(nextSpeed));
+                        }
+                        setGameState(prev => (prev ? { ...prev, speed: nextSpeed } : prev));
+                      }}
+                      className="pixel-btn pixel-btn-secondary font-pixel text-[9px] flex flex-col items-center justify-center gap-0.5 px-2 py-1.5 min-h-0 tabular-nums"
+                      title="Vitesse de jeu"
+                    >
+                      <span className="text-[14px] leading-none">⚡</span>
+                      <span className="leading-none">x{gameState.speed}</span>
+                    </button>
+
+                    {/* Contrôle 2 — Pause */}
+                    <button
+                      onClick={() => setGameState(prev => (prev ? { ...prev, isPaused: !prev.isPaused } : prev))}
+                      className="pixel-btn pixel-btn-secondary font-pixel text-[9px] flex flex-col items-center justify-center gap-0.5 px-2 py-1.5 min-h-0"
+                    >
+                      {gameState.isPaused
+                        ? <><Play size={14} className="shrink-0" /><span className="leading-none">Reprise</span></>
+                        : <><Pause size={14} className="shrink-0" /><span className="leading-none">Pause</span></>}
+                    </button>
+
+                    {/* Contrôle 3 — Quitter / Récupérer */}
+                    <button
+                      onClick={gameState.isStoryMode ? endStoryBattle : endTreasureHunt}
+                      className={`pixel-btn font-pixel text-[9px] flex flex-col items-center justify-center gap-0.5 px-2 py-1.5 min-h-0 ${
+                        gameState.mapCompleted
+                          ? 'pixel-btn-gold animate-pulse'
+                          : 'bg-destructive/80 text-destructive-foreground border-destructive/80 hover:bg-destructive'
+                      }`}
+                    >
+                      {gameState.mapCompleted
+                        ? <><Check size={14} className="shrink-0" /><span className="leading-none">Récup!</span></>
+                        : <><DoorOpen size={14} className="shrink-0" /><span className="leading-none">Quitter</span></>}
+                    </button>
                   </div>
 
-                  {/* Hero stamina bars */}
-                  <div className="flex gap-2 flex-wrap">
-                    {gameState.heroes.map(hero => {
-                      const staminaPct = Math.round((hero.currentStamina / hero.maxStamina) * 100);
-                      const isLow = staminaPct < 30;
-                      const isResting = hero.state === 'resting';
-                      return (
-                        <div key={hero.id} className={`flex items-center gap-1.5 px-2 py-1 rounded text-[9px] ${
-                          isResting ? 'bg-muted/50 opacity-60' : 'bg-muted'
-                        }`}>
-                          <span className="font-pixel text-[7px] text-foreground truncate max-w-[50px] sm:max-w-[60px]">{hero.name}</span>
-                          <div className="w-16 h-1.5 bg-background rounded-full overflow-hidden">
-                            <div
-                              className={`h-full ${isLow ? 'bg-game-energy-low' : 'bg-game-energy-green'}`}
-                              style={{ width: `${staminaPct}%` }}
-                            />
-                          </div>
-                          <span className={`font-pixel text-[7px] ${isLow ? 'text-game-energy-low' : 'text-muted-foreground'}`}>
-                            {isResting ? '💤' : `${staminaPct}%`}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
                 </div>
 
                 {/* Boss HP bar */}
@@ -2425,6 +2465,19 @@ const Index = () => {
                 </details>
               </motion.div>
             )}
+
+            {/* Victory Overlay */}
+            {gameState && (
+              <VictoryOverlay
+                show={gameState.mapCompleted && !autoFarm}
+                coinsEarned={gameState.coinsEarned + (currentStoryStage?.reward || 0)}
+                shardsEarned={lastShardRewards.reduce((sum, r) => sum + r.quantity, 0)}
+                chestsOpened={gameState.chestsOpened}
+                heroesActive={selectedHeroes.size}
+                onContinue={gameState.isStoryMode ? endStoryBattle : endTreasureHunt}
+                onAutoFarm={!gameState?.isStoryMode ? () => { setAutoFarm(true); collectAndContinue(true); } : undefined}
+              />
+            )}
           </div>
         </div>
 
@@ -2470,14 +2523,35 @@ const Index = () => {
                     });
                   }
                 }}
+                onClaimAll={(ids: string[]) => {
+                  let currentAchievements = player.achievements;
+                  let totalCoins = 0;
+                  let totalShards = 0;
+                  for (const id of ids) {
+                    const { newState, claimed, reward } = claimAchievementReward(currentAchievements, id);
+                    if (claimed && reward) {
+                      currentAchievements = newState;
+                      if (reward.type === 'coins') totalCoins += reward.amount;
+                      else totalShards += reward.amount;
+                    }
+                  }
+                  setPlayer(prev => ({
+                    ...prev,
+                    bomberCoins: prev.bomberCoins + totalCoins,
+                    universalShards: (prev.universalShards || 0) + totalShards,
+                    achievements: currentAchievements,
+                  }));
+                  toast({
+                    title: `${ids.length} succès récupérés !`,
+                    description: [
+                      totalCoins > 0 ? `${totalCoins} pièces` : '',
+                      totalShards > 0 ? `${totalShards} shards` : '',
+                    ].filter(Boolean).join(' · '),
+                  });
+                }}
               />
             </motion.div>
 
-            {/* Placeholder Classement */}
-            <div className="pixel-border bg-card p-4 text-center space-y-2">
-              <p className="font-pixel text-[9px] text-muted-foreground">CLASSEMENT</p>
-              <p className="text-[8px] text-muted-foreground">Bientôt disponible...</p>
-            </div>
           </div>
         </div>
 
@@ -2533,7 +2607,7 @@ const Index = () => {
                             </span>
                           </div>
                           <p className="text-[7px] text-muted-foreground mt-1">
-                            Maxed: {maxed}/{recipe.count}
+                            {maxed} prêts / {recipe.count} requis
                           </p>
                         </button>
                       );
@@ -2589,17 +2663,27 @@ const Index = () => {
                       </div>
                     </div>
 
-                    <button
-                      onClick={executeFusionFromSlots}
-                      disabled={fusionSlots.filter(s => s !== null).length !== MERGE_RECIPES[selectedRecipeIdx].count}
-                      className={`pixel-btn pixel-btn-primary font-pixel text-[10px] flex items-center justify-center gap-2 min-h-[48px] px-8 ${
-                        fusionSlots.filter(s => s !== null).length !== MERGE_RECIPES[selectedRecipeIdx].count
-                          ? 'opacity-50 cursor-not-allowed'
-                          : ''
-                      }`}
-                    >
-                      <Sparkles size={16} /> FUSIONNER
-                    </button>
+                    <div className="flex flex-col gap-2 w-full max-w-xs">
+                      <button
+                        onClick={executeFusionFromSlots}
+                        disabled={fusionSlots.filter(s => s !== null).length !== MERGE_RECIPES[selectedRecipeIdx].count}
+                        className={`pixel-btn pixel-btn-primary font-pixel text-[10px] flex items-center justify-center gap-2 min-h-[48px] w-full ${
+                          fusionSlots.filter(s => s !== null).length !== MERGE_RECIPES[selectedRecipeIdx].count
+                            ? 'opacity-50 cursor-not-allowed'
+                            : ''
+                        }`}
+                      >
+                        <Sparkles size={16} /> FUSIONNER
+                      </button>
+
+                      <button
+                        onClick={mergeAll}
+                        disabled={isMerging}
+                        className="pixel-btn pixel-btn-secondary font-pixel text-[8px] flex items-center justify-center gap-2 w-full"
+                      >
+                        <Zap size={12} /> TOUT FUSIONNER
+                      </button>
+                    </div>
 
                     <p className="text-[8px] text-muted-foreground mt-3">
                       {fusionSlots.filter(s => s !== null).length}/{MERGE_RECIPES[selectedRecipeIdx].count} slots remplis
@@ -2630,14 +2714,7 @@ const Index = () => {
       <MainNav page={page} onNavigate={setPage} />
 
 
-      <HeroUpgradeModal
-        hero={upgradeHeroData}
-        coins={player.bomberCoins}
-        allHeroes={player.heroes}
-        onClose={() => setUpgradeHeroId(null)}
-        onUpgrade={handleUpgrade}
-        onAscend={handleAscend}
-      />
+      {/* HeroUpgradeModal désactivé — détail héros rendu inline dans la Page 1 */}
 
       <SummonModal
         isOpen={summonOpen}

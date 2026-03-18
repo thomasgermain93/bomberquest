@@ -22,7 +22,7 @@ const STAT_ICONS: Record<string, React.ReactNode> = {
 
 const HeroCard: React.FC<HeroCardProps> = ({ hero, compact, onClick, selected }) => {
   const config = RARITY_CONFIG[hero.rarity];
-  const staPct = (hero.currentStamina / hero.maxStamina) * 100;
+  const staPct = hero.maxStamina > 0 ? Math.min(100, (hero.currentStamina / hero.maxStamina) * 100) : 0;
   const maxLevel = MAX_LEVEL_BY_RARITY[hero.rarity];
   const xpProgress = getXpProgress(hero);
   const isMaxLevel = hero.level >= maxLevel;

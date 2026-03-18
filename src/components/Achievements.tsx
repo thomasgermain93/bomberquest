@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { AchievementState, AchievementDefinition, canClaimReward } from '@/game/achievements';
+import { AchievementState, AchievementDefinition, canClaimReward, ACHIEVEMENTS } from '@/game/achievements';
 import { getUnlockedAchievements, getInProgressAchievements, getLockedAchievements } from '@/game/achievements';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ interface AchievementsProps {
   achievements: AchievementState;
   onClose?: () => void;
   onClaimReward?: (achievementId: string) => void;
+  onClaimAll?: (ids: string[]) => void;
 }
 
 const getCategoryIcon = (category: string) => {
@@ -132,12 +133,16 @@ const AchievementItem: React.FC<AchievementItemProps> = ({ achievement, progress
   );
 };
 
-const Achievements: React.FC<AchievementsProps> = ({ achievements, onClose, onClaimReward }) => {
+const Achievements: React.FC<AchievementsProps> = ({ achievements, onClose, onClaimReward, onClaimAll }) => {
   const [activeTab, setActiveTab] = useState('all');
-  
+
   const unlocked = getUnlockedAchievements(achievements);
   const inProgress = getInProgressAchievements(achievements);
   const locked = getLockedAchievements(achievements);
+
+  const claimableIds = ACHIEVEMENTS
+    .filter(a => achievements[a.id]?.unlocked && !achievements[a.id]?.claimedAt)
+    .map(a => a.id);
   
   const renderAchievements = (list: AchievementDefinition[], emptyMessage: string) => {
     if (list.length === 0) {
@@ -164,13 +169,23 @@ const Achievements: React.FC<AchievementsProps> = ({ achievements, onClose, onCl
 
   return (
     <div className="pixel-border bg-card p-4">
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
         <h3 className="font-pixel text-xs text-foreground flex items-center gap-2">
           <Trophy size={16} className="text-game-gold" /> SUCCÈS
         </h3>
-        <span className="text-[9px] text-muted-foreground font-pixel tabular-nums">
-          {unlocked.length}/{unlocked.length + inProgress.length + locked.length} débloqués
-        </span>
+        <div className="flex items-center gap-2">
+          {claimableIds.length > 1 && onClaimAll && (
+            <button
+              onClick={() => onClaimAll(claimableIds)}
+              className="pixel-btn pixel-btn-gold font-pixel text-[7px] px-2 py-1 min-h-0 flex items-center gap-1"
+            >
+              <Check size={10} /> Tout récupérer ({claimableIds.length})
+            </button>
+          )}
+          <span className="text-[9px] text-muted-foreground font-pixel tabular-nums">
+            {unlocked.length}/{unlocked.length + inProgress.length + locked.length}
+          </span>
+        </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

@@ -115,6 +115,7 @@ export interface GameState {
   eventLog: string[];
   bombsPlaced: number;
   chestsOpened: number;
+  blocksDestroyed: number;
   // Story mode fields
   enemies?: any[];
   boss?: any | null;

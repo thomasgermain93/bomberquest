@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Hero } from '@/game/types';
 import HeroAvatar from '@/components/HeroAvatar';
+import { getActiveClanSkills } from '@/game/clanSystem';
 import { toast } from '@/hooks/use-toast';
 import { Save, Play, Edit2, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -82,13 +83,15 @@ const TeamPresets: React.FC<TeamPresetsProps> = ({
         {localPresets.map((preset, slotIndex) => {
           const isEmpty = preset.heroIds.length === 0;
           const isEditing = editingSlot === slotIndex;
+          const presetHeroes = preset.heroIds.map(id => heroes.find(h => h.id === id)).filter(Boolean) as Hero[];
+          const synergies = !isEmpty ? getActiveClanSkills(presetHeroes) : [];
 
           return (
             <div
               key={preset.id}
               className={cn(
-                'rounded-lg border bg-black/40 p-3 flex flex-col gap-2 transition-colors',
-                isEditing ? 'border-yellow-500/60' : 'border-white/10',
+                'rounded-lg border bg-card p-3 flex flex-col gap-2 transition-colors',
+                isEditing ? 'border-yellow-500/60' : 'border-border',
               )}
             >
               {/* Nom du slot */}
@@ -96,14 +99,14 @@ const TeamPresets: React.FC<TeamPresetsProps> = ({
                 type="text"
                 value={preset.name}
                 onChange={(e) => handleNameChange(slotIndex, e.target.value)}
-                className="text-xs bg-transparent border-b border-white/20 text-white/90 font-semibold outline-none focus:border-yellow-400/60 pb-0.5 w-full"
+                className="font-pixel text-[9px] uppercase bg-transparent border-b border-border text-foreground outline-none focus:border-yellow-400/60 pb-0.5 w-full"
                 maxLength={24}
                 readOnly={!isEditing}
               />
 
               {/* Mini-avatars */}
               {isEmpty ? (
-                <div className="flex items-center justify-center h-16 text-white/30 text-xs">
+                <div className="flex items-center justify-center h-16 text-muted-foreground font-pixel text-[8px]">
                   Équipe vide
                 </div>
               ) : (
@@ -120,8 +123,8 @@ const TeamPresets: React.FC<TeamPresetsProps> = ({
                         className={cn(
                           'rounded overflow-hidden border',
                           hero
-                            ? 'border-white/20'
-                            : 'border-white/5 bg-white/5',
+                            ? 'border-border'
+                            : 'border-border/30 bg-accent/50',
                         )}
                         style={{ width: 28, height: 28 }}
                       >
@@ -139,12 +142,23 @@ const TeamPresets: React.FC<TeamPresetsProps> = ({
                 </div>
               )}
 
+              {/* Synergies actives */}
+              {synergies.length > 0 && !isEditing && (
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {synergies.map((skill, i) => (
+                    <span key={i} className="font-pixel text-[6px] text-yellow-400 bg-yellow-400/10 border border-yellow-400/20 rounded px-1 py-0.5">
+                      ✨ {skill.name}
+                    </span>
+                  ))}
+                </div>
+              )}
+
               {/* Actions */}
               <div className="flex gap-1 mt-1">
                 {isEmpty ? (
                   <button
                     onClick={() => handleEditToggle(slotIndex)}
-                    className="flex-1 flex items-center justify-center gap-1 text-xs py-1 rounded bg-yellow-600/20 hover:bg-yellow-600/40 text-yellow-300 transition-colors"
+                    className="flex-1 flex items-center justify-center gap-1 font-pixel text-[7px] py-1 rounded bg-yellow-600/20 hover:bg-yellow-600/40 text-yellow-300 transition-colors"
                   >
                     <Edit2 size={10} />
                     Créer
@@ -153,7 +167,7 @@ const TeamPresets: React.FC<TeamPresetsProps> = ({
                   <>
                     <button
                       onClick={() => handleLoadTeam(preset)}
-                      className="flex-1 flex items-center justify-center gap-1 text-xs py-1 rounded bg-green-600/20 hover:bg-green-600/40 text-green-300 transition-colors"
+                      className="flex-1 flex items-center justify-center gap-1 font-pixel text-[7px] py-1 rounded bg-green-600/20 hover:bg-green-600/40 text-green-300 transition-colors"
                     >
                       <Play size={10} />
                       Charger
@@ -161,10 +175,10 @@ const TeamPresets: React.FC<TeamPresetsProps> = ({
                     <button
                       onClick={() => handleEditToggle(slotIndex)}
                       className={cn(
-                        'flex-1 flex items-center justify-center gap-1 text-xs py-1 rounded transition-colors',
+                        'flex-1 flex items-center justify-center gap-1 font-pixel text-[7px] py-1 rounded transition-colors',
                         isEditing
                           ? 'bg-red-600/20 hover:bg-red-600/40 text-red-300'
-                          : 'bg-white/10 hover:bg-white/20 text-white/70',
+                          : 'bg-accent hover:bg-accent/80 text-foreground/70',
                       )}
                     >
                       {isEditing ? (
@@ -185,7 +199,7 @@ const TeamPresets: React.FC<TeamPresetsProps> = ({
                 {isEditing && (
                   <button
                     onClick={() => handleSaveSlot(slotIndex)}
-                    className="flex items-center justify-center gap-1 px-2 py-1 rounded bg-yellow-600/30 hover:bg-yellow-600/50 text-yellow-200 text-xs transition-colors"
+                    className="flex items-center justify-center gap-1 px-2 py-1 rounded bg-yellow-600/30 hover:bg-yellow-600/50 text-yellow-200 font-pixel text-[7px] transition-colors"
                   >
                     <Save size={10} />
                   </button>
@@ -194,8 +208,8 @@ const TeamPresets: React.FC<TeamPresetsProps> = ({
 
               {/* Mode édition : liste des héros */}
               {isEditing && (
-                <div className="mt-2 border-t border-white/10 pt-2">
-                  <p className="text-xs text-white/40 mb-2">
+                <div className="mt-2 border-t border-border pt-2">
+                  <p className="font-pixel text-[8px] text-muted-foreground mb-2">
                     {preset.heroIds.length}/{MAX_HEROES_PER_TEAM} héros sélectionnés
                   </p>
                   <div className="grid grid-cols-3 gap-1 max-h-48 overflow-y-auto">
@@ -217,8 +231,8 @@ const TeamPresets: React.FC<TeamPresetsProps> = ({
                             selected
                               ? 'border-yellow-400/60 bg-yellow-500/10 text-yellow-200'
                               : disabled
-                              ? 'border-white/5 bg-white/5 text-white/20 cursor-not-allowed'
-                              : 'border-white/10 bg-white/5 hover:bg-white/10 text-white/60',
+                              ? 'border-border/30 bg-muted/50 text-muted-foreground/40 cursor-not-allowed'
+                              : 'border-border bg-accent/50 hover:bg-accent text-muted-foreground',
                           )}
                         >
                           <HeroAvatar
@@ -227,10 +241,7 @@ const TeamPresets: React.FC<TeamPresetsProps> = ({
                             rarity={hero.rarity}
                             size={24}
                           />
-                          <span
-                            className="truncate w-full text-center"
-                            style={{ fontSize: '9px' }}
-                          >
+                          <span className="font-pixel text-[8px] truncate w-full text-center">
                             {hero.name}
                           </span>
                         </button>

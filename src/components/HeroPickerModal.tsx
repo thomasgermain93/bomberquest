@@ -59,10 +59,10 @@ const HeroPickerModal: React.FC<HeroPickerModalProps> = ({
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
         <div className="flex items-center justify-between pb-4 border-b">
           <div>
-            <h2 className="font-pixel text-sm text-foreground flex items-center gap-2">
+            <h2 className="font-pixel text-[10px] text-foreground flex items-center gap-2 uppercase">
               Choisir un héros
             </h2>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="font-pixel text-[8px] text-muted-foreground mt-1">
               {requiredCount}× {requiredRarityConfig?.label ?? requiredRarity} niv. {maxLevel} requis(s)
             </p>
           </div>
@@ -72,7 +72,7 @@ const HeroPickerModal: React.FC<HeroPickerModalProps> = ({
           {sortedHeroes.length === 0 ? (
             <div className="text-center py-8">
               <AlertCircle className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
-              <p className="text-sm text-muted-foreground">Aucun héros disponible</p>
+              <p className="font-pixel text-[8px] text-muted-foreground">Aucun héros disponible</p>
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
@@ -143,10 +143,10 @@ const HeroPickerModal: React.FC<HeroPickerModalProps> = ({
         </div>
 
         <div className="pt-4 border-t flex items-center justify-between">
-          <div className="text-xs text-muted-foreground">
-            <span className="text-game-energy-green font-semibold">{eligibleHeroes.length}</span> éligible(s)
+          <div className="font-pixel text-[8px] text-muted-foreground">
+            <span className="text-game-energy-green">{eligibleHeroes.length}</span> éligible(s)
             {' • '}
-            <span className="text-muted-foreground">{ineligibleHeroes.length}</span> non éligible(s)
+            <span>{ineligibleHeroes.length}</span> non éligible(s)
           </div>
         </div>
       </DialogContent>

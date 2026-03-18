@@ -382,6 +382,7 @@ export function tickGame(state: GameState, deltaMs: number): GameState {
   let coinsEarned = newState.coinsEarned;
   let bombsPlaced = newState.bombsPlaced;
   let chestsOpened = newState.chestsOpened;
+  let blocksDestroyed = newState.blocksDestroyed ?? 0;
   let eventLog = [...newState.eventLog];
 
   // Update bombs
@@ -405,6 +406,7 @@ export function tickGame(state: GameState, deltaMs: number): GameState {
     for (const tile of tiles) {
       if (map.tiles[tile.y][tile.x] === 'block') {
         map.tiles[tile.y][tile.x] = 'floor';
+        blocksDestroyed++;
         if (Math.random() < 0.3) {
           const coins = 1 + Math.floor(Math.random() * 5);
           coinsEarned += coins;
@@ -734,6 +736,7 @@ export function tickGame(state: GameState, deltaMs: number): GameState {
     coinsEarned,
     bombsPlaced,
     chestsOpened,
+    blocksDestroyed,
     mapCompleted,
     eventLog: eventLog.slice(-20),
   };
