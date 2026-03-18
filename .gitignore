@@ -26,3 +26,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Claude worktrees
+.claude/worktrees/
+
+# Supabase temp
+supabase/.temp/
