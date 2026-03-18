@@ -49,6 +49,7 @@ export interface Hero {
   stuckTimer: number;
   icon: string; // icon key for PixelIcon
   progressionStats: HeroProgressionStats;
+  isLocked?: boolean;
 }
 
 export const MAX_LEVEL_BY_RARITY: Record<Rarity, number> = {
