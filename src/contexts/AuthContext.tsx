@@ -141,6 +141,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
+    // Clear local save data so the next login always gets a fresh cloud load
+    localStorage.removeItem('bomberquest_save');
+    localStorage.removeItem('bq_last_local_save_ts');
+    localStorage.removeItem('bq_last_hero_mutation_ts');
+    localStorage.removeItem('bq_story');
     await supabase.auth.signOut();
     setProfile(null);
   };
