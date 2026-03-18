@@ -2132,6 +2132,31 @@ const Index = () => {
                       })}
                     </div>
 
+                    {/* Charger un preset */}
+                    <div className="pixel-border bg-muted/20 rounded p-3">
+                      <p className="font-pixel text-[8px] text-muted-foreground mb-2 flex items-center gap-1.5">
+                        <Play size={10} /> Charger une équipe sauvegardée
+                      </p>
+                      {teamPresets.some(p => p.heroIds.length > 0) ? (
+                        <div className="flex gap-2 flex-wrap">
+                          {teamPresets.filter(p => p.heroIds.length > 0).map(preset => (
+                            <button
+                              key={preset.id}
+                              onClick={() => {
+                                setSelectedHeroes(new Set(preset.heroIds));
+                                toast({ title: `${preset.name} chargée !` });
+                              }}
+                              className="pixel-btn pixel-btn-secondary font-pixel text-[7px] px-2 py-1 flex items-center gap-1"
+                            >
+                              <Play size={10} /> {preset.name} ({preset.heroIds.length})
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="font-pixel text-[8px] text-muted-foreground/60">Aucun preset — sauvegarde une équipe dans l'onglet Héros &gt; Équipes</p>
+                      )}
+                    </div>
+
                     <details className="pixel-border bg-muted/20 rounded">
                       <summary className="font-pixel text-[8px] text-muted-foreground cursor-pointer px-3 py-2 flex items-center gap-1.5 hover:text-foreground transition-colors">
                         <Users size={10} /> Choisir manuellement ({player.heroes.length} héros disponibles)
@@ -2149,27 +2174,6 @@ const Index = () => {
                       </div>
                     </details>
                   </div>
-
-                  {/* Charger un preset */}
-                  {teamPresets.some(p => p.heroIds.length > 0) && (
-                    <div className="mb-3">
-                      <p className="font-pixel text-[8px] text-muted-foreground mb-2">Presets sauvegardés :</p>
-                      <div className="flex gap-2 flex-wrap">
-                        {teamPresets.filter(p => p.heroIds.length > 0).map(preset => (
-                          <button
-                            key={preset.id}
-                            onClick={() => {
-                              setSelectedHeroes(new Set(preset.heroIds));
-                              toast({ title: `${preset.name} chargée !` });
-                            }}
-                            className="pixel-btn pixel-btn-secondary font-pixel text-[7px] px-2 py-1 flex items-center gap-1"
-                          >
-                            <Play size={10} /> {preset.name} ({preset.heroIds.length})
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
 
                   {/* Synergies actives */}
                   {activeClanSkills.length > 0 && (
