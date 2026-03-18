@@ -400,7 +400,7 @@ export function tickGame(state: GameState, deltaMs: number): GameState {
   // Process explosions from bombs
   for (const bomb of explodingBombs) {
     const tiles = getExplosionTiles(map, bomb.position, bomb.range);
-    explosions.push({ id: genId(), tiles, timer: 0.4, team: bomb.team, heroId: bomb.heroId });
+    explosions.push({ id: genId(), tiles, timer: 0.4, team: bomb.team, heroId: bomb.heroId, family: bomb.family });
 
     for (const tile of tiles) {
       if (map.tiles[tile.y][tile.x] === 'block') {
@@ -457,7 +457,8 @@ export function tickGame(state: GameState, deltaMs: number): GameState {
     for (const cb of chainedBombs) {
       bombs = bombs.filter(b => b.id !== cb.id);
       const cbTiles = getExplosionTiles(map, cb.position, cb.range);
-      explosions.push({ id: genId(), tiles: cbTiles, timer: 0.4, team: cb.team, heroId: cb.heroId });
+      explosions.push({ id: genId(), tiles: cbTiles, timer: 0.4, team: cb.team, heroId: cb.heroId, family: cb.family });
+      // TODO #168 chain_chance arcane-circuit : augmenter la probabilité de réaction en chaîne si cb.family === 'arcane-circuit'
     }
 
     // Explosion damage to heroes: only enemy bombs can hurt heroes

@@ -82,6 +82,7 @@ export interface Explosion {
   timer: number;
   team: BombTeam;
   heroId?: string;
+  family?: HeroFamilyId;  // Clan du héros qui a posé la bombe
 }
 
 export interface Chest {
