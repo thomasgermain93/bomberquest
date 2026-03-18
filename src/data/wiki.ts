@@ -5,6 +5,9 @@ export interface WikiArticle {
   category: string;
   icon: string;
   content: WikiSection[];
+  relatedSlugs?: string[];
+  tags?: string[];
+  difficulty?: 'débutant' | 'intermédiaire' | 'avancé';
 }
 
 export interface WikiSection {
@@ -31,6 +34,9 @@ export const WIKI_ARTICLES: WikiArticle[] = [
     subtitle: 'BomberCoins, Fragments et XP — tout sur la progression économique du jeu',
     category: 'Économie',
     icon: 'gem',
+    tags: ['bombercoins', 'bc', 'shards', 'xp', 'expérience', 'monnaie', 'fragments', 'économie'],
+    difficulty: 'débutant',
+    relatedSlugs: ['recyclage', 'invocation-gacha', 'quetes-journalieres'],
     content: [
       {
         heading: 'BomberCoins (BC)',
@@ -77,6 +83,9 @@ export const WIKI_ARTICLES: WikiArticle[] = [
     subtitle: 'Tout sur les héros : stats, raretés, compétences, amélioration et ascension',
     category: 'Héros',
     icon: 'crown',
+    tags: ['héros', 'stats', 'rareté', 'compétences', 'ascension', 'étoiles', 'leveling', 'amélioration'],
+    difficulty: 'débutant',
+    relatedSlugs: ['families-heros', 'invocation-gacha', 'fusion-heros', 'recyclage'],
     content: [
       {
         heading: 'Présentation',
@@ -138,6 +147,9 @@ export const WIKI_ARTICLES: WikiArticle[] = [
     subtitle: 'Les 6 familles de héros : Clan Braise, Cavaliers de l\'Orage, Garde de Forge, Noyau d\'Ombre, Circuit Arcanique, Meute Sauvage',
     category: 'Héros',
     icon: 'users',
+    tags: ['clan', 'famille', 'braise', 'orage', 'forge', 'ombre', 'arcanique', 'sauvage', 'synergie', 'skin'],
+    difficulty: 'intermédiaire',
+    relatedSlugs: ['heros', 'mode-histoire'],
     content: [
       {
         heading: 'Présentation',
@@ -193,6 +205,9 @@ export const WIKI_ARTICLES: WikiArticle[] = [
     subtitle: 'Description des 6 cartes disponibles, leurs conditions de déblocage et récompenses',
     category: 'Cartes',
     icon: 'target',
+    tags: ['carte', 'chasse', 'trésor', 'coffres', 'prairie', 'forêt', 'mines', 'château', 'volcan', 'citadelle'],
+    difficulty: 'débutant',
+    relatedSlugs: ['ressources', 'heros', 'quetes-journalieres'],
     content: [
       {
         heading: 'Présentation',
@@ -239,6 +254,9 @@ export const WIKI_ARTICLES: WikiArticle[] = [
     subtitle: '5 régions, 25 étapes et des boss uniques — guide complet du mode Histoire',
     category: 'Combat',
     icon: 'sword',
+    tags: ['histoire', 'donjon', 'boss', 'région', 'ennemis', 'combat', 'slime', 'gobelin', 'squelette', 'orc', 'démon'],
+    difficulty: 'intermédiaire',
+    relatedSlugs: ['heros', 'families-heros', 'quetes-journalieres'],
     content: [
       {
         heading: 'Structure',
@@ -298,6 +316,9 @@ export const WIKI_ARTICLES: WikiArticle[] = [
     subtitle: 'Fonctionnement du système d\'invocation, des taux et du pity',
     category: 'Gacha',
     icon: 'sparkle',
+    tags: ['invocation', 'gacha', 'pity', 'taux', 'drop', 'doublon', 'ascension', 'tirage'],
+    difficulty: 'débutant',
+    relatedSlugs: ['heros', 'ressources', 'recyclage'],
     content: [
       {
         heading: 'Comment invoquer ?',
@@ -344,6 +365,9 @@ export const WIKI_ARTICLES: WikiArticle[] = [
     subtitle: 'Présentation des quêtes quotidiennes et stratégie optimale',
     category: 'Progression',
     icon: 'target',
+    tags: ['quêtes', 'journalières', 'quotidien', 'bonus', 'récompenses', 'reset', 'xp'],
+    difficulty: 'débutant',
+    relatedSlugs: ['ressources', 'cartes', 'mode-histoire'],
     content: [
       {
         heading: 'Fonctionnement',
@@ -370,6 +394,184 @@ export const WIKI_ARTICLES: WikiArticle[] = [
           'La Chasse au Trésor compte à la fois pour les quêtes "bombes" et "coffres".',
           'Jouez au moins une session par jour pour ne pas manquer le bonus 3/3.',
           'Le bonus de complétion totale (500 BC + 200 XP) représente plus de la moitié de la récompense journalière.',
+        ],
+      },
+    ],
+  },
+  // ─── Recyclage ────────────────────────────────────────────────────────────
+  {
+    slug: 'recyclage',
+    title: 'Recyclage & Universal Shards',
+    subtitle: 'Convertissez vos héros en excès en Universal Shards pour progresser',
+    category: 'Économie',
+    icon: 'gem',
+    tags: ['recyclage', 'shards', 'universal', 'conversion', 'doublon', 'ressources'],
+    difficulty: 'intermédiaire',
+    relatedSlugs: ['ressources', 'heros', 'invocation-gacha', 'fusion-heros'],
+    content: [
+      {
+        heading: 'Présentation',
+        body: 'Le recyclage permet de convertir des héros inutilisés en Universal Shards, la ressource secondaire du jeu. C\'est le principal moyen de valoriser les doublons et les héros de faible rareté accumulés via l\'invocation.',
+      },
+      {
+        heading: 'Valeurs de recyclage par rareté',
+        table: {
+          headers: ['Rareté', 'Shards obtenus', 'Bonus niveaux'],
+          rows: [
+            ['Common', '1', '+1 / 10 niveaux'],
+            ['Rare', '3', '+1 / 10 niveaux'],
+            ['Super Rare', '8', '+1 / 10 niveaux'],
+            ['Epic', '20', '+1 / 10 niveaux'],
+            ['Legend', '50', '+1 / 10 niveaux'],
+            ['Super Legend', '150', '+1 / 10 niveaux'],
+          ],
+        },
+      },
+      {
+        heading: 'Utilisation des Universal Shards',
+        list: [
+          'Invocation ciblée — Choisissez la rareté exacte du héros invoqué (Common=10, Rare=50, Super-Rare=150, Epic=400, Legend=1000, Super-Legend=2500 shards)',
+          'Amélioration de compétences — Sacrifiez des doublons pour monter les skills de vos héros clés',
+        ],
+      },
+      {
+        heading: 'Stratégie de recyclage',
+        list: [
+          'Verrouillez toujours vos héros principaux pour éviter un recyclage accidentel.',
+          'Améliorez les compétences avec les doublons AVANT de recycler les surplus.',
+          'Montez les héros Common/Rare au niveau 10+ avant de les recycler pour le bonus de shards.',
+          'Gardez au moins 2 héros par clan pour les synergies — ne recyclez pas tout.',
+        ],
+      },
+    ],
+  },
+
+  // ─── Fusion de Héros ───────────────────────────────────────────────────────
+  {
+    slug: 'fusion-heros',
+    title: 'Fusion & Ascension de Héros',
+    subtitle: 'Sacrifiez des doublons pour faire monter les étoiles et les compétences de vos héros',
+    category: 'Héros',
+    icon: 'crown',
+    tags: ['fusion', 'ascension', 'étoiles', 'doublons', 'compétences', 'skill', 'upgrade'],
+    difficulty: 'intermédiaire',
+    relatedSlugs: ['heros', 'recyclage', 'invocation-gacha'],
+    content: [
+      {
+        heading: 'Ascension (Étoiles)',
+        body: 'L\'ascension consomme des doublons d\'un même héros pour augmenter ses étoiles de 1 à 5. Chaque étoile confère un bonus significatif à toutes les statistiques. Un héros 5 étoiles atteint son plein potentiel.',
+      },
+      {
+        heading: 'Coût d\'ascension',
+        table: {
+          headers: ['Étoile visée', 'Doublons requis', 'Bonus stats cumulé'],
+          rows: [
+            ['★★', '1 doublon', '+10 %'],
+            ['★★★', '2 doublons', '+25 %'],
+            ['★★★★', '3 doublons', '+45 %'],
+            ['★★★★★', '5 doublons', '+75 %'],
+          ],
+        },
+      },
+      {
+        heading: 'Amélioration de compétences',
+        body: 'Chaque héros possède un nombre de compétences déterminé par sa rareté (0 pour Common, jusqu\'à 5 pour Super Legend). Les doublons peuvent être sacrifiés pour monter le niveau d\'une compétence spécifique, augmentant son efficacité.',
+      },
+      {
+        heading: 'Priorité : Ascension ou Compétences ?',
+        list: [
+          'Priorisez les compétences si le héros est déjà dans votre équipe active — l\'impact en combat est immédiat.',
+          'Priorisez l\'ascension si vous avez beaucoup de doublons — le bonus de stats est global.',
+          'Pour les héros Common (0 compétences), l\'ascension est la seule option.',
+          'Un héros Legend avec des compétences maximisées surpasse un Super Legend de base.',
+        ],
+      },
+    ],
+  },
+
+  // ─── Compétences ────────────────────────────────────────────────────────────
+  {
+    slug: 'competences',
+    title: 'Compétences des Héros',
+    subtitle: 'Les 21 compétences disponibles, leurs effets et comment les débloquer',
+    category: 'Héros',
+    icon: 'sparkle',
+    tags: ['compétences', 'skills', 'passif', 'actif', 'bombstorm', 'ironwill', 'clanbond'],
+    difficulty: 'avancé',
+    relatedSlugs: ['heros', 'fusion-heros', 'families-heros'],
+    content: [
+      {
+        heading: 'Présentation',
+        body: 'Les compétences sont des capacités passives ou conditionnelles attachées aux héros. Le nombre de compétences dépend de la rareté : Common = 0, Rare = 1, Super Rare = 2, Epic = 3, Legend = 4, Super Legend = 5.',
+      },
+      {
+        heading: 'Compétences clés',
+        table: {
+          headers: ['Compétence', 'Effet', 'Type'],
+          rows: [
+            ['bombStorm', 'Pose plusieurs bombes en une action', 'Offensif'],
+            ['blastRadius', 'Augmente la portée des explosions', 'Offensif'],
+            ['ironWill', 'Réduit les dégâts reçus', 'Défensif'],
+            ['lastStand', 'Boost de stats quand la stamina est basse', 'Survie'],
+            ['clanBond', 'Renforce le bonus de synergie de clan', 'Support'],
+            ['speedBurst', 'Boost temporaire de vitesse', 'Mobilité'],
+            ['luckyCharm', 'Augmente la chance de coffres rares', 'Utilitaire'],
+          ],
+        },
+      },
+      {
+        heading: 'Montée en niveau',
+        body: 'Les compétences montent en niveau via le sacrifice de doublons du même héros. Chaque niveau augmente l\'efficacité de la compétence (ex : +10 % de portée par niveau pour blastRadius). Le niveau maximum dépend de la rareté du héros.',
+      },
+      {
+        heading: 'Conseils d\'optimisation',
+        list: [
+          'bombStorm et blastRadius sont les meilleurs skills pour la Chasse au Trésor (farm rapide).',
+          'ironWill et lastStand sont essentiels pour les boss de haut niveau en mode Histoire.',
+          'clanBond est particulièrement puissant si vous jouez une équipe mono-clan.',
+          'Montez les compétences de vos héros Legend/Epic en priorité — l\'investissement en doublons y est le plus rentable.',
+        ],
+      },
+    ],
+  },
+
+  // ─── Synergies de Clan ──────────────────────────────────────────────────────
+  {
+    slug: 'synergies-clan',
+    title: 'Synergies de Clan',
+    subtitle: 'Activez des bonus passifs puissants en alignant des héros du même clan',
+    category: 'Combat',
+    icon: 'shield',
+    tags: ['synergie', 'clan', 'bonus', 'équipe', 'composition', 'affinité', 'passif'],
+    difficulty: 'avancé',
+    relatedSlugs: ['families-heros', 'heros', 'mode-histoire', 'competences'],
+    content: [
+      {
+        heading: 'Fonctionnement',
+        body: 'Placer 2 héros ou plus du même clan dans votre équipe active déclenche un bonus de synergie passif. Ce bonus s\'applique à TOUS les héros de l\'équipe, pas seulement ceux du clan concerné.',
+      },
+      {
+        heading: 'Bonus par clan',
+        table: {
+          headers: ['Clan', 'Bonus synergie (2+ héros)', 'Affinité Histoire'],
+          rows: [
+            ['Clan Braise', '+1 portée pour toutes les bombes', '×1.25 vs Démons'],
+            ['Cavaliers de l\'Orage', 'Bombes explosent 0.3s plus tôt', '×1.25 vs Squelettes'],
+            ['Garde de Forge', 'Dégâts reçus −20 %', '×1.25 vs Orcs'],
+            ['Noyau d\'Ombre', '+30 % pièces des coffres', '×1.25 vs Gobelins'],
+            ['Circuit Arcanique', '+20 % chance de réaction en chaîne', '×1.25 vs Slimes'],
+            ['Meute Sauvage', 'Déplacement +20 %', '×1.25 vs Gobelins'],
+          ],
+        },
+      },
+      {
+        heading: 'Compositions recommandées',
+        list: [
+          'Farm coffres : 2+ Noyau d\'Ombre pour +30 % pièces — la synergie la plus rentable en Chasse au Trésor.',
+          'Speed run : 2+ Meute Sauvage pour +20 % vitesse — idéal pour compléter des cartes rapidement.',
+          'Boss tanky : 2+ Garde de Forge pour −20 % dégâts reçus — indispensable en Enfer Ardent.',
+          'Chaînes : 2+ Circuit Arcanique pour +20 % réactions en chaîne — puissant sur les cartes denses.',
+          'Régions Histoire : alignez le clan avec l\'affinité de la région pour cumuler synergie + bonus dégâts.',
         ],
       },
     ],

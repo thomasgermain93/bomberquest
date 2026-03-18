@@ -2,21 +2,38 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { WIKI_ARTICLES } from '@/data/wiki';
-import { ArrowLeft, BookOpen, ChevronRight, Library, Search } from 'lucide-react';
+import { ArrowLeft, BookOpen, ChevronRight, Library, Search, Filter } from 'lucide-react';
 import PixelIcon from '@/components/PixelIcon';
 
 const CATEGORIES = ['Tous', 'Économie', 'Héros', 'Cartes', 'Combat', 'Gacha', 'Progression'];
+const DIFFICULTIES = ['Toutes', 'débutant', 'intermédiaire', 'avancé'] as const;
 
 const WikiIndex: React.FC = () => {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('Tous');
+  const [activeDifficulty, setActiveDifficulty] = useState<string>('Toutes');
 
   const filtered = WIKI_ARTICLES.filter((a) => {
     const matchesCategory = activeCategory === 'Tous' || a.category === activeCategory;
+    const matchesDifficulty = activeDifficulty === 'Toutes' || a.difficulty === activeDifficulty;
     const q = search.toLowerCase();
-    const matchesSearch = !q || a.title.toLowerCase().includes(q) || a.subtitle.toLowerCase().includes(q) || a.category.toLowerCase().includes(q);
-    return matchesCategory && matchesSearch;
+    let matchesSearch = true;
+    if (q) {
+      const contentText = a.content
+        .flatMap((s) => [s.heading, s.body, ...(s.list || [])])
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      const tagsText = (a.tags || []).join(' ').toLowerCase();
+      matchesSearch =
+        a.title.toLowerCase().includes(q) ||
+        a.subtitle.toLowerCase().includes(q) ||
+        a.category.toLowerCase().includes(q) ||
+        tagsText.includes(q) ||
+        contentText.includes(q);
+    }
+    return matchesCategory && matchesDifficulty && matchesSearch;
   });
 
   return (
@@ -86,7 +103,7 @@ const WikiIndex: React.FC = () => {
           </div>
 
           {/* Category filters */}
-          <div className="flex flex-wrap gap-2 mb-6">
+          <div className="flex flex-wrap gap-2 mb-3">
             {CATEGORIES.map((cat) => (
               <button
                 key={cat}
@@ -98,6 +115,30 @@ const WikiIndex: React.FC = () => {
                 }`}
               >
                 {cat.toUpperCase()}
+              </button>
+            ))}
+          </div>
+
+          {/* Difficulty filters */}
+          <div className="flex flex-wrap items-center gap-2 mb-6">
+            <Filter size={12} className="text-muted-foreground" />
+            {DIFFICULTIES.map((diff) => (
+              <button
+                key={diff}
+                onClick={() => setActiveDifficulty(diff)}
+                className={`font-pixel text-[6px] px-2.5 py-1 rounded border transition-colors ${
+                  activeDifficulty === diff
+                    ? diff === 'débutant'
+                      ? 'bg-green-500/20 text-green-400 border-green-500/40'
+                      : diff === 'intermédiaire'
+                      ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/40'
+                      : diff === 'avancé'
+                      ? 'bg-red-500/20 text-red-400 border-red-500/40'
+                      : 'bg-primary/20 text-primary border-primary/40'
+                    : 'bg-card text-muted-foreground border-border hover:border-primary/30 hover:text-foreground'
+                }`}
+              >
+                {diff === 'Toutes' ? 'TOUTES' : diff.toUpperCase()}
               </button>
             ))}
           </div>
@@ -122,7 +163,20 @@ const WikiIndex: React.FC = () => {
                     <PixelIcon icon={article.icon} size={22} color="hsl(var(--primary))" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <span className="font-pixel text-[6px] px-2 py-0.5 rounded bg-primary/15 text-primary mb-1 inline-block">{article.category}</span>
+                    <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                      <span className="font-pixel text-[6px] px-2 py-0.5 rounded bg-primary/15 text-primary inline-block">{article.category}</span>
+                      {article.difficulty && (
+                        <span className={`font-pixel text-[5px] px-1.5 py-0.5 rounded inline-block ${
+                          article.difficulty === 'débutant'
+                            ? 'bg-green-500/15 text-green-400'
+                            : article.difficulty === 'intermédiaire'
+                            ? 'bg-yellow-500/15 text-yellow-400'
+                            : 'bg-red-500/15 text-red-400'
+                        }`}>
+                          {article.difficulty.toUpperCase()}
+                        </span>
+                      )}
+                    </div>
                     <h2 className="font-pixel text-[9px] text-foreground group-hover:text-primary transition-colors">{article.title}</h2>
                     <p className="text-xs text-muted-foreground mt-1 truncate">{article.subtitle}</p>
                   </div>
