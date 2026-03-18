@@ -45,6 +45,8 @@ import { Users, Sparkles, Swords, Map as MapIcon, Trophy, Coins, Play, Pause, Do
 import PityTracker from '@/components/PityTracker';
 import VictoryOverlay from '@/components/VictoryOverlay';
 import DefeatOverlay from '@/components/DefeatOverlay';
+import TutorialOverlay from '@/components/TutorialOverlay';
+import { useTutorial } from '@/hooks/useTutorial';
 import DailyResetTimer from '@/components/DailyResetTimer';
 import { SFX, isMuted, setMuted } from '@/game/sfx';
 import { toast } from '@/hooks/use-toast';
@@ -148,6 +150,24 @@ const Index = () => {
   const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [heroFilters, setHeroFilters] = useState<HeroFilters>(DEFAULT_HERO_FILTERS);
   const [codexClanFilter, setCodexClanFilter] = useState<'all' | HeroFamilyId>('all');
+
+  // Tutorial — check for restart flag from Profile page
+  useEffect(() => {
+    const restart = localStorage.getItem('bq_restart_tutorial');
+    if (restart === '1') {
+      localStorage.removeItem('bq_restart_tutorial');
+      setPlayer(prev => ({ ...prev, tutorialStep: 0 }));
+    }
+  }, []);
+
+  const handleTutorialAdvance = useCallback((nextStep: number | undefined) => {
+    setPlayer(prev => ({ ...prev, tutorialStep: nextStep }));
+  }, []);
+
+  const { isActive: tutorialActive, currentStep: tutorialCurrentStep, advance: advanceTutorial, skip: skipTutorial } = useTutorial({
+    tutorialStep: player.tutorialStep,
+    onAdvance: handleTutorialAdvance,
+  });
 
   // Reset fusion slots when recipe changes
   useEffect(() => {
@@ -2904,6 +2924,12 @@ const Index = () => {
         requiredRarity={MERGE_RECIPES[selectedRecipeIdx].from}
         requiredCount={MERGE_RECIPES[selectedRecipeIdx].count}
         alreadySelectedIds={fusionSlots.filter(s => s !== null).map(s => s!.id)}
+      />
+
+      <TutorialOverlay
+        step={tutorialCurrentStep}
+        onAdvance={advanceTutorial}
+        onSkip={skipTutorial}
       />
     </div>
   );
