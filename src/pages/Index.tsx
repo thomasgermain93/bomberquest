@@ -2276,30 +2276,6 @@ const Index = () => {
                     </div>
                   </div>
 
-                  {/* Hero stamina bars */}
-                  <div className="flex gap-2 flex-wrap">
-                    {gameState.heroes.map(hero => {
-                      const staminaPct = Math.round((hero.currentStamina / hero.maxStamina) * 100);
-                      const isLow = staminaPct < 30;
-                      const isResting = hero.state === 'resting';
-                      return (
-                        <div key={hero.id} className={`flex items-center gap-1.5 px-2 py-1 rounded text-[9px] ${
-                          isResting ? 'bg-muted/50 opacity-60' : 'bg-muted'
-                        }`}>
-                          <span className="font-pixel text-[7px] text-foreground truncate max-w-[50px] sm:max-w-[60px]">{hero.name}</span>
-                          <div className="w-16 h-1.5 bg-background rounded-full overflow-hidden">
-                            <div
-                              className={`h-full ${isLow ? 'bg-game-energy-low' : 'bg-game-energy-green'}`}
-                              style={{ width: `${staminaPct}%` }}
-                            />
-                          </div>
-                          <span className={`font-pixel text-[7px] ${isLow ? 'text-game-energy-low' : 'text-muted-foreground'}`}>
-                            {isResting ? '💤' : `${staminaPct}%`}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
                 </div>
 
                 {/* Boss HP bar */}

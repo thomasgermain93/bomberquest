@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Hero } from '@/game/types';
 import HeroAvatar from '@/components/HeroAvatar';
+import { getActiveClanSkills } from '@/game/clanSystem';
 import { toast } from '@/hooks/use-toast';
 import { Save, Play, Edit2, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -82,6 +83,8 @@ const TeamPresets: React.FC<TeamPresetsProps> = ({
         {localPresets.map((preset, slotIndex) => {
           const isEmpty = preset.heroIds.length === 0;
           const isEditing = editingSlot === slotIndex;
+          const presetHeroes = preset.heroIds.map(id => heroes.find(h => h.id === id)).filter(Boolean) as Hero[];
+          const synergies = !isEmpty ? getActiveClanSkills(presetHeroes) : [];
 
           return (
             <div
@@ -136,6 +139,17 @@ const TeamPresets: React.FC<TeamPresetsProps> = ({
                       </div>
                     );
                   })}
+                </div>
+              )}
+
+              {/* Synergies actives */}
+              {synergies.length > 0 && !isEditing && (
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {synergies.map((skill, i) => (
+                    <span key={i} className="font-pixel text-[6px] text-yellow-400 bg-yellow-400/10 border border-yellow-400/20 rounded px-1 py-0.5">
+                      ✨ {skill.name}
+                    </span>
+                  ))}
                 </div>
               )}
 
