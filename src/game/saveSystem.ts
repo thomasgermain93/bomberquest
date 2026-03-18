@@ -26,6 +26,7 @@ export function getDefaultPlayerData(): PlayerData {
       legend: 0,
       'super-legend': 0,
     } as Record<Rarity, number>,
+    universalShards: 0,
     huntSpeed: 1,
     achievements: getDefaultAchievementState(),
   };
@@ -46,6 +47,12 @@ export function loadPlayerData(): PlayerData {
       const parsed = JSON.parse(saved);
       if (!parsed.achievements) {
         parsed.achievements = getDefaultAchievementState();
+      }
+      if (parsed.universalShards === undefined) {
+        // Migration: convertir les anciens shards par rareté en universalShards
+        const s = parsed.shards || { common: 0, rare: 0, 'super-rare': 0, epic: 0, legend: 0, 'super-legend': 0 };
+        parsed.universalShards = (s.common || 0) + (s.rare || 0) * 2 + (s['super-rare'] || 0) * 4 + (s.epic || 0) * 10 + (s.legend || 0) * 25 + (s['super-legend'] || 0) * 100;
+        parsed.shards = { common: 0, rare: 0, 'super-rare': 0, epic: 0, legend: 0, 'super-legend': 0 };
       }
       parsed.xp = Number.isFinite(Number(parsed?.xp)) ? Number(parsed.xp) : 0;
       if (Array.isArray(parsed.heroes)) {

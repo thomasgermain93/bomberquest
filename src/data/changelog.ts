@@ -8,7 +8,7 @@ export interface ChangelogEntry {
   }[];
 }
 
-export const CHANGELOG: ChangelogEntry[
+export const CHANGELOG: ChangelogEntry[] = [
   {
     version: 'Unreleased',
     date: '2026-03-18',
@@ -17,7 +17,7 @@ export const CHANGELOG: ChangelogEntry[
       { type: 'feature', description: 'Bugfix Critical: réparer la suppression de compte non fonctionnelle (#161)' },
       { type: 'feature', description: 'fix: changelog — plus de vUnreleased, dates et versions correctes (#185)' },
     ],
-  },] = [
+  },
   {
     version: '1.7.0',
     date: '2026-03-18',
