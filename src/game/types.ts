@@ -18,6 +18,7 @@ export interface Skill {
   description: string;
   trigger: string;
   effect: string;
+  skillLevel?: number; // 1-5, default 1
 }
 
 export interface HeroProgressionStats {
