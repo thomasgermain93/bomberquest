@@ -50,6 +50,9 @@ function rowToHero(row: PlayerHeroRow): Hero {
     state: 'idle',
     bombCooldown: 0,
     stuckTimer: 0,
+    progressionStats: (row as any).progression_stats ?? { chestsOpened: 0, totalDamageDealt: 0, battlesPlayed: 0, victories: 0, obtainedAt: Date.now() },
+    isLocked: (row as any).is_locked ?? false,
+    family: (row as any).family ?? undefined,
   };
 }
 
