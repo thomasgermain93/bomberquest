@@ -1434,14 +1434,14 @@ const Index = () => {
 
   const handleRecycle = (ids: string[], shardsGained: number) => {
     const { remainingHeroes } = recycleHeroes(player.heroes, ids);
-    setPlayer(prev => ({
-      ...prev,
-      heroes: remainingHeroes,
-      universalShards: prev.universalShards + shardsGained,
-    }));
+    const updatedPlayer = { ...player, heroes: remainingHeroes, universalShards: player.universalShards + shardsGained };
+    setPlayer(updatedPlayer);
+    // Sauvegarde immédiate pour ne pas perdre les shards si reload
+    savePlayerData(updatedPlayer);
     if (canWriteCloud) {
       saveHeroesToCloud(remainingHeroes);
       removeHeroesFromCloud(ids);
+      saveStatsToCloud(updatedPlayer, storyProgress, dailyQuests);
     }
     toast({ title: `♻️ Recyclage!`, description: `${ids.length} héros recyclés → +${shardsGained} 💎` });
   };

@@ -1,8 +1,12 @@
-import { useState } from 'react';
-import { Hero } from '@/game/types';
+import { useState, useMemo } from 'react';
+import { Hero, Rarity } from '@/game/types';
 import { getRecycleValue } from '@/game/recycleSystem';
 import { Button } from '@/components/ui/button';
 import { Trash2, Lock, Unlock, RefreshCw } from 'lucide-react';
+
+const RARITY_RANK: Record<Rarity, number> = {
+  common: 0, rare: 1, 'super-rare': 2, epic: 3, legend: 4, 'super-legend': 5,
+};
 
 interface RecyclePanelProps {
   heroes: Hero[];
@@ -15,9 +19,21 @@ export default function RecyclePanel({ heroes, universalShards, onRecycle, onTog
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showConfirm, setShowConfirm] = useState(false);
 
+  // Grouper les héros par nom de base et ne garder que les groupes avec 2+ exemplaires
+  const duplicateHeroes = useMemo(() => {
+    const groups = new Map<string, Hero[]>();
+    heroes.forEach(h => {
+      const base = h.name.split(' #')[0];
+      if (!groups.has(base)) groups.set(base, []);
+      groups.get(base)!.push(h);
+    });
+    // Retourner uniquement les héros faisant partie d'un groupe avec duplicata
+    return heroes.filter(h => (groups.get(h.name.split(' #')[0]) || []).length > 1);
+  }, [heroes]);
+
   const toggleSelect = (id: string) => {
     const hero = heroes.find(h => h.id === id);
-    if (hero?.isLocked) return; // Pas de sélection des héros lockés
+    if (hero?.isLocked) return;
     setSelectedIds(prev => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
@@ -26,23 +42,36 @@ export default function RecyclePanel({ heroes, universalShards, onRecycle, onTog
     });
   };
 
-  const selectedHeroes = heroes.filter(h => selectedIds.has(h.id));
+  // Sélectionner les doublons en gardant le meilleur exemplaire de chaque héros
+  const selectAllKeepingBest = () => {
+    const groups = new Map<string, Hero[]>();
+    duplicateHeroes.forEach(h => {
+      const base = h.name.split(' #')[0];
+      if (!groups.has(base)) groups.set(base, []);
+      groups.get(base)!.push(h);
+    });
+
+    const toSelect = new Set<string>();
+    groups.forEach(group => {
+      // Trier par rareté décroissante puis niveau décroissant → le premier est le meilleur
+      const sorted = [...group].sort((a, b) => {
+        const rarityDiff = (RARITY_RANK[b.rarity as Rarity] ?? 0) - (RARITY_RANK[a.rarity as Rarity] ?? 0);
+        if (rarityDiff !== 0) return rarityDiff;
+        return b.level - a.level;
+      });
+      // Sélectionner tous sauf le meilleur (non-lockés)
+      sorted.slice(1).forEach(h => { if (!h.isLocked) toSelect.add(h.id); });
+    });
+    setSelectedIds(toSelect);
+  };
+
+  const selectedHeroes = duplicateHeroes.filter(h => selectedIds.has(h.id));
   const totalShards = selectedHeroes.reduce((acc, h) => acc + getRecycleValue(h), 0);
 
   const handleConfirmRecycle = () => {
     onRecycle([...selectedIds], totalShards);
     setSelectedIds(new Set());
     setShowConfirm(false);
-  };
-
-  // Sélectionner tous les doublons non-lockés
-  const selectAllDuplicates = () => {
-    const seen = new Map<string, number>();
-    heroes.forEach(h => seen.set(h.name.split(' #')[0], (seen.get(h.name.split(' #')[0]) || 0) + 1));
-    const duplicateIds = heroes
-      .filter(h => !h.isLocked && (seen.get(h.name.split(' #')[0]) || 0) > 1)
-      .map(h => h.id);
-    setSelectedIds(new Set(duplicateIds));
   };
 
   const rarityColors: Record<string, string> = {
@@ -54,22 +83,26 @@ export default function RecyclePanel({ heroes, universalShards, onRecycle, onTog
     'super-legend': 'border-red-500',
   };
 
+  if (duplicateHeroes.length === 0) {
+    return (
+      <div className="text-center py-6 text-muted-foreground text-sm">
+        Aucun doublon à recycler.
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-3">
       {/* Header stats */}
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-muted-foreground">💎 {universalShards} Shards Universels</span>
+      <div className="flex items-center justify-between text-sm flex-wrap gap-2">
+        <span className="text-muted-foreground">💎 {universalShards} Shards · {duplicateHeroes.length} doublons</span>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={selectAllDuplicates}>
+          <Button variant="outline" size="sm" onClick={selectAllKeepingBest}>
             <RefreshCw className="w-3 h-3 mr-1" />
-            Sélec. doublons
+            Garder le meilleur
           </Button>
           {selectedIds.size > 0 && (
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => setShowConfirm(true)}
-            >
+            <Button variant="destructive" size="sm" onClick={() => setShowConfirm(true)}>
               <Trash2 className="w-3 h-3 mr-1" />
               Recycler {selectedIds.size} (+{totalShards} 💎)
             </Button>
@@ -81,7 +114,7 @@ export default function RecyclePanel({ heroes, universalShards, onRecycle, onTog
       {showConfirm && (
         <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 space-y-2">
           <p className="text-sm text-destructive font-medium">
-            Recycler {selectedIds.size} héros pour {totalShards} Shards Universels ?
+            Recycler {selectedIds.size} héros pour {totalShards} 💎 Shards ?
           </p>
           <p className="text-xs text-muted-foreground">Cette action est irréversible.</p>
           <div className="flex gap-2">
@@ -91,9 +124,9 @@ export default function RecyclePanel({ heroes, universalShards, onRecycle, onTog
         </div>
       )}
 
-      {/* Grille de héros */}
+      {/* Grille de doublons uniquement */}
       <div className="grid grid-cols-4 gap-2 max-h-80 overflow-y-auto">
-        {heroes.map(hero => {
+        {duplicateHeroes.map(hero => {
           const selected = selectedIds.has(hero.id);
           const recycleVal = getRecycleValue(hero);
           return (
@@ -107,10 +140,8 @@ export default function RecyclePanel({ heroes, universalShards, onRecycle, onTog
               onClick={() => toggleSelect(hero.id)}
             >
               <div className="text-xs text-center truncate">{hero.name.split(' #')[0]}</div>
-              <div className="text-xs text-center text-muted-foreground">
-                +{recycleVal}💎
-              </div>
-              {/* Lock button */}
+              <div className="text-[10px] text-center text-muted-foreground">Niv.{hero.level}</div>
+              <div className="text-xs text-center text-cyan-400">+{recycleVal}💎</div>
               <button
                 className="absolute top-0.5 right-0.5 p-0.5 rounded hover:bg-white/10"
                 onClick={e => { e.stopPropagation(); onToggleLock(hero.id); }}
@@ -125,7 +156,6 @@ export default function RecyclePanel({ heroes, universalShards, onRecycle, onTog
         })}
       </div>
 
-      {/* Table des taux */}
       <div className="text-xs text-muted-foreground border-t pt-2">
         <span className="font-medium">Taux : </span>
         Common=1💎 · Rare=3💎 · Super-Rare=8💎 · Epic=20💎 · Legend=50💎 · Super-Legend=150💎
