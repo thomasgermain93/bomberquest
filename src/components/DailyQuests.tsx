@@ -22,10 +22,10 @@ const DailyQuests: React.FC<DailyQuestsProps> = ({ quests, onClaim, onClaimBonus
         <h3 className="font-pixel text-xs text-foreground flex items-center gap-2">
           <Clock size={16} className="text-primary" /> QUÊTES DU JOUR
         </h3>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3">
           <DailyResetTimer />
           <span className="text-[9px] text-muted-foreground font-pixel tabular-nums">
-            {quests.quests.filter(q => q.claimed).length}/{quests.quests.length} complétées
+            {quests.quests.filter(q => q.claimed).length}/{quests.quests.length}
           </span>
         </div>
       </div>

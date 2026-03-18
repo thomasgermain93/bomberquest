@@ -41,7 +41,7 @@ export function MainNav({ page, onNavigate }: MainNavProps) {
                 )}
               >
                 <Icon size={20} />
-                <span className="text-[10px] font-medium leading-none">{label}</span>
+                <span className="text-[10px] font-medium leading-none truncate max-w-[56px]">{label}</span>
                 {isActive && (
                   <motion.div
                     layoutId="page-indicator"
