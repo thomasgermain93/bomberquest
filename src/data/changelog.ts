@@ -14,6 +14,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: '2026-03-18',
     title: 'Mises à jour récentes',
     changes: [
+      { type: 'feature', description: 'Docs: mise à jour complète du wiki / guides in-game (v1.1 + v1.2) (#201)' },
       { type: 'feature', description: 'Balancing/UX: passe globale après ajout clans+affinités+UI combat (#157)' },
       { type: 'feature', description: 'Combat Effects: effets élémentaires de bombes selon le clan (feu/électrique/etc.) (#168)' },
       { type: 'feature', description: 'UI Combat: panneau de suivi héros (niveau + mini fiche) sous la carte (#155)' },
