@@ -98,7 +98,7 @@ const SummonExplosion: React.FC<{ onComplete: () => void }> = ({ onComplete }) =
             scale: 0,
             opacity: 0
           }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
+          transition={{ duration: 0.5, ease: "easeIn" }}
           className="absolute"
         >
           <Star size={12} fill="white" color="white" />
@@ -120,7 +120,7 @@ const HeroRevealCard: React.FC<{ hero: Hero; index: number; total: number }> = (
     <motion.div
       initial={{ scale: 0, rotateY: 180, opacity: 0 }}
       animate={{ scale: 1, rotateY: 0, opacity: 1 }}
-      transition={{ type: 'spring', stiffness: 200, delay: total > 1 ? index * 0.08 : 0 }}
+      transition={{ type: 'spring', stiffness: 200, delay: total > 1 ? Math.min(index * 0.04, 0.4) : 0 }}
       className="flex flex-col items-center"
     >
       <div
@@ -248,7 +248,7 @@ const Summon: React.FC = () => {
     setTimeout(() => {
       setShowResult(true);
       setShowExplosion(false);
-    }, 600);
+    }, 300);
 
     const updatedData = {
       ...player,
@@ -324,7 +324,7 @@ const Summon: React.FC = () => {
     setTimeout(() => {
       setShowResult(true);
       setShowExplosion(false);
-    }, 600);
+    }, 300);
 
     const updatedData = {
       ...player,

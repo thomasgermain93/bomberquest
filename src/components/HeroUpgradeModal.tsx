@@ -99,7 +99,7 @@ const HeroUpgradeModal: React.FC<HeroUpgradeModalProps> = ({ hero, coins, allHer
           <div className="flex border-b border-border">
             <button
               onClick={() => setActiveTab('upgrade')}
-              className={`flex-1 py-2 text-[10px] font-pixel transition-colors ${
+              className={`flex-1 py-2 text-[10px] font-pixel transition-colors active:scale-[0.97] ${
                 activeTab === 'upgrade'
                   ? 'text-primary border-b-2 border-primary'
                   : 'text-muted-foreground hover:text-foreground'
@@ -109,7 +109,7 @@ const HeroUpgradeModal: React.FC<HeroUpgradeModalProps> = ({ hero, coins, allHer
             </button>
             <button
               onClick={() => setActiveTab('identity')}
-              className={`flex-1 py-2 text-[10px] font-pixel transition-colors ${
+              className={`flex-1 py-2 text-[10px] font-pixel transition-colors active:scale-[0.97] ${
                 activeTab === 'identity'
                   ? 'text-primary border-b-2 border-primary'
                   : 'text-muted-foreground hover:text-foreground'
@@ -212,12 +212,12 @@ const HeroUpgradeModal: React.FC<HeroUpgradeModalProps> = ({ hero, coins, allHer
                         <span>{meta.label}</span>
                       </div>
                       <div className="flex-1 flex items-center gap-2">
-                        <span className="font-bold text-foreground w-8 text-right">{val}</span>
+                        <span className="font-bold text-foreground w-8 text-right tabular-nums">{val}</span>
                         {nextVal !== null && diff > 0 && (
                           <>
                             <ArrowUp size={10} className={nextStarStats ? 'text-game-gold' : 'text-game-energy-green'} />
-                            <span className={`font-bold ${nextStarStats ? 'text-game-gold' : 'text-game-energy-green'}`}>{nextVal}</span>
-                            <span className={`text-[9px] ${nextStarStats ? 'text-game-gold' : 'text-game-energy-green'}`}>(+{key === 'lck' ? diff + '%' : diff})</span>
+                            <span className={`font-bold tabular-nums ${nextStarStats ? 'text-game-gold' : 'text-game-energy-green'}`}>{nextVal}</span>
+                            <span className={`text-[9px] tabular-nums ${nextStarStats ? 'text-game-gold' : 'text-game-energy-green'}`}>(+{key === 'lck' ? diff + '%' : diff})</span>
                           </>
                         )}
                       </div>

@@ -74,6 +74,14 @@
   body {
     @apply bg-background text-foreground;
     font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  h1, h2, h3 {
+    text-wrap: balance;
+  }
+  .stat-value {
+    font-variant-numeric: tabular-nums;
   }
   .font-pixel {
     font-family: 'Press Start 2P', cursive;
@@ -91,7 +99,7 @@
   }
 
   .pixel-btn {
-    @apply font-pixel text-xs px-4 py-3 transition-all duration-100 min-h-[44px] sm:min-h-[auto];
+    @apply font-pixel text-xs px-4 py-3 transition-all duration-150 min-h-[44px] sm:min-h-[auto];
     background: hsl(var(--primary));
     color: hsl(var(--primary-foreground));
     border: 3px solid hsl(var(--primary));

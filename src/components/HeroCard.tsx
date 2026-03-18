@@ -97,7 +97,7 @@ const HeroCard: React.FC<HeroCardProps> = ({ hero, compact, onClick, selected })
   return (
     <div
       onClick={onClick}
-      className={`pixel-border p-3 bg-card cursor-pointer transition-all hover:scale-[1.03] group relative ${rarityBorderClass} ${selected ? 'ring-2 ring-primary/60' : ''}`}
+      className={`pixel-border p-3 bg-card cursor-pointer transition-all hover:scale-[1.03] active:scale-[0.97] group relative ${rarityBorderClass} ${selected ? 'ring-2 ring-primary/60' : ''}`}
     >
       <div className="absolute inset-0 opacity-[0.06] rounded pointer-events-none"
         style={{ background: `radial-gradient(circle at 50% 30%, hsl(var(--game-rarity-${hero.rarity})), transparent 70%)` }}
@@ -138,7 +138,7 @@ const HeroCard: React.FC<HeroCardProps> = ({ hero, compact, onClick, selected })
                 style={{ width: `${xpProgress.percentage}%` }}
               />
             </div>
-            <p className="text-[8px] text-muted-foreground text-center mt-0.5">
+            <p className="text-[8px] text-muted-foreground text-center mt-0.5 tabular-nums">
               {xpProgress.current}/{xpProgress.required} XP
             </p>
           </div>
