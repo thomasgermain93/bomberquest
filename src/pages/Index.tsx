@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCloudSave } from '@/hooks/useCloudSave';
@@ -1678,7 +1678,7 @@ const Index = () => {
                             </p>
                             <button
                               onClick={() => toggleHeroSelection(hero.id)}
-                              className="text-[7px] text-destructive hover:text-destructive/80 mt-0.5 min-w-[24px] min-h-[24px] flex items-center justify-center"
+                              className="text-[7px] text-destructive hover:text-destructive/80 mt-0.5 min-w-[32px] min-h-[32px] flex items-center justify-center"
                             >
                               ✕
                             </button>
@@ -1904,10 +1904,12 @@ const Index = () => {
             )}
 
             {/* Victory banner */}
+            <AnimatePresence>
             {gameState.mapCompleted && (
               <motion.div
-                initial={{ scale: 0.5, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
                 transition={{ type: 'spring', damping: 12 }}
                 className="pixel-border bg-card p-5 text-center glow-gold"
               >
@@ -1983,12 +1985,15 @@ const Index = () => {
                 )}
               </motion.div>
             )}
+            </AnimatePresence>
 
             {/* Defeat banner for Story Mode */}
+            <AnimatePresence>
             {gameState.isStoryMode && gameState.storyFailed && (
               <motion.div
-                initial={{ scale: 0.5, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
                 transition={{ type: 'spring', damping: 12 }}
                 className="pixel-border bg-card p-5 text-center border-destructive/50"
               >
@@ -2016,6 +2021,7 @@ const Index = () => {
                 </div>
               </motion.div>
             )}
+            </AnimatePresence>
 
             {/* Grid */}
             <div className="flex justify-center">
@@ -2029,7 +2035,7 @@ const Index = () => {
               </summary>
               <div className="mt-2 max-h-24 overflow-y-auto space-y-0.5">
                 {gameState.eventLog.slice().reverse().map((log, i) => (
-                  <p key={i} className="text-[10px] text-muted-foreground">{log}</p>
+                  <p key={`${log}-${i}`} className="text-[10px] text-muted-foreground">{log}</p>
                 ))}
               </div>
             </details>

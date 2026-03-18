@@ -33,7 +33,7 @@ export default function XpBar({ xp, accountLevel }: XpBarProps) {
           className="h-full bg-gradient-to-r from-primary to-game-gold rounded-full"
           initial={{ width: 0 }}
           animate={{ width: `${pct}%` }}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: 0.25, ease: "easeOut" }}
         />
       </div>
     </div>

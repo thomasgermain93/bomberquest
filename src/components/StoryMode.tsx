@@ -113,10 +113,12 @@ const StoryMode: React.FC<StoryModeProps> = ({
           <button
             key={r.id}
             onClick={() => onRegionChange(i)}
-            className={`w-3 h-3 rounded-full transition-all ${
+            className="w-8 h-8 flex items-center justify-center transition-all"
+          >
+            <span className={`w-3 h-3 rounded-full transition-all ${
               i === selectedRegionIdx ? 'bg-primary scale-125' : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
-            }`}
-          />
+            }`} />
+          </button>
         ))}
       </div>
 
@@ -244,14 +246,14 @@ const StoryMode: React.FC<StoryModeProps> = ({
               <div className="flex items-center gap-1.5">
                 <button
                   onClick={onAutoSelectHeroes}
-                  className="font-pixel text-[7px] px-2.5 py-1.5 rounded bg-primary/15 text-primary hover:bg-primary/25 transition-colors flex items-center gap-1"
+                  className="font-pixel text-[7px] px-2.5 py-2 rounded bg-primary/15 text-primary hover:bg-primary/25 transition-colors flex items-center gap-1"
                 >
                   Auto-sélection
                 </button>
                 {selectedHeroes.size > 0 && (
                   <button
                     onClick={onClearSelectedHeroes}
-                    className="font-pixel text-[7px] px-2.5 py-1.5 rounded bg-muted text-muted-foreground hover:bg-muted/80 transition-colors"
+                    className="font-pixel text-[7px] px-2.5 py-2 rounded bg-muted text-muted-foreground hover:bg-muted/80 transition-colors"
                   >
                     Reset
                   </button>
