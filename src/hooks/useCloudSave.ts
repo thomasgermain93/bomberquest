@@ -3,6 +3,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { Hero, PlayerData } from '@/game/types';
 import { StoryProgress } from '@/game/storyTypes';
 import { DailyQuestData } from '@/game/questSystem';
+import type { Database } from '@/integrations/supabase/types';
+
+type PlayerHeroRow = Database['public']['Tables']['player_heroes']['Row'];
 
 // Converts a Hero to a DB row (excludes runtime fields)
 function heroToRow(hero: Hero, userId: string) {
@@ -25,7 +28,7 @@ function heroToRow(hero: Hero, userId: string) {
 }
 
 // Converts a DB row back to a Hero with runtime defaults
-function rowToHero(row: any): Hero {
+function rowToHero(row: PlayerHeroRow): Hero {
   return {
     id: row.id,
     name: row.name,

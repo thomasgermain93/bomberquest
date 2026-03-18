@@ -284,6 +284,20 @@ export function getHeroVisualTraits(heroId: string): HeroVisualTraits {
   return visuals.traits;
 }
 
+// Rarity ordering: higher value = higher rarity
+export const RARITY_ORDER: Record<string, number> = {
+  'super-legend': 6,
+  legend: 5,
+  epic: 4,
+  'super-rare': 3,
+  rare: 2,
+  common: 1,
+};
+
+export function sortByRarity<T extends { rarity: string }>(a: T, b: T): number {
+  return (RARITY_ORDER[b.rarity] ?? 0) - (RARITY_ORDER[a.rarity] ?? 0);
+}
+
 export const MAP_CONFIGS = [
   { name: 'Prairie', width: 13, height: 9, chests: 12, blockDensity: 0.40, reward: 350, unlockLevel: 1, unlockMaps: 0, icon: 'prairie' },
   { name: 'Forêt', width: 15, height: 11, chests: 22, blockDensity: 0.45, reward: 750, unlockLevel: 5, unlockMaps: 3, icon: 'forest' },

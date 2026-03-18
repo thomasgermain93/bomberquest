@@ -10,7 +10,7 @@ import HeroUpgradeModal from '@/components/HeroUpgradeModal';
 import HeroPickerModal from '@/components/HeroPickerModal';
 import FusionSlot from '@/components/FusionSlot';
 import StoryMode from '@/components/StoryMode';
-import { GameState, Hero, MAP_CONFIGS, PlayerData, RARITY_CONFIG, Rarity, HERO_NAMES, HERO_FAMILIES, HERO_FAMILY_MAP, HeroFamilyId } from '@/game/types';
+import { GameState, Hero, MAP_CONFIGS, PlayerData, RARITY_CONFIG, RARITY_ORDER, sortByRarity, Rarity, HERO_NAMES, HERO_FAMILIES, HERO_FAMILY_MAP, HeroFamilyId } from '@/game/types';
 import { generateMap, tickGame } from '@/game/engine';
 import { summonHero, generateHero } from '@/game/summoning';
 import { loadPlayerData, savePlayerData, getDefaultPlayerData, saveStoryProgress, loadStoryProgress } from '@/game/saveSystem';
@@ -24,6 +24,7 @@ import { getExplosionTiles } from '@/game/engine';
 import { generateShardRewards, applyShardRewards, ShardReward } from '@/game/shardRewardSystem';
 import DailyQuests from '@/components/DailyQuests';
 import Achievements from '@/components/Achievements';
+import XpBar from '@/components/XpBar';
 import PixelIcon from '@/components/PixelIcon';
 import HeroAvatar from '@/components/HeroAvatar';
 import { Home, Users, Sparkles, Swords, Map, Trophy, Coins, Star, ChevronLeft, Play, Pause, DoorOpen, Check, Scroll, FastForward, BookOpen, Shield, Skull, Bomb, Lock as LockIcon, Volume2, VolumeX, User, Hammer, ArrowDown } from 'lucide-react';
@@ -1553,40 +1554,7 @@ const Index = () => {
             </div>
 
             {/* XP Progress Bar */}
-            {(() => {
-              const safeXp = Number.isFinite(player.xp) ? player.xp : 0;
-              let xpRemaining = safeXp;
-              let lvl = 1;
-              let xpForLevel = 100;
-              while (xpRemaining >= xpForLevel) {
-                xpRemaining -= xpForLevel;
-                lvl++;
-                xpForLevel = lvl * 100;
-              }
-              const nextLevelXp = lvl * 100;
-              const rawPct = nextLevelXp > 0 ? (xpRemaining / nextLevelXp) * 100 : 0;
-              const pct = Math.max(2, Math.min(100, Math.round(rawPct)));
-              return (
-                <div className="pixel-border bg-card p-3">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="font-pixel text-[9px] text-foreground flex items-center gap-1">
-                      <Star size={12} className="text-game-gold" /> Niveau {player.accountLevel}
-                    </span>
-                    <span className="font-pixel text-[8px] text-muted-foreground">
-                      {xpRemaining} / {nextLevelXp} XP
-                    </span>
-                  </div>
-                  <div className="w-full h-2.5 bg-muted rounded-full overflow-hidden">
-                    <motion.div
-                      className="h-full bg-gradient-to-r from-primary to-game-gold rounded-full"
-                      initial={{ width: 0 }}
-                      animate={{ width: `${pct}%` }}
-                      transition={{ duration: 0.5 }}
-                    />
-                  </div>
-                </div>
-              );
-            })()}
+            <XpBar xp={player.xp} accountLevel={player.accountLevel} />
 
             {/* Daily Quests */}
             <DailyQuests
@@ -1730,10 +1698,7 @@ const Index = () => {
                   </summary>
                   <div className="p-2 grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-60 overflow-y-auto">
                     {player.heroes
-                      .sort((a, b) => {
-                        const rarityOrder = ['super-legend', 'legend', 'epic', 'super-rare', 'rare', 'common'];
-                        return rarityOrder.indexOf(a.rarity) - rarityOrder.indexOf(b.rarity);
-                      })
+                      .sort(sortByRarity)
                       .map(hero => (
                         <HeroCard
                           key={hero.id}
