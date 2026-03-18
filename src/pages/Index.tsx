@@ -32,11 +32,14 @@ import Achievements from '@/components/Achievements';
 import XpBar from '@/components/XpBar';
 import PixelIcon from '@/components/PixelIcon';
 import HeroAvatar from '@/components/HeroAvatar';
-import { Home, Users, Sparkles, Swords, Map as MapIcon, Trophy, Coins, Star, ChevronLeft, Play, Pause, DoorOpen, Check, Scroll, FastForward, BookOpen, Shield, Skull, Bomb, Lock as LockIcon, Volume2, VolumeX, User, Hammer, ArrowDown, Trash2 } from 'lucide-react';
+import SlimHeader from '@/components/SlimHeader';
+import MainNav from '@/components/MainNav';
+import TeamPresets, { TeamPreset } from '@/components/TeamPresets';
+import { Users, Sparkles, Swords, Map as MapIcon, Trophy, Coins, Play, Pause, DoorOpen, Check, Scroll, FastForward, BookOpen, Shield, Skull, Lock as LockIcon, Hammer, ArrowDown, Trash2, Gem } from 'lucide-react';
 import { SFX, isMuted, setMuted } from '@/game/sfx';
 import { toast } from '@/hooks/use-toast';
 
-type Screen = 'hub' | 'treasure-hunt' | 'heroes' | 'codex' | 'fusion' | 'summon' | 'story' | 'story-battle' | 'achievements';
+type Screen = 'hub' | 'treasure-hunt' | 'heroes' | 'codex' | 'fusion' | 'summon' | 'story' | 'story-battle' | 'achievements' | 'combat' | 'recycle';
 
 
 const LOCAL_SAVE_TS_KEY = 'bq_last_local_save_ts';
@@ -86,11 +89,21 @@ const Index = () => {
   const { user, session, loading: authLoading, signOut } = useAuth();
   const navigate = useNavigate();
   const [screen, setScreen] = useState<Screen>('hub');
+  const [page, setPage] = useState(2); // page Combat par défaut
+  const [heroesTab, setHeroesTab] = useState<'collection' | 'codex' | 'equipes'>('collection');
+  const [forgeTab, setForgeTab] = useState<'fusion' | 'recycle'>('fusion');
+  const [teamPresets, setTeamPresets] = useState<TeamPreset[]>([
+    { id: 'team-1', name: 'Équipe 1', heroIds: [] },
+    { id: 'team-2', name: 'Équipe 2', heroIds: [] },
+    { id: 'team-3', name: 'Équipe 3', heroIds: [] },
+  ]);
   const [player, setPlayer] = useState<PlayerData>(() =>
     user ? getDefaultPlayerData() : loadPlayerData()
   );
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [summonOpen, setSummonOpen] = useState(false);
+  const [summonTab, setSummonTab] = useState<'coins' | 'shards'>('coins');
+  const [selectedShardRarity, setSelectedShardRarity] = useState<Rarity>('rare');
   const [lastSummoned, setLastSummoned] = useState<Hero | null>(null);
   const [selectedMap, setSelectedMap] = useState(0);
   const [selectedHeroes, setSelectedHeroes] = useState<Set<string>>(new Set());
@@ -1341,6 +1354,62 @@ const Index = () => {
     setDailyQuests(prev => updateQuestProgress(prev, 'summon_heroes', count));
   };
 
+  const SHARD_COSTS: Record<Rarity, number> = {
+    common: 10, rare: 50, 'super-rare': 150, epic: 400, legend: 1000, 'super-legend': 2500,
+  };
+
+  const handleSummonShards = () => {
+    const cost = SHARD_COSTS[selectedShardRarity];
+    if (player.universalShards < cost) {
+      toast({ title: 'Fragments insuffisants', description: `Il te faut ${cost} Fragments pour cette invocation.` });
+      return;
+    }
+
+    const newHero = generateHero(selectedShardRarity);
+    const newHeroes = [...player.heroes, newHero];
+
+    setLastSummoned(newHero);
+    setSummonedBatch([newHero]);
+
+    const newTotalSummons = player.totalHeroesOwned + 1;
+    const newAchievements = { ...player.achievements };
+    const newAchievementUnlocks: AchievementDefinition[] = [];
+
+    const { newState: summonState, unlocked: summonUnlocks } = trackSummon(player.achievements, newTotalSummons);
+    Object.assign(newAchievements, summonState);
+    newAchievementUnlocks.push(...summonUnlocks);
+
+    const { newState: heroCountState, unlocked: heroCountUnlocks } = trackHeroCount(player.achievements, newHeroes.length);
+    Object.assign(newAchievements, heroCountState);
+    newAchievementUnlocks.push(...heroCountUnlocks);
+
+    setPlayer(prev => ({
+      ...prev,
+      heroes: newHeroes,
+      totalHeroesOwned: newHeroes.length,
+      achievements: newAchievements,
+      universalShards: prev.universalShards - cost,
+    }));
+
+    for (const achievement of newAchievementUnlocks) {
+      toast({ title: 'Succès débloqué!', description: achievement.title });
+    }
+
+    const updatedData = {
+      ...player,
+      heroes: newHeroes,
+      totalHeroesOwned: newHeroes.length,
+      achievements: newAchievements,
+      universalShards: player.universalShards - cost,
+    };
+    savePlayerData(updatedData);
+    markHeroMutation();
+    if (canWriteCloud) {
+      saveHeroesToCloud([newHero]);
+    }
+    setDailyQuests(prev => updateQuestProgress(prev, 'summon_heroes', 1));
+  };
+
   const toggleHeroSelection = (id: string) => {
     setSelectedHeroes(prev => {
       const next = new Set(prev);
@@ -1504,6 +1573,33 @@ const Index = () => {
 
   const isInBattle = screen === 'treasure-hunt' || screen === 'story-battle';
 
+  const PAGE_TITLES = ['Invoquer', 'Héros', 'Combat', 'Social', 'Forge'];
+
+  // Touch swipe handlers
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  }, []);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    const deltaX = e.changedTouches[0].clientX - touchStartX.current;
+    const deltaY = e.changedTouches[0].clientY - touchStartY.current;
+    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 60) {
+      if (deltaX < 0) setPage(p => Math.min(4, p + 1));
+      if (deltaX > 0) setPage(p => Math.max(0, p - 1));
+    }
+  }, []);
+
+  // Auto-navigate to Combat page when a battle starts
+  useEffect(() => {
+    if (screen === 'treasure-hunt' || screen === 'story-battle' || screen === 'story') {
+      setPage(2);
+    }
+  }, [screen]);
+
   if (isCloudLoading) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
@@ -1514,121 +1610,827 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden">
-      {/* Top Bar */}
-      <header className="sticky top-0 z-40 bg-card/95 backdrop-blur border-b border-border px-2 sm:px-4 py-2 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <Bomb size={18} className="text-primary shrink-0" />
-          <h1 className="font-pixel text-[8px] sm:text-xs text-foreground tracking-wider hidden sm:block">BOMBERQUEST</h1>
-        </div>
-        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-end">
-          <button
-            onClick={toggleMute}
-            className="p-2 sm:p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground min-w-[44px] sm:min-w-[auto] min-h-[36px] sm:min-h-[auto] flex items-center justify-center"
-            title={muted ? 'Activer le son' : 'Couper le son'}
-          >
-            {muted ? <VolumeX size={16} /> : <Volume2 size={16} />}
-          </button>
-          <div className="flex items-center gap-1.5 pixel-border px-2 sm:px-3 py-1.5 bg-muted min-w-[70px] sm:min-w-[auto]">
-            <Coins size={14} className="text-game-gold shrink-0" />
-            <span className="font-pixel text-[9px] sm:text-[10px] text-game-gold tabular-nums">
-              {(player.bomberCoins + (gameState?.coinsEarned || 0)).toLocaleString()}
-              {gameState?.coinsEarned ? <span className="text-[8px] opacity-70 ml-1">(+{gameState.coinsEarned})</span> : null}
-            </span>
-          </div>
-          <div className="hidden sm:flex items-center gap-1.5 text-[10px] text-muted-foreground">
-            <Star size={12} /> Lv.{player.accountLevel}
-            <span className="text-border">|</span>
-            <Users size={12} /> {player.heroes.length}
-          </div>
-          <div className="flex sm:hidden items-center gap-1 text-[9px] text-muted-foreground tabular-nums">
-            <Star size={10} /> {player.accountLevel}
-            <Users size={10} /> {player.heroes.length}
-          </div>
-          {user && (
-            <>
-              <button
-                onClick={() => navigate('/profile')}
-                className="p-2 sm:p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground min-w-[44px] sm:min-w-[auto] min-h-[36px] sm:min-h-[auto] flex items-center justify-center"
-                title="Profil"
-              >
-                <User size={16} />
-              </button>
-              <button
-                onClick={async () => { await signOut(); navigate('/'); }}
-                className="p-2 sm:p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground min-w-[44px] sm:min-w-[auto] min-h-[36px] sm:min-h-[auto] flex items-center justify-center"
-                title="Déconnexion"
-              >
-                <DoorOpen size={16} />
-              </button>
-            </>
-          )}
-        </div>
-      </header>
+    <div className="flex flex-col h-screen bg-background overflow-hidden">
+      <SlimHeader
+        bomberCoins={player.bomberCoins + (gameState?.coinsEarned || 0)}
+        universalShards={player.universalShards}
+        accountLevel={player.accountLevel}
+        title={PAGE_TITLES[page]}
+      />
 
-      {/* Navigation */}
-      {!isInBattle && (
-        <nav className="sticky top-[49px] sm:top-[49px] z-30 bg-card/90 backdrop-blur border-b border-border px-1 sm:px-2 py-1.5 flex gap-1 overflow-x-auto">
-          {[
-            { id: 'hub' as Screen, label: 'Hub', icon: <Home size={14} />, testId: 'tab-hub' },
-            { id: 'story' as Screen, label: 'Histoire', icon: <BookOpen size={14} />, testId: 'tab-story' },
-            { id: 'heroes' as Screen, label: 'Héros', icon: <Users size={14} />, testId: 'tab-heroes' },
-            { id: 'codex' as Screen, label: 'Codex', icon: <BookOpen size={14} />, testId: 'tab-codex' },
-            { id: 'fusion' as Screen, label: 'Fusion', icon: <Hammer size={14} />, testId: 'tab-fusion' },
-            { id: 'summon' as Screen, label: 'Invoquer', icon: <Sparkles size={14} />, testId: 'tab-summon' },
-            { id: 'achievements' as Screen, label: 'Succès', icon: <Trophy size={14} />, testId: 'tab-achievements' },
-          ].map(tab => (
-            <button
-              key={tab.id}
-              data-testid={tab.testId}
-              onClick={() => {
-                if (tab.id === 'summon') navigate('/summon');
-                else setScreen(tab.id);
-              }}
-              className={`font-pixel text-[7px] sm:text-[8px] px-2.5 sm:px-3 py-2.5 sm:py-2 rounded flex items-center gap-1.5 transition-all whitespace-nowrap min-h-[44px] ${
-                screen === tab.id
-                  ? 'bg-primary text-primary-foreground shadow-md'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-              }`}
-            >
-              {tab.icon}
-              {tab.label}
-            </button>
-          ))}
-        </nav>
-      )}
+      {/* Container swipeable 5 pages */}
+      <motion.div
+        className="flex flex-1 min-h-0 pt-12"
+        style={{ width: '500%' }}
+        animate={{ x: `${-page * 20}%` }}
+        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
 
-      <main className="p-4 max-w-6xl mx-auto">
-        {/* HUB SCREEN */}
-        {screen === 'hub' && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-            {/* Hero Banner - Compact */}
-            <div className="text-center py-4">
-              <h2 className="font-pixel text-sm sm:text-lg text-foreground text-glow-red mb-1">
-                💣 BOMBERQUEST
-              </h2>
-              <p className="text-xs text-muted-foreground">Idle Bomber • Collecter & Améliorer</p>
+        {/* PAGE 0 — Invoquer */}
+        <div className="w-1/5 h-full overflow-y-auto pb-nav md:pl-16">
+          <div className="p-4 max-w-2xl mx-auto space-y-4">
+            {/* Ressources */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="pixel-border bg-card p-3 text-center glow-gold">
+                <Coins size={20} className="text-game-gold mx-auto mb-1" />
+                <p className="font-pixel text-[10px] text-foreground">{player.bomberCoins.toLocaleString('fr-FR')}</p>
+                <p className="text-[9px] text-muted-foreground">BomberCoins</p>
+              </div>
+              <div className="pixel-border bg-card p-3 text-center">
+                <Gem size={20} className="text-blue-400 mx-auto mb-1" />
+                <p className="font-pixel text-[10px] text-foreground">{player.universalShards.toLocaleString('fr-FR')}</p>
+                <p className="text-[9px] text-muted-foreground">Fragments</p>
+              </div>
             </div>
 
-            {/* Quick Stats + XP Bar */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {[
-                { label: 'BomberCoins', value: player.bomberCoins.toLocaleString(), icon: <Coins size={20} className="text-game-gold" />, glow: 'glow-gold' },
-                { label: 'Héros', value: `${player.heroes.length}`, icon: <Users size={20} className="text-primary" />, glow: '' },
-                { label: 'Cartes', value: `${player.mapsCompleted}`, icon: <MapIcon size={20} className="text-game-neon-blue" />, glow: '' },
-                { label: 'Niveau', value: `${player.accountLevel}`, icon: <Trophy size={20} className="text-game-gold" />, glow: '' },
-              ].map(stat => (
-                <div key={stat.label} className={`pixel-border bg-card p-3 text-center ${stat.glow}`}>
-                  <div className="flex justify-center mb-1">{stat.icon}</div>
-                  <p className="font-pixel text-[10px] text-foreground mt-1 tabular-nums">{stat.value}</p>
-                  <p className="text-[9px] text-muted-foreground">{stat.label}</p>
+            {/* Tabs BC / Shards */}
+            <div className="flex gap-2">
+              <button onClick={() => setSummonTab('coins')} className={`flex-1 pixel-btn font-pixel text-[8px] flex items-center justify-center gap-2 ${summonTab === 'coins' ? 'pixel-btn-gold' : 'pixel-btn-secondary'}`}>
+                <Coins size={12} /> BomberCoins
+              </button>
+              <button onClick={() => setSummonTab('shards')} className={`flex-1 pixel-btn font-pixel text-[8px] flex items-center justify-center gap-2 ${summonTab === 'shards' ? 'pixel-btn-gold' : 'pixel-btn-secondary'}`}>
+                <Gem size={12} /> Fragments
+              </button>
+            </div>
+
+            {/* BC Tab */}
+            {summonTab === 'coins' && (
+              <div className="pixel-border bg-card p-4 space-y-3">
+                <h3 className="font-pixel text-[9px] text-foreground flex items-center gap-2"><Sparkles size={12} /> INVOCATION BC</h3>
+                <div className="grid grid-cols-3 gap-2">
+                  {([['single', '×1', 1000], ['x10', '×10', 9000], ['x100', '×100', 80000]] as const).map(([type, label, cost]) => (
+                    <button key={type} onClick={() => handleSummon(type)} disabled={player.bomberCoins < cost}
+                      className="pixel-btn pixel-btn-gold font-pixel text-[8px] flex flex-col items-center gap-1 disabled:opacity-40">
+                      <span>{label}</span>
+                      <span className="text-[7px]">{cost.toLocaleString('fr-FR')} BC</span>
+                    </button>
+                  ))}
                 </div>
+                <div className="grid grid-cols-2 gap-1 mt-2">
+                  {[
+                    { label: 'Rare', count: player.pityCounters.rare, max: 10 },
+                    { label: 'Super-Rare', count: player.pityCounters.superRare, max: 30 },
+                    { label: 'Epic', count: player.pityCounters.epic, max: 50 },
+                    { label: 'Legend', count: player.pityCounters.legend, max: 200 },
+                  ].map(({ label, count, max }) => (
+                    <div key={label} className="text-[8px] text-muted-foreground flex justify-between items-center px-2 py-1 bg-muted/30 rounded">
+                      <span>{label}</span>
+                      <span className="font-pixel text-[7px] text-foreground">{count}/{max}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Shards Tab */}
+            {summonTab === 'shards' && (
+              <div className="pixel-border bg-card p-4 space-y-3">
+                <h3 className="font-pixel text-[9px] text-foreground flex items-center gap-2"><Gem size={12} /> INVOCATION FRAGMENTS</h3>
+                <div className="grid grid-cols-3 gap-1">
+                  {(['rare', 'super-rare', 'epic', 'legend', 'super-legend'] as Rarity[]).map(r => {
+                    const costs: Record<string, number> = { rare: 50, 'super-rare': 150, epic: 400, legend: 1000, 'super-legend': 2500 };
+                    return (
+                      <button key={r} onClick={() => setSelectedShardRarity(r)}
+                        className={`pixel-border p-2 font-pixel text-[7px] text-center transition-all ${selectedShardRarity === r ? 'ring-2 ring-primary bg-primary/10' : 'bg-muted/30'}`}
+                        style={{ color: `hsl(var(--game-rarity-${r}))` }}>
+                        {RARITY_CONFIG[r].label}<br />
+                        <span className="text-muted-foreground">{costs[r]} 💎</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <button onClick={handleSummonShards} disabled={player.universalShards < ({ rare: 50, 'super-rare': 150, epic: 400, legend: 1000, 'super-legend': 2500 }[selectedShardRarity] || 0)}
+                  className="pixel-btn pixel-btn-gold w-full font-pixel text-[8px] flex items-center justify-center gap-2 disabled:opacity-40">
+                  <Sparkles size={14} /> INVOQUER — {({ rare: 50, 'super-rare': 150, epic: 400, legend: 1000, 'super-legend': 2500 }[selectedShardRarity])} 💎
+                </button>
+              </div>
+            )}
+
+            {/* Dernière invocation */}
+            {lastSummoned && (
+              <div className="pixel-border bg-card p-4">
+                <h3 className="font-pixel text-[9px] text-foreground mb-3">DERNIÈRE INVOCATION</h3>
+                {summonedBatch.length > 1 ? (
+                  <div className="grid grid-cols-5 gap-1">
+                    {summonedBatch.slice(0, 10).map(h => (
+                      <div key={h.id} className="flex flex-col items-center gap-1 p-1">
+                        <HeroAvatar heroId={h.id} heroName={h.name} rarity={h.rarity} size={32} />
+                        <p className="font-pixel text-[6px] truncate w-full text-center" style={{ color: `hsl(var(--game-rarity-${h.rarity}))` }}>{RARITY_CONFIG[h.rarity].label}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center gap-2">
+                    <HeroAvatar heroId={lastSummoned.id} heroName={lastSummoned.name} rarity={lastSummoned.rarity} size={64} />
+                    <p className="font-pixel text-[9px] text-foreground">{lastSummoned.name}</p>
+                    <p className="font-pixel text-[8px]" style={{ color: `hsl(var(--game-rarity-${lastSummoned.rarity}))` }}>{RARITY_CONFIG[lastSummoned.rarity].label}</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* PAGE 1 — Héros */}
+        <div className="w-1/5 h-full overflow-y-auto pb-nav md:pl-16">
+          <div className="p-4 max-w-6xl mx-auto">
+            {/* Sub-tabs */}
+            <div className="flex gap-1 mb-4 sticky top-0 bg-background/95 backdrop-blur py-2 z-10">
+              {(['collection', 'codex', 'equipes'] as const).map(tab => (
+                <button key={tab} onClick={() => setHeroesTab(tab)}
+                  className={`flex-1 font-pixel text-[8px] py-2 rounded transition-colors ${
+                    heroesTab === tab ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                  }`}>
+                  {tab === 'collection' ? 'Collection' : tab === 'codex' ? 'Codex' : 'Équipes'}
+                </button>
               ))}
             </div>
 
-            {/* XP Progress Bar */}
-            <XpBar xp={player.xp} accountLevel={player.accountLevel} />
+            {/* Tab Collection */}
+            {heroesTab === 'collection' && (
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="font-pixel text-xs text-foreground flex items-center gap-2">
+                    <Users size={16} /> TOUS LES HÉROS ({player.heroes.length})
+                  </h2>
+                </div>
 
+                <HeroCollectionStats heroes={player.heroes} />
+
+                <div className="pixel-border bg-card p-3 sm:p-4 space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <h3 className="font-pixel text-[9px] text-foreground">FILTRES</h3>
+                    <button
+                      onClick={() => setHeroFilters(DEFAULT_HERO_FILTERS)}
+                      className="pixel-btn pixel-btn-secondary font-pixel text-[8px] min-h-[36px] px-3"
+                      disabled={heroFilters.clan === 'all' && heroFilters.rarity === 'all' && heroFilters.level === 'all' && !heroFilters.showDuplicatesOnly && !heroFilters.showLockedOnly}
+                    >
+                      Réinitialiser
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <label className="text-[8px] text-muted-foreground space-y-1">
+                      <span className="font-pixel">Clan</span>
+                      <select
+                        className="w-full bg-muted border border-border rounded px-2 py-2 text-[10px]"
+                        value={heroFilters.clan}
+                        onChange={(e) => setHeroFilters(prev => ({ ...prev, clan: e.target.value as HeroFilters['clan'] }))}
+                      >
+                        <option value="all">Tous les clans</option>
+                        {HERO_FAMILIES.map((family) => (
+                          <option key={family.id} value={family.id}>{family.name}</option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label className="text-[8px] text-muted-foreground space-y-1">
+                      <span className="font-pixel">Rareté</span>
+                      <select
+                        className="w-full bg-muted border border-border rounded px-2 py-2 text-[10px]"
+                        value={heroFilters.rarity}
+                        onChange={(e) => setHeroFilters(prev => ({ ...prev, rarity: e.target.value as HeroFilters['rarity'] }))}
+                      >
+                        <option value="all">Toutes les raretés</option>
+                        {(Object.keys(RARITY_CONFIG) as Rarity[]).map((rarity) => (
+                          <option key={rarity} value={rarity}>{RARITY_CONFIG[rarity].label}</option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label className="text-[8px] text-muted-foreground space-y-1">
+                      <span className="font-pixel">Niveau</span>
+                      <select
+                        className="w-full bg-muted border border-border rounded px-2 py-2 text-[10px]"
+                        value={heroFilters.level}
+                        onChange={(e) => setHeroFilters(prev => ({ ...prev, level: e.target.value as HeroLevelFilter }))}
+                      >
+                        <option value="all">Tous les niveaux</option>
+                        <option value="1-20">Niv. 1-20</option>
+                        <option value="21-40">Niv. 21-40</option>
+                        <option value="41-60">Niv. 41-60</option>
+                        <option value="61+">Niv. 61+</option>
+                      </select>
+                    </label>
+                  </div>
+
+                  <div className="flex gap-2 flex-wrap">
+                    <button
+                      className={`text-xs px-2 py-1 rounded border transition-colors ${
+                        heroFilters.showDuplicatesOnly ? 'border-orange-400 text-orange-400 bg-orange-400/10' : 'border-border text-muted-foreground'
+                      }`}
+                      onClick={() => setHeroFilters(f => ({ ...f, showDuplicatesOnly: !f.showDuplicatesOnly }))}
+                    >
+                      Doublons
+                    </button>
+                    <button
+                      className={`text-xs px-2 py-1 rounded border transition-colors ${
+                        heroFilters.showLockedOnly ? 'border-yellow-400 text-yellow-400 bg-yellow-400/10' : 'border-border text-muted-foreground'
+                      }`}
+                      onClick={() => setHeroFilters(f => ({ ...f, showLockedOnly: !f.showLockedOnly }))}
+                    >
+                      🔒 Lockés
+                    </button>
+                  </div>
+
+                  <p className="text-[8px] text-muted-foreground">
+                    {filteredHeroes.length} héros affichés sur {player.heroes.length}
+                  </p>
+                </div>
+
+                {/* Toggle mode recyclage */}
+                <div className="flex justify-end mb-2">
+                  <button
+                    className={`pixel-btn font-pixel text-[8px] flex items-center gap-1 ${showRecycleMode ? 'pixel-btn-primary' : 'pixel-btn-secondary'}`}
+                    onClick={() => setShowRecycleMode(r => !r)}
+                  >
+                    <Trash2 size={12} />
+                    {showRecycleMode ? 'Terminer recyclage' : 'Recycler des héros'}
+                  </button>
+                </div>
+
+                {showRecycleMode && (
+                  <div className="pixel-border bg-card p-3 sm:p-4">
+                    <RecyclePanel
+                      heroes={player.heroes}
+                      universalShards={player.universalShards}
+                      onRecycle={handleRecycle}
+                      onToggleLock={handleToggleLock}
+                    />
+                  </div>
+                )}
+
+                {filteredHeroes.length === 0 ? (
+                  <div className="pixel-border bg-card p-6 text-center space-y-3">
+                    <p className="font-pixel text-[10px] text-foreground">Aucun héros ne correspond aux filtres.</p>
+                    <p className="text-[8px] text-muted-foreground">Essayez d'élargir un critère ou réinitialisez les filtres.</p>
+                    <button
+                      onClick={() => setHeroFilters(DEFAULT_HERO_FILTERS)}
+                      className="pixel-btn font-pixel text-[8px] min-h-[40px] px-4"
+                    >
+                      Voir tous les héros
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                    {filteredHeroes.map(hero => (
+                      <HeroCard key={hero.id} hero={hero} onClick={() => setUpgradeHeroId(hero.id)} />
+                    ))}
+                  </div>
+                )}
+              </motion.div>
+            )}
+
+            {/* Tab Codex */}
+            {heroesTab === 'codex' && (
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+                <div className="pixel-border bg-card p-4 space-y-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="font-pixel text-[9px] text-foreground flex items-center gap-2">
+                      <Trophy size={12} className="text-game-gold" /> Collection débloquée
+                    </p>
+                    <p className="font-pixel text-[10px] text-primary tabular-nums">
+                      {codexUnlockedCount}/{codexTotalCount}
+                    </p>
+                  </div>
+                  <div className="w-full h-2.5 bg-muted rounded-full overflow-hidden">
+                    <motion.div
+                      className="h-full bg-gradient-to-r from-primary to-game-gold rounded-full"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${Math.max(2, Math.round((codexUnlockedCount / codexTotalCount) * 100))}%` }}
+                      transition={{ duration: 0.4 }}
+                    />
+                  </div>
+                  <p className="text-[8px] text-muted-foreground">
+                    Les héros non débloqués restent masqués (silhouette) pour garder la surprise.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                  {codexByName.map((entry) => (
+                    <div
+                      key={entry.key}
+                      className={`pixel-border p-3 transition-all ${
+                        entry.unlocked ? `bg-card rarity-${entry.rarity}` : 'bg-muted/30'
+                      }`}
+                    >
+                      <div className="relative flex justify-center mb-2">
+                        <div className={entry.unlocked ? '' : 'opacity-35 grayscale blur-[0.8px]'}>
+                          <HeroAvatar heroId={entry.heroPreviewId} rarity={entry.rarity} size={48} />
+                        </div>
+                        {!entry.unlocked && (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="px-2 py-0.5 rounded bg-background/80 border border-border flex items-center gap-1">
+                              <LockIcon size={10} className="text-muted-foreground" />
+                              <span className="font-pixel text-[7px] text-muted-foreground">LOCKED</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      <p className="font-pixel text-[8px] text-center text-foreground truncate">
+                        {entry.unlocked ? entry.displayName : '???'}
+                      </p>
+                      <p className="text-[8px] text-center mt-1" style={{ color: `hsl(var(--game-rarity-${entry.rarity}))` }}>
+                        {entry.unlocked ? RARITY_CONFIG[entry.rarity].label : 'Inconnu'}
+                      </p>
+                      <p className="text-[8px] text-center text-muted-foreground mt-1 tabular-nums">
+                        {entry.unlocked ? `Possédés: ${entry.ownedCount}` : 'À invoquer'}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+
+            {/* Tab Équipes */}
+            {heroesTab === 'equipes' && (
+              <TeamPresets
+                heroes={player.heroes}
+                presets={teamPresets}
+                onSave={setTeamPresets}
+                onLoadTeam={(heroIds) => {
+                  setSelectedHeroes(new Set(heroIds));
+                  toast({ title: 'Équipe chargée !', description: 'Prête pour le combat.' });
+                }}
+              />
+            )}
+          </div>
+        </div>
+
+        {/* PAGE 2 — Combat */}
+        <div className="w-1/5 h-full overflow-y-auto pb-nav md:pl-16">
+          <div className="p-4 max-w-6xl mx-auto">
+            {/* Mode Histoire */}
+            {screen === 'story' && (
+              <StoryMode
+                player={player}
+                storyProgress={storyProgress}
+                selectedHeroes={selectedHeroes}
+                onToggleHero={toggleHeroSelection}
+                onAutoSelectHeroes={autoSelectHeroes}
+                onClearSelectedHeroes={() => setSelectedHeroes(new Set())}
+                onStartStage={startStoryStage}
+                selectedRegionIdx={storyRegionIdx}
+                onRegionChange={setStoryRegionIdx}
+              />
+            )}
+
+            {/* Sélecteur carte + équipe (hors bataille, hors story) */}
+            {!isInBattle && screen !== 'story' && (
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+                {/* Story Mode CTA */}
+                <button
+                  onClick={() => setScreen('story')}
+                  className="pixel-btn w-full font-pixel text-xs flex items-center justify-center gap-2 glow-red"
+                >
+                  <BookOpen size={16} /> MODE HISTOIRE
+                  <span className="text-[8px] opacity-70">({storyProgress.completedStages.length} étapes)</span>
+                </button>
+
+                {/* Treasure Hunt Launcher */}
+                <div className="pixel-border bg-card p-4">
+                  <h3 className="font-pixel text-xs text-foreground mb-1 flex items-center gap-2">
+                    <MapIcon size={16} /> CHASSE AU TRÉSOR
+                  </h3>
+                  <p className="text-[8px] text-muted-foreground mb-3 flex items-center gap-1">
+                    <Trophy size={10} /> {player.mapsCompleted} cartes complétées
+                  </p>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
+                    {MAP_CONFIGS.map((mapCfg, i) => {
+                      const unlocked = player.mapsCompleted >= mapCfg.unlockMaps && player.accountLevel >= mapCfg.unlockLevel;
+                      return (
+                        <button
+                          key={i}
+                          onClick={() => unlocked && setSelectedMap(i)}
+                          disabled={!unlocked}
+                          className={`pixel-border p-3 text-left transition-all relative ${
+                            !unlocked
+                              ? 'bg-muted/30 opacity-50 cursor-not-allowed'
+                              : selectedMap === i
+                                ? 'bg-primary/15 ring-2 ring-primary/50 scale-[1.02]'
+                                : 'bg-muted hover:bg-muted/80 hover:scale-[1.01]'
+                          }`}
+                        >
+                          {selectedMap === i && unlocked && (
+                            <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-primary flex items-center justify-center shadow-md">
+                              <Check size={12} className="text-primary-foreground" />
+                            </div>
+                          )}
+                          {!unlocked && (
+                            <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-destructive flex items-center justify-center shadow-md">
+                              <LockIcon size={10} className="text-destructive-foreground" />
+                            </div>
+                          )}
+                          <div className="flex items-center gap-2 mb-1">
+                            <PixelIcon icon={mapCfg.icon} size={20} />
+                            <p className="font-pixel text-[8px] text-foreground">{mapCfg.name}</p>
+                          </div>
+                          {unlocked ? (
+                            <>
+                              <p className="text-[9px] text-muted-foreground">{mapCfg.width}×{mapCfg.height} • {mapCfg.chests} coffres</p>
+                              <p className="text-[9px] text-game-gold flex items-center gap-1 mt-0.5">
+                                <Coins size={10} /> ~{mapCfg.reward} BC
+                              </p>
+                            </>
+                          ) : (
+                            <div className="text-[8px] text-destructive mt-1 space-y-0.5">
+                              {player.mapsCompleted < mapCfg.unlockMaps && (
+                                <p className="flex items-center gap-1"><LockIcon size={9} /> {mapCfg.unlockMaps} cartes ({player.mapsCompleted}/{mapCfg.unlockMaps})</p>
+                              )}
+                              {player.accountLevel < mapCfg.unlockLevel && (
+                                <p className="flex items-center gap-1"><LockIcon size={9} /> Niveau {mapCfg.unlockLevel} (actuel: {player.accountLevel})</p>
+                              )}
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Mon Équipe */}
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="font-pixel text-[8px] text-foreground flex items-center gap-1.5">
+                        <Users size={12} /> MON ÉQUIPE ({selectedHeroes.size}/6)
+                      </p>
+                      <div className="flex gap-1.5">
+                        <button
+                          onClick={autoSelectHeroes}
+                          className="font-pixel text-[7px] px-2.5 py-1.5 rounded bg-primary/15 text-primary hover:bg-primary/25 transition-colors flex items-center gap-1"
+                        >
+                          <Sparkles size={10} /> Auto-sélection
+                        </button>
+                        {selectedHeroes.size > 0 && (
+                          <button
+                            onClick={() => setSelectedHeroes(new Set())}
+                            className="font-pixel text-[7px] px-2.5 py-1.5 rounded bg-muted text-muted-foreground hover:bg-muted/80 transition-colors"
+                          >
+                            Réinitialiser
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-3">
+                      {Array.from({ length: 6 }).map((_, slotIdx) => {
+                        const heroId = Array.from(selectedHeroes)[slotIdx];
+                        const hero = heroId ? player.heroes.find(h => h.id === heroId) : null;
+                        return (
+                          <div
+                            key={slotIdx}
+                            className={`pixel-border p-2 flex flex-col items-center justify-center min-h-[72px] transition-all ${
+                              hero ? `bg-card rarity-${hero.rarity}` : 'bg-muted/30 border-dashed'
+                            }`}
+                          >
+                            {hero ? (
+                              <>
+                                <HeroAvatar heroId={hero.id} heroName={hero.name} rarity={hero.rarity} size={32} />
+                                <p className="font-pixel text-[7px] text-foreground mt-1 truncate max-w-[60px]">{hero.name.split(' ')[0]}</p>
+                                <p className="text-[7px] mt-0.5" style={{ color: `hsl(var(--game-rarity-${hero.rarity}))` }}>
+                                  {RARITY_CONFIG[hero.rarity].label}
+                                </p>
+                                <button
+                                  onClick={() => toggleHeroSelection(hero.id)}
+                                  className="text-[7px] text-destructive hover:text-destructive/80 mt-0.5 min-w-[32px] min-h-[32px] flex items-center justify-center"
+                                >
+                                  ✕
+                                </button>
+                              </>
+                            ) : (
+                              <p className="font-pixel text-[7px] text-muted-foreground">Slot {slotIdx + 1}</p>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <details className="pixel-border bg-muted/20 rounded">
+                      <summary className="font-pixel text-[8px] text-muted-foreground cursor-pointer px-3 py-2 flex items-center gap-1.5 hover:text-foreground transition-colors">
+                        <Users size={10} /> Choisir manuellement ({player.heroes.length} héros disponibles)
+                      </summary>
+                      <div className="p-2 grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-60 overflow-y-auto">
+                        {player.heroes.sort(sortByRarity).map(hero => (
+                          <HeroCard
+                            key={hero.id}
+                            hero={hero}
+                            compact
+                            selected={selectedHeroes.has(hero.id)}
+                            onClick={() => toggleHeroSelection(hero.id)}
+                          />
+                        ))}
+                      </div>
+                    </details>
+                  </div>
+
+                  <button onClick={startTreasureHunt} className="pixel-btn pixel-btn-gold w-full font-pixel text-xs flex items-center justify-center gap-2">
+                    <Swords size={16} /> LANCER LA CHASSE !
+                  </button>
+                </div>
+              </motion.div>
+            )}
+
+            {/* BATTLE SCREENS (treasure hunt & story) */}
+            {isInBattle && gameState && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
+                {/* Game HUD */}
+                <div className="pixel-border bg-card p-2.5 space-y-2">
+                  {/* Top row: stats + controls */}
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    {/* Stats */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-muted min-w-[60px]">
+                        <Coins size={12} className="text-game-gold" />
+                        <span className="font-pixel text-[9px] text-game-gold tabular-nums">+{gameState.coinsEarned}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-muted min-w-[40px]">
+                        <span className="text-[10px]">💣</span>
+                        <span className="font-pixel text-[9px] text-muted-foreground tabular-nums">{gameState.bombsPlaced}</span>
+                      </div>
+                      {!gameState.isStoryMode && (
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-primary/15 min-w-[50px]">
+                          <span className="text-[10px]">📦</span>
+                          <span className="font-pixel text-[9px] text-primary tabular-nums">
+                            {gameState.chestsOpened}/{gameState.map.chests.length}
+                          </span>
+                        </div>
+                      )}
+                      {gameState.isStoryMode && (
+                        <>
+                          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-destructive/15 min-w-[70px]">
+                            <Skull size={12} className="text-destructive shrink-0" />
+                            <span className="font-pixel text-[9px] text-destructive tabular-nums whitespace-nowrap">
+                              {gameState.enemies?.filter(e => e.hp > 0).length || 0} restants
+                            </span>
+                          </div>
+                          {(gameState.enemiesKilled || 0) > 0 && (
+                            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-primary/15 min-w-[50px]">
+                              <Swords size={12} className="text-primary shrink-0" />
+                              <span className="font-pixel text-[9px] text-primary tabular-nums">{gameState.enemiesKilled} tué(s)</span>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+
+                    {/* Controls */}
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => {
+                          const nextSpeed = gameState.speed === 1 ? 2 : gameState.speed === 2 ? 3 : 1;
+                          huntSpeedRef.current = nextSpeed;
+                          if (user) {
+                            setPlayer(prev => ({ ...prev, huntSpeed: nextSpeed }));
+                          } else {
+                            localStorage.setItem('hunt-speed', String(nextSpeed));
+                          }
+                          setGameState(prev => (prev ? { ...prev, speed: nextSpeed } : prev));
+                        }}
+                        className="font-pixel text-[8px] sm:text-[7px] px-3 py-2.5 sm:py-1.5 rounded transition-all bg-primary text-primary-foreground shadow-md min-w-[44px] sm:min-w-[38px] min-h-[44px] sm:min-h-[auto] tabular-nums"
+                        title="Vitesse de chasse"
+                      >
+                        x{gameState.speed}
+                      </button>
+                      <div className="w-px h-5 bg-border mx-0.5 hidden sm:block" />
+                      <button
+                        onClick={() => setGameState(prev => (prev ? { ...prev, isPaused: !prev.isPaused } : prev))}
+                        className="font-pixel text-[8px] px-3 py-2.5 sm:py-1.5 rounded bg-secondary text-secondary-foreground hover:bg-secondary/80 flex items-center gap-1 min-h-[44px] sm:min-h-[auto]"
+                      >
+                        {gameState.isPaused ? <Play size={14} className="sm:size-[10px]" /> : <Pause size={14} className="sm:size-[10px]" />}
+                        <span className="hidden sm:inline">{gameState.isPaused ? 'Reprendre' : 'Pause'}</span>
+                      </button>
+                      <button
+                        onClick={gameState.isStoryMode ? endStoryBattle : endTreasureHunt}
+                        className={`font-pixel text-[8px] px-3 py-2.5 sm:py-1.5 rounded flex items-center gap-1 min-h-[44px] sm:min-h-[auto] ${
+                          gameState.mapCompleted
+                            ? 'bg-game-gold text-background font-bold animate-pulse'
+                            : 'bg-destructive/80 text-destructive-foreground hover:bg-destructive'
+                        }`}
+                      >
+                        {gameState.mapCompleted ? <><Check size={14} className="sm:size-[10px]" /> <span className="hidden sm:inline">Récupérer!</span></> : <><DoorOpen size={14} className="sm:size-[10px]" /> <span className="hidden sm:inline">Quitter</span></>}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Hero stamina bars */}
+                  <div className="flex gap-2 flex-wrap">
+                    {gameState.heroes.map(hero => {
+                      const staminaPct = Math.round((hero.currentStamina / hero.maxStamina) * 100);
+                      const isLow = staminaPct < 30;
+                      const isResting = hero.state === 'resting';
+                      return (
+                        <div key={hero.id} className={`flex items-center gap-1.5 px-2 py-1 rounded text-[9px] ${
+                          isResting ? 'bg-muted/50 opacity-60' : 'bg-muted'
+                        }`}>
+                          <span className="font-pixel text-[7px] text-foreground truncate max-w-[50px] sm:max-w-[60px]">{hero.name}</span>
+                          <div className="w-16 h-1.5 bg-background rounded-full overflow-hidden">
+                            <div
+                              className={`h-full ${isLow ? 'bg-game-energy-low' : 'bg-game-energy-green'}`}
+                              style={{ width: `${staminaPct}%` }}
+                            />
+                          </div>
+                          <span className={`font-pixel text-[7px] ${isLow ? 'text-game-energy-low' : 'text-muted-foreground'}`}>
+                            {isResting ? '💤' : `${staminaPct}%`}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Boss HP bar */}
+                {gameState.isStoryMode && gameState.boss && gameState.boss.hp > 0 && (
+                  <div className="pixel-border bg-card p-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-pixel text-[8px] text-destructive flex items-center gap-1">
+                        <Skull size={12} /> <span className="truncate max-w-[80px] sm:max-w-[auto]">{gameState.boss.name}</span>
+                      </span>
+                      <span className="font-pixel text-[8px] text-muted-foreground tabular-nums whitespace-nowrap">
+                        {gameState.boss.hp}/{gameState.boss.maxHp} HP
+                      </span>
+                    </div>
+                    <div className="w-full h-3 bg-muted rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-destructive transition-all duration-300"
+                        style={{ width: `${(gameState.boss.hp / gameState.boss.maxHp) * 100}%` }}
+                      />
+                    </div>
+                    {gameState.boss.invincible && (
+                      <p className="font-pixel text-[7px] text-game-neon-blue mt-1 animate-pulse flex items-center gap-1">
+                        <Shield size={10} /> INVINCIBLE
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Auto-farm indicator */}
+                {autoFarm && (
+                  <div className="pixel-border bg-primary/10 p-2.5 flex items-center justify-between gap-2">
+                    <span className="font-pixel text-[8px] text-primary flex items-center gap-1.5 whitespace-nowrap">
+                      <FastForward size={12} /> AUTO-FARM ACTIF
+                      <span className="text-muted-foreground tabular-nums">• Run #{farmStats.runs + 1} • Total: {farmStats.totalCoins} BC</span>
+                    </span>
+                    <button
+                      onClick={() => { setAutoFarm(false); endTreasureHunt(); }}
+                      className="font-pixel text-[7px] px-2 py-1 rounded bg-destructive/80 text-destructive-foreground hover:bg-destructive"
+                    >
+                      Arrêter
+                    </button>
+                  </div>
+                )}
+
+                {/* Victory banner */}
+                <AnimatePresence>
+                {gameState.mapCompleted && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ type: 'spring', damping: 12 }}
+                    className="pixel-border bg-card p-5 text-center glow-gold"
+                  >
+                    <p className="font-pixel text-sm sm:text-base text-game-gold flex items-center justify-center gap-2 text-glow-gold">
+                      <Trophy size={22} /> {gameState.isStoryMode ? '⚔️ VICTOIRE!' : '🗺️ CARTE COMPLÉTÉE!'}
+                    </p>
+                    <p className="font-pixel text-lg sm:text-xl text-game-gold mt-2 flex items-center justify-center gap-2">
+                      <Coins size={20} /> +{gameState.coinsEarned + (currentStoryStage?.reward || 0)} BC
+                    </p>
+                    {!gameState.isStoryMode && lastShardRewards.length > 0 && (
+                      <div className="mt-3 flex flex-wrap gap-2 justify-center">
+                        {lastShardRewards.map((reward, idx) => (
+                          <div
+                            key={idx}
+                            className={`font-pixel text-xs px-2 py-1 rounded flex items-center gap-1 ${
+                              reward.rarity === 'common' ? 'bg-gray-600 text-gray-200' :
+                              reward.rarity === 'rare' ? 'bg-blue-600 text-blue-200' :
+                              reward.rarity === 'epic' ? 'bg-purple-600 text-purple-200' :
+                              'bg-orange-600 text-orange-200'
+                            }`}
+                          >
+                            <Sparkles size={12} /> +{reward.quantity} {RARITY_CONFIG[reward.rarity].label}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {gameState.isStoryMode && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        +{currentStoryStage?.xpReward || 0} XP • {gameState.enemiesKilled || 0} ennemis éliminés
+                      </p>
+                    )}
+                    {gameState.bossDefeated && (
+                      <p className="font-pixel text-xs text-destructive mt-2 animate-pulse">👑 BOSS VAINCU!</p>
+                    )}
+
+                    {autoFarm ? (
+                      <p className="font-pixel text-[8px] text-primary mt-3 animate-pulse">
+                        ⏳ Prochaine chasse dans quelques secondes...
+                      </p>
+                    ) : (
+                      <div className="flex gap-2 mt-4 justify-center flex-wrap">
+                        <button
+                          onClick={gameState.isStoryMode ? endStoryBattle : endTreasureHunt}
+                          className="pixel-btn pixel-btn-gold font-pixel text-xs flex items-center gap-2"
+                        >
+                          <Check size={14} /> Récupérer
+                        </button>
+                        {gameState.isStoryMode && currentStoryStage && !currentStoryStage.boss && (
+                          <button
+                            onClick={() => finalizeStoryBattle(true)}
+                            className="pixel-btn font-pixel text-xs flex items-center gap-2"
+                          >
+                            <Play size={14} /> Étape suivante
+                          </button>
+                        )}
+                        {!gameState.isStoryMode && (
+                          <>
+                            <button
+                              onClick={() => collectAndContinue(true)}
+                              className="pixel-btn font-pixel text-xs flex items-center gap-2"
+                            >
+                              <Play size={14} /> Continuer
+                            </button>
+                            <button
+                              onClick={() => { setAutoFarm(true); collectAndContinue(true); }}
+                              className="pixel-btn pixel-btn-secondary font-pixel text-[8px] flex items-center gap-1.5"
+                            >
+                              <FastForward size={12} /> Auto-Farm
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+                </AnimatePresence>
+
+                {/* Defeat banner */}
+                <AnimatePresence>
+                {gameState.isStoryMode && gameState.storyFailed && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ type: 'spring', damping: 12 }}
+                    className="pixel-border bg-card p-5 text-center border-destructive/50"
+                  >
+                    <p className="font-pixel text-sm sm:text-base text-destructive flex items-center justify-center gap-2">
+                      <Skull size={22} /> 💀 DÉFAITE!
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Tous vos héros sont KO
+                    </p>
+                    <div className="flex gap-2 mt-4 justify-center">
+                      <button
+                        onClick={() => {
+                          if (currentStoryStage) startStoryStage(currentStoryStage);
+                        }}
+                        className="pixel-btn font-pixel text-xs flex items-center gap-2"
+                      >
+                        <Play size={14} /> Réessayer
+                      </button>
+                      <button
+                        onClick={endStoryBattle}
+                        className="pixel-btn pixel-btn-secondary font-pixel text-xs flex items-center gap-2"
+                      >
+                        <DoorOpen size={14} /> Quitter
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+                </AnimatePresence>
+
+                {/* Grid */}
+                <div className="flex justify-center flex-col items-center">
+                  <GameGrid gameState={gameState} />
+                  {gameState && (
+                    <CombatHeroPanel
+                      deployedHeroes={gameState.heroes}
+                      playerHeroes={player.heroes}
+                    />
+                  )}
+                </div>
+
+                {/* Event log */}
+                <details className="pixel-border bg-card p-3">
+                  <summary className="font-pixel text-[8px] text-muted-foreground cursor-pointer flex items-center gap-1">
+                    <Scroll size={10} /> Journal ({gameState.eventLog.length})
+                  </summary>
+                  <div className="mt-2 max-h-24 overflow-y-auto space-y-0.5">
+                    {gameState.eventLog.slice().reverse().map((log, i) => (
+                      <p key={`${log}-${i}`} className="text-[10px] text-muted-foreground">{log}</p>
+                    ))}
+                  </div>
+                </details>
+              </motion.div>
+            )}
+          </div>
+        </div>
+
+        {/* PAGE 3 — Social */}
+        <div className="w-1/5 h-full overflow-y-auto pb-nav md:pl-16">
+          <div className="p-4 max-w-2xl mx-auto space-y-6">
             {/* Daily Quests */}
             <DailyQuests
               quests={dailyQuests}
@@ -1636,890 +2438,197 @@ const Index = () => {
               onClaimBonus={handleClaimDailyBonus}
             />
 
-            {/* Story Mode CTA */}
-            <button
-              onClick={() => setScreen('story')}
-              className="pixel-btn w-full font-pixel text-xs flex items-center justify-center gap-2 glow-red"
-            >
-              <BookOpen size={16} /> MODE HISTOIRE
-              <span className="text-[8px] opacity-70">({storyProgress.completedStages.length} étapes)</span>
-            </button>
-
-            {/* Treasure Hunt Launcher */}
-            <div className="pixel-border bg-card p-4">
-              <h3 className="font-pixel text-xs text-foreground mb-1 flex items-center gap-2">
-                <MapIcon size={16} /> CHASSE AU TRÉSOR
-              </h3>
-              <p className="text-[8px] text-muted-foreground mb-3 flex items-center gap-1">
-                <Trophy size={10} /> {player.mapsCompleted} cartes complétées
-              </p>
-              
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
-                {MAP_CONFIGS.map((mapCfg, i) => {
-                  const unlocked = player.mapsCompleted >= mapCfg.unlockMaps && player.accountLevel >= mapCfg.unlockLevel;
-                  return (
-                    <button
-                      key={i}
-                      onClick={() => unlocked && setSelectedMap(i)}
-                      disabled={!unlocked}
-                      className={`pixel-border p-3 text-left transition-all relative ${
-                        !unlocked
-                          ? 'bg-muted/30 opacity-50 cursor-not-allowed'
-                          : selectedMap === i
-                            ? 'bg-primary/15 ring-2 ring-primary/50 scale-[1.02]'
-                            : 'bg-muted hover:bg-muted/80 hover:scale-[1.01]'
-                      }`}
-                    >
-                      {selectedMap === i && unlocked && (
-                        <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-primary flex items-center justify-center shadow-md">
-                          <Check size={12} className="text-primary-foreground" />
-                        </div>
-                      )}
-                      {!unlocked && (
-                        <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-destructive flex items-center justify-center shadow-md">
-                          <LockIcon size={10} className="text-destructive-foreground" />
-                        </div>
-                      )}
-                      <div className="flex items-center gap-2 mb-1">
-                        <PixelIcon icon={mapCfg.icon} size={20} />
-                        <p className="font-pixel text-[8px] text-foreground">{mapCfg.name}</p>
-                      </div>
-                      {unlocked ? (
-                        <>
-                          <p className="text-[9px] text-muted-foreground">{mapCfg.width}×{mapCfg.height} • {mapCfg.chests} coffres</p>
-                          <p className="text-[9px] text-game-gold flex items-center gap-1 mt-0.5">
-                            <Coins size={10} /> ~{mapCfg.reward} BC
-                          </p>
-                        </>
-                      ) : (
-                        <div className="text-[8px] text-destructive mt-1 space-y-0.5">
-                          {player.mapsCompleted < mapCfg.unlockMaps && (
-                            <p className="flex items-center gap-1"><LockIcon size={9} /> {mapCfg.unlockMaps} cartes ({player.mapsCompleted}/{mapCfg.unlockMaps})</p>
-                          )}
-                          {player.accountLevel < mapCfg.unlockLevel && (
-                            <p className="flex items-center gap-1"><LockIcon size={9} /> Niveau {mapCfg.unlockLevel} (actuel: {player.accountLevel})</p>
-                          )}
-                        </div>
-                      )}
-                    </button>
-                  );
-                })}
+            {/* Achievements */}
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="font-pixel text-xs text-foreground flex items-center gap-2">
+                  <Trophy size={16} /> SUCCÈS
+                </h2>
               </div>
+              <Achievements
+                achievements={player.achievements}
+                onClaimReward={(achievementId: string) => {
+                  const { newState, claimed, reward } = claimAchievementReward(player.achievements, achievementId);
+                  if (claimed && reward) {
+                    setPlayer(prev => ({
+                      ...prev,
+                      bomberCoins: reward.type === 'coins' ? prev.bomberCoins + reward.amount : prev.bomberCoins,
+                      universalShards: reward.type === 'shards' && !reward.rarity
+                        ? (prev.universalShards || 0) + reward.amount
+                        : (prev.universalShards || 0),
+                      shards: reward.type === 'shards' && reward.rarity
+                        ? {
+                            ...prev.shards,
+                            [reward.rarity as keyof typeof prev.shards]: (prev.shards[reward.rarity as keyof typeof prev.shards] || 0) + reward.amount,
+                          }
+                        : prev.shards,
+                      achievements: newState,
+                    }));
+                    toast({
+                      title: 'Récompense réclamée!',
+                      description: `${reward.amount} ${reward.type === 'coins' ? 'pièces' : reward.rarity ? `shards ${reward.rarity}` : 'shards universels'}`,
+                    });
+                  }
+                }}
+              />
+            </motion.div>
 
-              {/* Mon Équipe - Slot-based selection */}
-              <div className="mb-4">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="font-pixel text-[8px] text-foreground flex items-center gap-1.5">
-                    <Users size={12} /> MON ÉQUIPE ({selectedHeroes.size}/6)
-                  </p>
-                  <div className="flex gap-1.5">
-                    <button
-                      onClick={autoSelectHeroes}
-                      className="font-pixel text-[7px] px-2.5 py-1.5 rounded bg-primary/15 text-primary hover:bg-primary/25 transition-colors flex items-center gap-1"
-                    >
-                      <Sparkles size={10} /> Auto-sélection
-                    </button>
-                    {selectedHeroes.size > 0 && (
-                      <button
-                        onClick={() => setSelectedHeroes(new Set())}
-                        className="font-pixel text-[7px] px-2.5 py-1.5 rounded bg-muted text-muted-foreground hover:bg-muted/80 transition-colors"
-                      >
-                        Réinitialiser
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {/* 6 Slots */}
-                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-3">
-                  {Array.from({ length: 6 }).map((_, slotIdx) => {
-                    const heroId = Array.from(selectedHeroes)[slotIdx];
-                    const hero = heroId ? player.heroes.find(h => h.id === heroId) : null;
-                    return (
-                      <div
-                        key={slotIdx}
-                        className={`pixel-border p-2 flex flex-col items-center justify-center min-h-[72px] transition-all ${
-                          hero ? `bg-card rarity-${hero.rarity}` : 'bg-muted/30 border-dashed'
-                        }`}
-                      >
-                        {hero ? (
-                          <>
-                            <HeroAvatar heroId={hero.id} heroName={hero.name} rarity={hero.rarity} size={32} />
-                            <p className="font-pixel text-[7px] text-foreground mt-1 truncate max-w-[60px]">{hero.name.split(' ')[0]}</p>
-                            <p className="text-[7px] mt-0.5" style={{ color: `hsl(var(--game-rarity-${hero.rarity}))` }}>
-                              {RARITY_CONFIG[hero.rarity].label}
-                            </p>
-                            <button
-                              onClick={() => toggleHeroSelection(hero.id)}
-                              className="text-[7px] text-destructive hover:text-destructive/80 mt-0.5 min-w-[32px] min-h-[32px] flex items-center justify-center"
-                            >
-                              ✕
-                            </button>
-                          </>
-                        ) : (
-                          <p className="font-pixel text-[7px] text-muted-foreground">Slot {slotIdx + 1}</p>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Expandable hero picker */}
-                <details className="pixel-border bg-muted/20 rounded">
-                  <summary className="font-pixel text-[8px] text-muted-foreground cursor-pointer px-3 py-2 flex items-center gap-1.5 hover:text-foreground transition-colors">
-                    <Users size={10} /> Choisir manuellement ({player.heroes.length} héros disponibles)
-                  </summary>
-                  <div className="p-2 grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-60 overflow-y-auto">
-                    {player.heroes
-                      .sort(sortByRarity)
-                      .map(hero => (
-                        <HeroCard
-                          key={hero.id}
-                          hero={hero}
-                          compact
-                          selected={selectedHeroes.has(hero.id)}
-                          onClick={() => toggleHeroSelection(hero.id)}
-                        />
-                      ))}
-                  </div>
-                </details>
-              </div>
-
-              <button onClick={startTreasureHunt} className="pixel-btn pixel-btn-gold w-full font-pixel text-xs flex items-center justify-center gap-2">
-                <Swords size={16} /> LANCER LA CHASSE !
-              </button>
+            {/* Placeholder Classement */}
+            <div className="pixel-border bg-card p-4 text-center space-y-2">
+              <p className="font-pixel text-[9px] text-muted-foreground">CLASSEMENT</p>
+              <p className="text-[8px] text-muted-foreground">Bientôt disponible...</p>
             </div>
+          </div>
+        </div>
 
-            {/* Quick link to all heroes */}
-            <button onClick={() => setScreen('heroes')} className="pixel-btn pixel-btn-secondary w-full font-pixel text-[8px] flex items-center justify-center gap-2">
-              <Users size={12} /> Gérer tous les héros ({player.heroes.length})
-            </button>
-
-            {/* Quick link to fusion */}
-            <button onClick={() => setScreen('fusion')} className="pixel-btn pixel-btn-secondary w-full font-pixel text-[8px] flex items-center justify-center gap-2">
-              <Hammer size={12} /> Forge de Fusion
-            </button>
-
-            <button
-              onClick={() => setSummonOpen(true)}
-              className="pixel-btn pixel-btn-gold w-full font-pixel text-xs glow-gold flex items-center justify-center gap-2"
-            >
-              <Sparkles size={16} /> INVOQUER UN HÉROS (100 BC)
-            </button>
-          </motion.div>
-        )}
-
-        {/* STORY MODE SCREEN */}
-        {screen === 'story' && (
-          <StoryMode
-            player={player}
-            storyProgress={storyProgress}
-            selectedHeroes={selectedHeroes}
-            onToggleHero={toggleHeroSelection}
-            onAutoSelectHeroes={autoSelectHeroes}
-            onClearSelectedHeroes={() => setSelectedHeroes(new Set())}
-            onStartStage={startStoryStage}
-            selectedRegionIdx={storyRegionIdx}
-            onRegionChange={setStoryRegionIdx}
-          />
-        )}
-
-        {/* BATTLE SCREENS (treasure hunt & story) */}
-        {isInBattle && gameState && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
-            {/* Game HUD */}
-            <div className="pixel-border bg-card p-2.5 space-y-2">
-              {/* Top row: stats + controls */}
-              <div className="flex items-center justify-between gap-2 flex-wrap">
-                {/* Stats */}
-                <div className="flex items-center gap-2 flex-wrap">
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-muted min-w-[60px]">
-                    <Coins size={12} className="text-game-gold" />
-                    <span className="font-pixel text-[9px] text-game-gold tabular-nums">+{gameState.coinsEarned}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-muted min-w-[40px]">
-                    <span className="text-[10px]">💣</span>
-                    <span className="font-pixel text-[9px] text-muted-foreground tabular-nums">{gameState.bombsPlaced}</span>
-                  </div>
-                  {!gameState.isStoryMode && (
-                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-primary/15 min-w-[50px]">
-                      <span className="text-[10px]">📦</span>
-                      <span className="font-pixel text-[9px] text-primary tabular-nums">
-                        {gameState.chestsOpened}/{gameState.map.chests.length}
-                      </span>
-                    </div>
-                  )}
-                  {gameState.isStoryMode && (
-                    <>
-                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-destructive/15 min-w-[70px]">
-                        <Skull size={12} className="text-destructive shrink-0" />
-                        <span className="font-pixel text-[9px] text-destructive tabular-nums whitespace-nowrap">
-                          {gameState.enemies?.filter(e => e.hp > 0).length || 0} restants
-                        </span>
-                      </div>
-                      {(gameState.enemiesKilled || 0) > 0 && (
-                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-primary/15 min-w-[50px]">
-                          <Swords size={12} className="text-primary shrink-0" />
-                          <span className="font-pixel text-[9px] text-primary tabular-nums">{gameState.enemiesKilled} tué(s)</span>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-
-                {/* Controls */}
-                <div className="flex items-center gap-1.5">
-                  <button
-                    onClick={() => {
-                      const nextSpeed = gameState.speed === 1 ? 2 : gameState.speed === 2 ? 3 : 1;
-                      huntSpeedRef.current = nextSpeed;
-                      if (user) {
-                        // Persist speed preference in Supabase for authenticated users
-                        setPlayer(prev => ({ ...prev, huntSpeed: nextSpeed }));
-                      } else {
-                        localStorage.setItem('hunt-speed', String(nextSpeed));
-                      }
-                      setGameState(prev => (prev ? { ...prev, speed: nextSpeed } : prev));
-                    }}
-                    className="font-pixel text-[8px] sm:text-[7px] px-3 py-2.5 sm:py-1.5 rounded transition-all bg-primary text-primary-foreground shadow-md min-w-[44px] sm:min-w-[38px] min-h-[44px] sm:min-h-[auto] tabular-nums"
-                    title="Vitesse de chasse"
-                  >
-                    x{gameState.speed}
-                  </button>
-                  <div className="w-px h-5 bg-border mx-0.5 hidden sm:block" />
-                  <button
-                    onClick={() => setGameState(prev => prev ? { ...prev, isPaused: !prev.isPaused } : prev)}
-                    className="font-pixel text-[8px] px-3 py-2.5 sm:py-1.5 rounded bg-secondary text-secondary-foreground hover:bg-secondary/80 flex items-center gap-1 min-h-[44px] sm:min-h-[auto]"
-                  >
-                    {gameState.isPaused ? <Play size={14} className="sm:size-[10px]" /> : <Pause size={14} className="sm:size-[10px]" />}
-                    <span className="hidden sm:inline">{gameState.isPaused ? 'Reprendre' : 'Pause'}</span>
-                  </button>
-                  <button
-                    onClick={gameState.isStoryMode ? endStoryBattle : endTreasureHunt}
-                    className={`font-pixel text-[8px] px-3 py-2.5 sm:py-1.5 rounded flex items-center gap-1 min-h-[44px] sm:min-h-[auto] ${
-                      gameState.mapCompleted 
-                        ? 'bg-game-gold text-background font-bold animate-pulse' 
-                        : 'bg-destructive/80 text-destructive-foreground hover:bg-destructive'
-                    }`}
-                  >
-                    {gameState.mapCompleted ? <><Check size={14} className="sm:size-[10px]" /> <span className="hidden sm:inline">Récupérer!</span></> : <><DoorOpen size={14} className="sm:size-[10px]" /> <span className="hidden sm:inline">Quitter</span></>}
-                  </button>
-                </div>
-              </div>
-
-              {/* Hero stamina bars - compact inline */}
-              <div className="flex gap-2 flex-wrap">
-                {gameState.heroes.map(hero => {
-                  const staminaPct = Math.round((hero.currentStamina / hero.maxStamina) * 100);
-                  const isLow = staminaPct < 30;
-                  const isResting = hero.state === 'resting';
-                  return (
-                    <div key={hero.id} className={`flex items-center gap-1.5 px-2 py-1 rounded text-[9px] ${
-                      isResting ? 'bg-muted/50 opacity-60' : 'bg-muted'
-                    }`}>
-                      <span className="font-pixel text-[7px] text-foreground truncate max-w-[50px] sm:max-w-[60px]">{hero.name}</span>
-                      <div className="w-16 h-1.5 bg-background rounded-full overflow-hidden">
-                        <div
-                          className={`h-full ${
-                            isLow ? 'bg-game-energy-low' : 'bg-game-energy-green'
-                          }`}
-                          style={{ width: `${staminaPct}%` }}
-                        />
-                      </div>
-                      <span className={`font-pixel text-[7px] ${isLow ? 'text-game-energy-low' : 'text-muted-foreground'}`}>
-                        {isResting ? '💤' : `${staminaPct}%`}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Boss HP bar (story mode) */}
-            {gameState.isStoryMode && gameState.boss && gameState.boss.hp > 0 && (
-              <div className="pixel-border bg-card p-3">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="font-pixel text-[8px] text-destructive flex items-center gap-1">
-                    <Skull size={12} /> <span className="truncate max-w-[80px] sm:max-w-[auto]">{gameState.boss.name}</span>
-                  </span>
-                  <span className="font-pixel text-[8px] text-muted-foreground tabular-nums whitespace-nowrap">
-                    {gameState.boss.hp}/{gameState.boss.maxHp} HP
-                  </span>
-                </div>
-                <div className="w-full h-3 bg-muted rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-destructive transition-all duration-300"
-                    style={{ width: `${(gameState.boss.hp / gameState.boss.maxHp) * 100}%` }}
-                  />
-                </div>
-                {gameState.boss.invincible && (
-                  <p className="font-pixel text-[7px] text-game-neon-blue mt-1 animate-pulse flex items-center gap-1">
-                    <Shield size={10} /> INVINCIBLE
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* Auto-farm indicator */}
-            {autoFarm && (
-              <div className="pixel-border bg-primary/10 p-2.5 flex items-center justify-between gap-2">
-                <span className="font-pixel text-[8px] text-primary flex items-center gap-1.5 whitespace-nowrap">
-                  <FastForward size={12} /> AUTO-FARM ACTIF
-                  <span className="text-muted-foreground tabular-nums">• Run #{farmStats.runs + 1} • Total: {farmStats.totalCoins} BC</span>
-                </span>
-                <button
-                  onClick={() => { setAutoFarm(false); endTreasureHunt(); }}
-                  className="font-pixel text-[7px] px-2 py-1 rounded bg-destructive/80 text-destructive-foreground hover:bg-destructive"
-                >
-                  Arrêter
+        {/* PAGE 4 — Forge */}
+        <div className="w-1/5 h-full overflow-y-auto pb-nav md:pl-16">
+          <div className="p-4 max-w-2xl mx-auto">
+            {/* Sub-tabs Fusion | Recyclage */}
+            <div className="flex gap-1 mb-4 sticky top-0 bg-background/95 backdrop-blur py-2 z-10">
+              {(['fusion', 'recycle'] as const).map(tab => (
+                <button key={tab} onClick={() => setForgeTab(tab)}
+                  className={`flex-1 font-pixel text-[8px] py-2 rounded transition-colors ${
+                    forgeTab === tab ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                  }`}>
+                  {tab === 'fusion' ? 'Fusion' : 'Recyclage'}
                 </button>
-              </div>
-            )}
-
-            {/* Victory banner */}
-            <AnimatePresence>
-            {gameState.mapCompleted && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ type: 'spring', damping: 12 }}
-                className="pixel-border bg-card p-5 text-center glow-gold"
-              >
-                <p className="font-pixel text-sm sm:text-base text-game-gold flex items-center justify-center gap-2 text-glow-gold">
-                  <Trophy size={22} /> {gameState.isStoryMode ? '⚔️ VICTOIRE!' : '🗺️ CARTE COMPLÉTÉE!'}
-                </p>
-                <p className="font-pixel text-lg sm:text-xl text-game-gold mt-2 flex items-center justify-center gap-2">
-                  <Coins size={20} /> +{gameState.coinsEarned + (currentStoryStage?.reward || 0)} BC
-                </p>
-                {!gameState.isStoryMode && lastShardRewards.length > 0 && (
-                  <div className="mt-3 flex flex-wrap gap-2 justify-center">
-                    {lastShardRewards.map((reward, idx) => (
-                      <div
-                        key={idx}
-                        className={`font-pixel text-xs px-2 py-1 rounded flex items-center gap-1 ${
-                          reward.rarity === 'common' ? 'bg-gray-600 text-gray-200' :
-                          reward.rarity === 'rare' ? 'bg-blue-600 text-blue-200' :
-                          reward.rarity === 'epic' ? 'bg-purple-600 text-purple-200' :
-                          'bg-orange-600 text-orange-200'
-                        }`}
-                      >
-                        <Sparkles size={12} /> +{reward.quantity} {RARITY_CONFIG[reward.rarity].label}
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {gameState.isStoryMode && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    +{currentStoryStage?.xpReward || 0} XP • {gameState.enemiesKilled || 0} ennemis éliminés
-                  </p>
-                )}
-                {gameState.bossDefeated && (
-                  <p className="font-pixel text-xs text-destructive mt-2 animate-pulse">👑 BOSS VAINCU!</p>
-                )}
-                
-                {autoFarm ? (
-                  <p className="font-pixel text-[8px] text-primary mt-3 animate-pulse">
-                    ⏳ Prochaine chasse dans quelques secondes...
-                  </p>
-                ) : (
-                  <div className="flex gap-2 mt-4 justify-center flex-wrap">
-                    <button
-                      onClick={gameState.isStoryMode ? endStoryBattle : endTreasureHunt}
-                      className="pixel-btn pixel-btn-gold font-pixel text-xs flex items-center gap-2"
-                    >
-                      <Check size={14} /> Récupérer
-                    </button>
-                    {gameState.isStoryMode && currentStoryStage && !currentStoryStage.boss && (
-                      <button
-                        onClick={() => finalizeStoryBattle(true)}
-                        className="pixel-btn font-pixel text-xs flex items-center gap-2"
-                      >
-                        <Play size={14} /> Étape suivante
-                      </button>
-                    )}
-                    {!gameState.isStoryMode && (
-                      <>
-                        <button
-                          onClick={() => collectAndContinue(true)}
-                          className="pixel-btn font-pixel text-xs flex items-center gap-2"
-                        >
-                          <Play size={14} /> Continuer
-                        </button>
-                        <button
-                          onClick={() => { setAutoFarm(true); collectAndContinue(true); }}
-                          className="pixel-btn pixel-btn-secondary font-pixel text-[8px] flex items-center gap-1.5"
-                        >
-                          <FastForward size={12} /> Auto-Farm
-                        </button>
-                      </>
-                    )}
-                  </div>
-                )}
-              </motion.div>
-            )}
-            </AnimatePresence>
-
-            {/* Defeat banner for Story Mode */}
-            <AnimatePresence>
-            {gameState.isStoryMode && gameState.storyFailed && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ type: 'spring', damping: 12 }}
-                className="pixel-border bg-card p-5 text-center border-destructive/50"
-              >
-                <p className="font-pixel text-sm sm:text-base text-destructive flex items-center justify-center gap-2">
-                  <Skull size={22} /> 💀 DÉFAITE!
-                </p>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Tous vos héros sont KO
-                </p>
-                <div className="flex gap-2 mt-4 justify-center">
-                  <button
-                    onClick={() => {
-                      if (currentStoryStage) startStoryStage(currentStoryStage);
-                    }}
-                    className="pixel-btn font-pixel text-xs flex items-center gap-2"
-                  >
-                    <Play size={14} /> Réessayer
-                  </button>
-                  <button
-                    onClick={endStoryBattle}
-                    className="pixel-btn pixel-btn-secondary font-pixel text-xs flex items-center gap-2"
-                  >
-                    <DoorOpen size={14} /> Quitter
-                  </button>
-                </div>
-              </motion.div>
-            )}
-            </AnimatePresence>
-
-            {/* Grid */}
-            <div className="flex justify-center flex-col items-center">
-              <GameGrid gameState={gameState} />
-              {gameState && (
-                <CombatHeroPanel
-                  deployedHeroes={gameState.heroes}
-                  playerHeroes={player.heroes}
-                />
-              )}
-            </div>
-
-            {/* Event log - collapsible */}
-            <details className="pixel-border bg-card p-3">
-              <summary className="font-pixel text-[8px] text-muted-foreground cursor-pointer flex items-center gap-1">
-                <Scroll size={10} /> Journal ({gameState.eventLog.length})
-              </summary>
-              <div className="mt-2 max-h-24 overflow-y-auto space-y-0.5">
-                {gameState.eventLog.slice().reverse().map((log, i) => (
-                  <p key={`${log}-${i}`} className="text-[10px] text-muted-foreground">{log}</p>
-                ))}
-              </div>
-            </details>
-          </motion.div>
-        )}
-
-        {/* HEROES SCREEN */}
-        {screen === 'heroes' && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="font-pixel text-xs text-foreground flex items-center gap-2">
-                <Users size={16} /> TOUS LES HÉROS ({player.heroes.length})
-              </h2>
-              <button onClick={() => setScreen('hub')} className="pixel-btn pixel-btn-secondary font-pixel text-[8px] flex items-center gap-1">
-                <ChevronLeft size={12} /> Retour
-              </button>
-            </div>
-
-            <div className="pixel-border bg-card p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div>
-                <h3 className="font-pixel text-[9px] text-foreground flex items-center gap-2">
-                  <Hammer size={14} /> Fusion déplacée dans la Forge
-                </h3>
-                <p className="text-[8px] text-muted-foreground mt-1">
-                  Les recettes de fusion sont maintenant centralisées sur l’écran Fusion.
-                </p>
-              </div>
-              <button
-                onClick={() => setScreen('fusion')}
-                className="pixel-btn pixel-btn-primary font-pixel text-[8px] flex items-center justify-center gap-2 min-h-[44px]"
-              >
-                <Hammer size={14} /> Ouvrir la Forge
-              </button>
-            </div>
-
-            <HeroCollectionStats heroes={player.heroes} />
-
-            <div className="pixel-border bg-card p-3 sm:p-4 space-y-3">
-              <div className="flex items-center justify-between gap-2">
-                <h3 className="font-pixel text-[9px] text-foreground">FILTRES</h3>
-                <button
-                  onClick={() => setHeroFilters(DEFAULT_HERO_FILTERS)}
-                  className="pixel-btn pixel-btn-secondary font-pixel text-[8px] min-h-[36px] px-3"
-                  disabled={heroFilters.clan === 'all' && heroFilters.rarity === 'all' && heroFilters.level === 'all' && !heroFilters.showDuplicatesOnly && !heroFilters.showLockedOnly}
-                >
-                  Réinitialiser
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                <label className="text-[8px] text-muted-foreground space-y-1">
-                  <span className="font-pixel">Clan</span>
-                  <select
-                    className="w-full bg-muted border border-border rounded px-2 py-2 text-[10px]"
-                    value={heroFilters.clan}
-                    onChange={(e) => setHeroFilters(prev => ({ ...prev, clan: e.target.value as HeroFilters['clan'] }))}
-                  >
-                    <option value="all">Tous les clans</option>
-                    {HERO_FAMILIES.map((family) => (
-                      <option key={family.id} value={family.id}>{family.name}</option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="text-[8px] text-muted-foreground space-y-1">
-                  <span className="font-pixel">Rareté</span>
-                  <select
-                    className="w-full bg-muted border border-border rounded px-2 py-2 text-[10px]"
-                    value={heroFilters.rarity}
-                    onChange={(e) => setHeroFilters(prev => ({ ...prev, rarity: e.target.value as HeroFilters['rarity'] }))}
-                  >
-                    <option value="all">Toutes les raretés</option>
-                    {(Object.keys(RARITY_CONFIG) as Rarity[]).map((rarity) => (
-                      <option key={rarity} value={rarity}>{RARITY_CONFIG[rarity].label}</option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="text-[8px] text-muted-foreground space-y-1">
-                  <span className="font-pixel">Niveau</span>
-                  <select
-                    className="w-full bg-muted border border-border rounded px-2 py-2 text-[10px]"
-                    value={heroFilters.level}
-                    onChange={(e) => setHeroFilters(prev => ({ ...prev, level: e.target.value as HeroLevelFilter }))}
-                  >
-                    <option value="all">Tous les niveaux</option>
-                    <option value="1-20">Niv. 1-20</option>
-                    <option value="21-40">Niv. 21-40</option>
-                    <option value="41-60">Niv. 41-60</option>
-                    <option value="61+">Niv. 61+</option>
-                  </select>
-                </label>
-              </div>
-
-              {/* Filtres rapides */}
-              <div className="flex gap-2 flex-wrap">
-                <button
-                  className={`text-xs px-2 py-1 rounded border transition-colors ${
-                    heroFilters.showDuplicatesOnly ? 'border-orange-400 text-orange-400 bg-orange-400/10' : 'border-border text-muted-foreground'
-                  }`}
-                  onClick={() => setHeroFilters(f => ({ ...f, showDuplicatesOnly: !f.showDuplicatesOnly }))}
-                >
-                  Doublons
-                </button>
-                <button
-                  className={`text-xs px-2 py-1 rounded border transition-colors ${
-                    heroFilters.showLockedOnly ? 'border-yellow-400 text-yellow-400 bg-yellow-400/10' : 'border-border text-muted-foreground'
-                  }`}
-                  onClick={() => setHeroFilters(f => ({ ...f, showLockedOnly: !f.showLockedOnly }))}
-                >
-                  🔒 Lockés
-                </button>
-              </div>
-
-              <p className="text-[8px] text-muted-foreground">
-                {filteredHeroes.length} héros affichés sur {player.heroes.length}
-              </p>
-            </div>
-
-            {/* Toggle mode recyclage */}
-            <div className="flex justify-end mb-2">
-              <button
-                className={`pixel-btn font-pixel text-[8px] flex items-center gap-1 ${showRecycleMode ? 'pixel-btn-primary' : 'pixel-btn-secondary'}`}
-                onClick={() => setShowRecycleMode(r => !r)}
-              >
-                <Trash2 size={12} />
-                {showRecycleMode ? 'Terminer recyclage' : 'Recycler des héros'}
-              </button>
-            </div>
-
-            {showRecycleMode && (
-              <div className="pixel-border bg-card p-3 sm:p-4">
-                <RecyclePanel
-                  heroes={player.heroes}
-                  universalShards={player.universalShards}
-                  onRecycle={handleRecycle}
-                  onToggleLock={handleToggleLock}
-                />
-              </div>
-            )}
-
-            {filteredHeroes.length === 0 ? (
-              <div className="pixel-border bg-card p-6 text-center space-y-3">
-                <p className="font-pixel text-[10px] text-foreground">Aucun héros ne correspond aux filtres.</p>
-                <p className="text-[8px] text-muted-foreground">Essayez d'élargir un critère ou réinitialisez les filtres.</p>
-                <button
-                  onClick={() => setHeroFilters(DEFAULT_HERO_FILTERS)}
-                  className="pixel-btn font-pixel text-[8px] min-h-[40px] px-4"
-                >
-                  Voir tous les héros
-                </button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                {filteredHeroes.map(hero => (
-                  <HeroCard key={hero.id} hero={hero} onClick={() => setUpgradeHeroId(hero.id)} />
-                ))}
-              </div>
-            )}
-          </motion.div>
-        )}
-
-        {/* HERO CODEX SCREEN */}
-        {screen === 'codex' && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="font-pixel text-xs text-foreground flex items-center gap-2">
-                <BookOpen size={16} /> HERO CODEX
-              </h2>
-              <button onClick={() => setScreen('hub')} className="pixel-btn pixel-btn-secondary font-pixel text-[8px] flex items-center gap-1">
-                <ChevronLeft size={12} /> Retour
-              </button>
-            </div>
-
-            <div className="pixel-border bg-card p-4 space-y-2">
-              <div className="flex items-center justify-between gap-3">
-                <p className="font-pixel text-[9px] text-foreground flex items-center gap-2">
-                  <Trophy size={12} className="text-game-gold" /> Collection débloquée
-                </p>
-                <p className="font-pixel text-[10px] text-primary tabular-nums">
-                  {codexUnlockedCount}/{codexTotalCount}
-                </p>
-              </div>
-              <div className="w-full h-2.5 bg-muted rounded-full overflow-hidden">
-                <motion.div
-                  className="h-full bg-gradient-to-r from-primary to-game-gold rounded-full"
-                  initial={{ width: 0 }}
-                  animate={{ width: `${Math.max(2, Math.round((codexUnlockedCount / codexTotalCount) * 100))}%` }}
-                  transition={{ duration: 0.4 }}
-                />
-              </div>
-              <p className="text-[8px] text-muted-foreground">
-                Les héros non débloqués restent masqués (silhouette) pour garder la surprise.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-              {codexByName.map((entry) => (
-                <div
-                  key={entry.key}
-                  className={`pixel-border p-3 transition-all ${
-                    entry.unlocked ? `bg-card rarity-${entry.rarity}` : 'bg-muted/30'
-                  }`}
-                >
-                  <div className="relative flex justify-center mb-2">
-                    <div className={entry.unlocked ? '' : 'opacity-35 grayscale blur-[0.8px]'}>
-                      <HeroAvatar heroId={entry.heroPreviewId} rarity={entry.rarity} size={48} />
-                    </div>
-                    {!entry.unlocked && (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="px-2 py-0.5 rounded bg-background/80 border border-border flex items-center gap-1">
-                          <LockIcon size={10} className="text-muted-foreground" />
-                          <span className="font-pixel text-[7px] text-muted-foreground">LOCKED</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <p className="font-pixel text-[8px] text-center text-foreground truncate">
-                    {entry.unlocked ? entry.displayName : '???'}
-                  </p>
-                  <p className="text-[8px] text-center mt-1" style={{ color: `hsl(var(--game-rarity-${entry.rarity}))` }}>
-                    {entry.unlocked ? RARITY_CONFIG[entry.rarity].label : 'Inconnu'}
-                  </p>
-                  <p className="text-[8px] text-center text-muted-foreground mt-1 tabular-nums">
-                    {entry.unlocked ? `Possédés: ${entry.ownedCount}` : 'À invoquer'}
-                  </p>
-                </div>
               ))}
             </div>
-          </motion.div>
-        )}
 
-        {/* ACHIEVEMENTS SCREEN */}
-        {screen === 'achievements' && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="font-pixel text-xs text-foreground flex items-center gap-2">
-                <Trophy size={16} /> SUCCÈS
-              </h2>
-              <button onClick={() => setScreen('hub')} className="pixel-btn pixel-btn-secondary font-pixel text-[8px] flex items-center gap-1">
-                <ChevronLeft size={12} /> Retour
-              </button>
-            </div>
-            <Achievements 
-              achievements={player.achievements} 
-              onClaimReward={(achievementId: string) => {
-                const { newState, claimed, reward } = claimAchievementReward(player.achievements, achievementId);
-                if (claimed && reward) {
-                  setPlayer(prev => ({
-                    ...prev,
-                    bomberCoins: reward.type === 'coins' ? prev.bomberCoins + reward.amount : prev.bomberCoins,
-                    universalShards: reward.type === 'shards' && !reward.rarity
-                      ? (prev.universalShards || 0) + reward.amount
-                      : (prev.universalShards || 0),
-                    shards: reward.type === 'shards' && reward.rarity
-                      ? {
-                          ...prev.shards,
-                          [reward.rarity as keyof typeof prev.shards]: (prev.shards[reward.rarity as keyof typeof prev.shards] || 0) + reward.amount,
-                        }
-                      : prev.shards,
-                    achievements: newState,
-                  }));
-                  toast({
-                    title: '🎁 Récompense réclamée!',
-                    description: `${reward.amount} ${reward.type === 'coins' ? 'pièces' : reward.rarity ? `shards ${reward.rarity}` : 'shards universels'}`,
-                  });
-                }
-              }}
-            />
-          </motion.div>
-        )}
+            {/* Fusion */}
+            {forgeTab === 'fusion' && (
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+                {/* Recipe selector */}
+                <div className="pixel-border bg-card p-4">
+                  <h3 className="font-pixel text-[9px] text-foreground mb-3 flex items-center gap-2">
+                    <Sparkles size={14} /> RECETTES DE FUSION
+                  </h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+                    {MERGE_RECIPES.map((recipe, idx) => {
+                      const { total, maxed } = getAvailableForMerge(recipe.from);
+                      const canMerge = maxed >= recipe.count;
+                      const isSelected = selectedRecipeIdx === idx;
+                      return (
+                        <button
+                          key={`${recipe.from}-${recipe.to}`}
+                          onClick={() => setSelectedRecipeIdx(idx)}
+                          className={`pixel-border p-2 text-center transition-all ${
+                            isSelected
+                              ? 'ring-2 ring-primary bg-primary/10'
+                              : canMerge
+                                ? 'bg-game-energy-green/10 hover:bg-game-energy-green/20 cursor-pointer'
+                                : 'bg-muted/30 opacity-60'
+                          }`}
+                        >
+                          <div className="flex items-center justify-center gap-1 mb-1">
+                            <span className="font-pixel text-[7px]" style={{ color: `hsl(var(--game-rarity-${recipe.from}))` }}>
+                              {recipe.count}× {RARITY_CONFIG[recipe.from].label}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-center gap-1">
+                            <ArrowDown size={8} className="text-muted-foreground" />
+                            <span className="font-pixel text-[7px]" style={{ color: `hsl(var(--game-rarity-${recipe.to}))` }}>
+                              1× {RARITY_CONFIG[recipe.to].label}
+                            </span>
+                          </div>
+                          <p className="text-[7px] text-muted-foreground mt-1">
+                            Maxed: {maxed}/{recipe.count}
+                          </p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
 
-        {/* FUSION SCREEN - Forge UI */}
-        {screen === 'fusion' && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="font-pixel text-xs text-foreground flex items-center gap-2">
-                <Hammer size={16} /> FORGE DE FUSION
-              </h2>
-              <button onClick={() => setScreen('hub')} className="pixel-btn pixel-btn-secondary font-pixel text-[8px] flex items-center gap-1">
-                <ChevronLeft size={12} /> Retour
-              </button>
-            </div>
+                {/* Fusion Forge UI with Anvil */}
+                <div className="pixel-border bg-card p-6">
+                  <div className="flex flex-col items-center">
+                    <div className="relative mb-6">
+                      <div
+                        className="w-24 h-16 sm:w-32 sm:h-20 rounded-lg flex items-center justify-center"
+                        style={{
+                          background: 'linear-gradient(180deg, #4a4a4a 0%, #2a2a2a 100%)',
+                          boxShadow: '0 8px 0 #1a1a1a, 0 12px 20px rgba(0,0,0,0.5)',
+                        }}
+                      >
+                        <Hammer size={40} className="text-amber-600" />
+                      </div>
+                      <div className="absolute inset-0 rounded-lg animate-pulse bg-amber-500/20 blur-xl" />
+                    </div>
 
-            {/* Recipe selector */}
-            <div className="pixel-border bg-card p-4">
-              <h3 className="font-pixel text-[9px] text-foreground mb-3 flex items-center gap-2">
-                <Sparkles size={14} /> RECETTES DE FUSION
-              </h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
-                {MERGE_RECIPES.map((recipe, idx) => {
-                  const { total, maxed } = getAvailableForMerge(recipe.from);
-                  const canMerge = maxed >= recipe.count;
-                  const isSelected = selectedRecipeIdx === idx;
-                  return (
+                    <div className="text-center mb-4">
+                      <p className="font-pixel text-[10px] text-foreground">
+                        {MERGE_RECIPES[selectedRecipeIdx].count}× {RARITY_CONFIG[MERGE_RECIPES[selectedRecipeIdx].from].label} niv. {RARITY_CONFIG[MERGE_RECIPES[selectedRecipeIdx].from].maxLevel}
+                      </p>
+                      <p className="text-[8px] text-muted-foreground">→</p>
+                      <p className="font-pixel text-[10px]" style={{ color: `hsl(var(--game-rarity-${MERGE_RECIPES[selectedRecipeIdx].to}))` }}>
+                        1× {RARITY_CONFIG[MERGE_RECIPES[selectedRecipeIdx].to].label}
+                      </p>
+                    </div>
+
+                    <div className="w-full max-w-md mb-6">
+                      <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
+                        {fusionSlots.map((hero, idx) => {
+                          const recipe = MERGE_RECIPES[selectedRecipeIdx];
+                          const eligibility = hero
+                            ? isHeroEligibleForMerge(hero, recipe.from, recipe.count)
+                            : { eligible: true, reason: '' };
+                          return (
+                            <FusionSlot
+                              key={idx}
+                              hero={hero}
+                              index={idx}
+                              onClick={() => handleSlotClick(idx)}
+                              onClear={hero ? () => handleSlotClear(idx) : undefined}
+                              isEligible={eligibility.eligible}
+                              ineligibleReason={eligibility.reason}
+                            />
+                          );
+                        })}
+                      </div>
+                    </div>
+
                     <button
-                      key={`${recipe.from}-${recipe.to}`}
-                      onClick={() => {
-                        setSelectedRecipeIdx(idx);
-                      }}
-                      className={`pixel-border p-2 text-center transition-all ${
-                        isSelected 
-                          ? 'ring-2 ring-primary bg-primary/10' 
-                          : canMerge
-                            ? 'bg-game-energy-green/10 hover:bg-game-energy-green/20 cursor-pointer'
-                            : 'bg-muted/30 opacity-60'
+                      onClick={executeFusionFromSlots}
+                      disabled={fusionSlots.filter(s => s !== null).length !== MERGE_RECIPES[selectedRecipeIdx].count}
+                      className={`pixel-btn pixel-btn-primary font-pixel text-[10px] flex items-center justify-center gap-2 min-h-[48px] px-8 ${
+                        fusionSlots.filter(s => s !== null).length !== MERGE_RECIPES[selectedRecipeIdx].count
+                          ? 'opacity-50 cursor-not-allowed'
+                          : ''
                       }`}
                     >
-                      <div className="flex items-center justify-center gap-1 mb-1">
-                        <span className="font-pixel text-[7px]" style={{ color: `hsl(var(--game-rarity-${recipe.from}))` }}>
-                          {recipe.count}× {RARITY_CONFIG[recipe.from].label}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-center gap-1">
-                        <ArrowDown size={8} className="text-muted-foreground" />
-                        <span className="font-pixel text-[7px]" style={{ color: `hsl(var(--game-rarity-${recipe.to}))` }}>
-                          1× {RARITY_CONFIG[recipe.to].label}
-                        </span>
-                      </div>
-                      <p className="text-[7px] text-muted-foreground mt-1">
-                        Maxed: {maxed}/{recipe.count}
-                      </p>
+                      <Sparkles size={16} /> FUSIONNER
                     </button>
-                  );
-                })}
-              </div>
-            </div>
 
-            {/* Fusion Forge UI with Anvil */}
-            <div className="pixel-border bg-card p-6">
-              <div className="flex flex-col items-center">
-                {/* Anvil visual */}
-                <div className="relative mb-6">
-                  <div 
-                    className="w-24 h-16 sm:w-32 sm:h-20 rounded-lg flex items-center justify-center"
-                    style={{
-                      background: 'linear-gradient(180deg, #4a4a4a 0%, #2a2a2a 100%)',
-                      boxShadow: '0 8px 0 #1a1a1a, 0 12px 20px rgba(0,0,0,0.5)',
-                    }}
-                  >
-                    <Hammer size={40} className="text-amber-600" />
-                  </div>
-                  {/* Glow effect */}
-                  <div className="absolute inset-0 rounded-lg animate-pulse bg-amber-500/20 blur-xl" />
-                </div>
-
-                {/* Recipe info */}
-                <div className="text-center mb-4">
-                  <p className="font-pixel text-[10px] text-foreground">
-                    {MERGE_RECIPES[selectedRecipeIdx].count}× {RARITY_CONFIG[MERGE_RECIPES[selectedRecipeIdx].from].label} niv. {RARITY_CONFIG[MERGE_RECIPES[selectedRecipeIdx].from].maxLevel}
-                  </p>
-                  <p className="text-[8px] text-muted-foreground">→</p>
-                  <p className="font-pixel text-[10px]" style={{ color: `hsl(var(--game-rarity-${MERGE_RECIPES[selectedRecipeIdx].to}))` }}>
-                    1× {RARITY_CONFIG[MERGE_RECIPES[selectedRecipeIdx].to].label}
-                  </p>
-                </div>
-
-                {/* Slots - dynamic number based on recipe, centered responsive */}
-                <div className="w-full max-w-md mb-6">
-                  <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
-                  {fusionSlots.map((hero, idx) => {
-                    const recipe = MERGE_RECIPES[selectedRecipeIdx];
-                    const eligibility = hero 
-                      ? isHeroEligibleForMerge(hero, recipe.from, recipe.count)
-                      : { eligible: true, reason: '' };
-                    return (
-                      <FusionSlot
-                        key={idx}
-                        hero={hero}
-                        index={idx}
-                        onClick={() => handleSlotClick(idx)}
-                        onClear={hero ? () => handleSlotClear(idx) : undefined}
-                        isEligible={eligibility.eligible}
-                        ineligibleReason={eligibility.reason}
-                      />
-                    );
-                  })}
+                    <p className="text-[8px] text-muted-foreground mt-3">
+                      {fusionSlots.filter(s => s !== null).length}/{MERGE_RECIPES[selectedRecipeIdx].count} slots remplis
+                    </p>
                   </div>
                 </div>
+              </motion.div>
+            )}
 
-                {/* Fusion button */}
-                <button
-                  onClick={executeFusionFromSlots}
-                  disabled={fusionSlots.filter(s => s !== null).length !== MERGE_RECIPES[selectedRecipeIdx].count}
-                  className={`pixel-btn pixel-btn-primary font-pixel text-[10px] flex items-center justify-center gap-2 min-h-[48px] px-8 ${
-                    fusionSlots.filter(s => s !== null).length !== MERGE_RECIPES[selectedRecipeIdx].count 
-                      ? 'opacity-50 cursor-not-allowed' 
-                      : ''
-                  }`}
-                >
-                  <Sparkles size={16} /> FUSIONNER
-                </button>
+            {/* Recyclage */}
+            {forgeTab === 'recycle' && (
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+                <div className="pixel-border bg-card p-3 sm:p-4">
+                  <RecyclePanel
+                    heroes={player.heroes}
+                    universalShards={player.universalShards}
+                    onRecycle={handleRecycle}
+                    onToggleLock={handleToggleLock}
+                  />
+                </div>
+              </motion.div>
+            )}
+          </div>
+        </div>
 
-                {/* Slot progress */}
-                <p className="text-[8px] text-muted-foreground mt-3">
-                  {fusionSlots.filter(s => s !== null).length}/{MERGE_RECIPES[selectedRecipeIdx].count} slots remplis
-                </p>
-              </div>
-            </div>
+      </motion.div>
 
-          </motion.div>
-        )}
+      <MainNav page={page} onNavigate={setPage} />
 
-      </main>
 
       <HeroUpgradeModal
         hero={upgradeHeroData}

@@ -67,6 +67,15 @@ export default {
           "super-legend": "hsl(var(--game-rarity-super-legend))",
         },
       },
+      spacing: {
+        'nav': 'var(--bottom-nav-h)',
+        'header': 'var(--header-h)',
+        'safe-bottom': 'env(safe-area-inset-bottom, 0px)',
+      },
+      height: {
+        'nav': 'var(--bottom-nav-h)',
+        'header': 'var(--header-h)',
+      },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
