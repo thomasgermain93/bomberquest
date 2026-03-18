@@ -5,8 +5,9 @@ import {
 } from '@/components/ui/dialog';
 import { Hero, RARITY_CONFIG } from '@/game/types';
 import PixelIcon from '@/components/PixelIcon';
-import { X, AlertCircle, Check } from 'lucide-react';
+import { X, AlertCircle, Check, Users } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import EmptyState from '@/components/EmptyState';
 
 interface HeroPickerModalProps {
   isOpen: boolean;
@@ -70,10 +71,12 @@ const HeroPickerModal: React.FC<HeroPickerModalProps> = ({
 
         <div className="flex-1 overflow-y-auto py-4">
           {sortedHeroes.length === 0 ? (
-            <div className="text-center py-8">
-              <AlertCircle className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
-              <p className="font-pixel text-[8px] text-muted-foreground">Aucun héros disponible</p>
-            </div>
+            <EmptyState
+              icon={Users}
+              title="Aucun héros disponible"
+              description={`Besoin d'héros ${requiredRarityConfig?.label ?? requiredRarity} niveau ${maxLevel}.`}
+              className="py-4"
+            />
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
               <AnimatePresence>

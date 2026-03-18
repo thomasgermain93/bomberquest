@@ -37,6 +37,8 @@ import HeroAvatar from '@/components/HeroAvatar';
 import SlimHeader from '@/components/SlimHeader';
 import MainNav from '@/components/MainNav';
 import TeamPresets, { TeamPreset } from '@/components/TeamPresets';
+import PixelLoader from '@/components/PixelLoader';
+import EmptyState from '@/components/EmptyState';
 import { Users, Sparkles, Swords, Map as MapIcon, Trophy, Coins, Play, Pause, DoorOpen, Check, Scroll, FastForward, BookOpen, Shield, Skull, Lock as LockIcon, Hammer, ArrowDown, Gem, Filter, ChevronDown, Zap } from 'lucide-react';
 import PityTracker from '@/components/PityTracker';
 import VictoryOverlay from '@/components/VictoryOverlay';
@@ -1648,8 +1650,7 @@ const Index = () => {
   if (isCloudLoading) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
-        <div className="font-pixel text-primary text-xs animate-pulse tracking-widest">CHARGEMENT...</div>
-        <div className="font-pixel text-muted-foreground text-[10px]">Synchronisation du cloud</div>
+        <PixelLoader size="lg" label="Synchronisation du cloud" color="primary" />
       </div>
     );
   }
@@ -1992,16 +1993,16 @@ const Index = () => {
                 </div>
 
                 {filteredHeroes.length === 0 ? (
-                  <div className="pixel-border bg-card p-6 text-center space-y-3">
-                    <p className="font-pixel text-[10px] text-foreground">Aucun héros ne correspond aux filtres.</p>
-                    <p className="text-[8px] text-muted-foreground">Essayez d'élargir un critère ou réinitialisez les filtres.</p>
-                    <button
-                      onClick={() => setHeroFilters(DEFAULT_HERO_FILTERS)}
-                      className="pixel-btn font-pixel text-[8px] min-h-[40px] px-4"
-                    >
-                      Voir tous les héros
-                    </button>
-                  </div>
+                  <EmptyState
+                    icon={Filter}
+                    title="Aucun héros ne correspond"
+                    description="Essayez d'élargir un critère ou réinitialisez les filtres."
+                    action={{
+                      label: 'Réinitialiser les filtres',
+                      onClick: () => setHeroFilters(DEFAULT_HERO_FILTERS),
+                      variant: 'secondary'
+                    }}
+                  />
                 ) : (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                     {filteredHeroes.map(hero => (

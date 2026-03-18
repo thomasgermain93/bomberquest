@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { AchievementState, AchievementDefinition, ACHIEVEMENTS } from '@/game/achievements';
 import { getUnlockedAchievements, getInProgressAchievements, getLockedAchievements } from '@/game/achievements';
-import { Check, Lock, Sparkles, Swords, Star, Trophy, Coins, Gem } from 'lucide-react';
+import { Check, Lock, Sparkles, Swords, Star, Trophy, Coins, Gem, Award } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
+import EmptyState from '@/components/EmptyState';
 
 interface AchievementsProps {
   achievements: AchievementState;
@@ -134,12 +135,15 @@ const Achievements: React.FC<AchievementsProps> = ({ achievements, onClose, onCl
     .filter(a => achievements[a.id]?.unlocked && !achievements[a.id]?.claimedAt)
     .map(a => a.id);
 
-  const renderAchievements = (list: AchievementDefinition[], emptyMessage: string) => {
+  const renderAchievements = (list: AchievementDefinition[], emptyMessage: string, emptyDescription?: string) => {
     if (list.length === 0) {
       return (
-        <div className="text-center py-8 text-muted-foreground">
-          <p className="font-pixel text-[9px]">{emptyMessage}</p>
-        </div>
+        <EmptyState
+          icon={Award}
+          title={emptyMessage}
+          description={emptyDescription}
+          className="py-4"
+        />
       );
     }
     return (
@@ -191,13 +195,13 @@ const Achievements: React.FC<AchievementsProps> = ({ achievements, onClose, onCl
         </TabsList>
 
         <TabsContent value="all">
-          {renderAchievements([...unlocked, ...inProgress, ...locked], 'Aucun succès disponible')}
+          {renderAchievements([...unlocked, ...inProgress, ...locked], 'Aucun succès disponible', 'Complète des défis pour débloquer des succès')}
         </TabsContent>
         <TabsContent value="unlocked">
-          {renderAchievements(unlocked, 'Aucun succès débloqué')}
+          {renderAchievements(unlocked, 'Aucun succès débloqué', 'Continue d\'explorer et de combattre pour débloquer des succès')}
         </TabsContent>
         <TabsContent value="progress">
-          {renderAchievements(inProgress, 'Aucun succès en cours')}
+          {renderAchievements(inProgress, 'Aucun succès en cours', 'Commence par explorer ou combattre')}
         </TabsContent>
       </Tabs>
     </div>
