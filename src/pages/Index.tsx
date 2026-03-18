@@ -2025,9 +2025,9 @@ const Index = () => {
                       {codexUnlockedCount}/{codexTotalCount}
                     </p>
                   </div>
-                  <div className="w-full h-2.5 bg-muted rounded-full overflow-hidden">
+                  <div className="w-full h-2.5 bg-muted overflow-hidden">
                     <motion.div
-                      className="h-full bg-gradient-to-r from-primary to-game-gold rounded-full"
+                      className="h-full bg-gradient-to-r from-primary to-game-gold"
                       initial={{ width: 0 }}
                       animate={{ width: `${Math.max(2, Math.round((codexUnlockedCount / codexTotalCount) * 100))}%` }}
                       transition={{ duration: 0.4 }}
@@ -2458,7 +2458,7 @@ const Index = () => {
                         {gameState.boss.hp}/{gameState.boss.maxHp} HP
                       </span>
                     </div>
-                    <div className="w-full h-3 bg-muted rounded-full overflow-hidden">
+                    <div className="w-full h-3 bg-muted overflow-hidden">
                       <div
                         className="h-full bg-destructive transition-all duration-300"
                         style={{ width: `${(gameState.boss.hp / gameState.boss.maxHp) * 100}%` }}
