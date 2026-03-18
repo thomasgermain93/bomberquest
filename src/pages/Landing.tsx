@@ -7,9 +7,11 @@ import FaqSection from '@/components/landing/FaqSection';
 import CtaSection from '@/components/landing/CtaSection';
 import Footer from '@/components/landing/Footer';
 import { useKpis } from '@/hooks/useKpis';
+import { usePageMeta } from '@/hooks/usePageMeta';
 
 const Landing: React.FC = () => {
   const { kpis, kpisLoading } = useKpis();
+  usePageMeta();
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">

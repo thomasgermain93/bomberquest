@@ -4,9 +4,11 @@ import { Link, useNavigate } from 'react-router-dom';
 import { GUIDE_ARTICLES } from '@/data/guides';
 import { ArrowLeft, Clock, BookOpen, ChevronRight, Library } from 'lucide-react';
 import PixelIcon from '@/components/PixelIcon';
+import { usePageMeta } from '@/hooks/usePageMeta';
 
 const GuidesIndex: React.FC = () => {
   const navigate = useNavigate();
+  usePageMeta({ title: 'Guides', description: 'Guides et tutoriels BomberQuest.' });
 
   return (
     <div className="min-h-screen bg-background">

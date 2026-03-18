@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { usePageMeta } from '@/hooks/usePageMeta';
 import { motion, AnimatePresence } from 'framer-motion';
 import { pixelFade } from '@/lib/animations';
 import { useNavigate } from 'react-router-dom';
@@ -96,6 +97,7 @@ const MERGE_RECIPES: { from: Rarity; to: Rarity; count: number }[] = [
 ];
 
 const Index = () => {
+  usePageMeta({ title: 'Jeu', noIndex: true });
   const { user, session, loading: authLoading, signOut } = useAuth();
   const navigate = useNavigate();
   const [screen, setScreen] = useState<Screen>('hub');
