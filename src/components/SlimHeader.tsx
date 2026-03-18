@@ -1,5 +1,5 @@
 import React from 'react';
-import { Coins, Gem, Crown } from 'lucide-react';
+import { Coins, Gem, Crown, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import PixelIcon from '@/components/PixelIcon';
 
@@ -10,6 +10,7 @@ interface SlimHeaderProps {
   accountXp?: number;
   xpToNextLevel?: number;
   title?: string;
+  onProfileClick?: () => void;
 }
 
 export function SlimHeader({
@@ -19,6 +20,7 @@ export function SlimHeader({
   accountXp = 0,
   xpToNextLevel = 100,
   title,
+  onProfileClick,
 }: SlimHeaderProps) {
   const xpPercent = xpToNextLevel > 0
     ? Math.min(100, Math.round((accountXp / xpToNextLevel) * 100))
@@ -57,6 +59,15 @@ export function SlimHeader({
             <Gem size={13} style={{ color: 'hsl(var(--game-rarity-rare))' }} />
             <span>{universalShards.toLocaleString('fr-FR')}</span>
           </div>
+          {onProfileClick && (
+            <button
+              onClick={onProfileClick}
+              className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              title="Profil"
+            >
+              <User size={14} />
+            </button>
+          )}
         </div>
       </div>
 
