@@ -13,15 +13,45 @@ const ALL_SKILLS: Record<string, Skill> = {
   megaBomb: { name: 'Mega Bomb', description: 'Super bombe toutes les 10 bombes', trigger: 'every_10_bombs', effect: 'mega_bomb' },
   timeWarp: { name: 'Time Warp', description: 'Bombes explosent en 1s', trigger: 'passive', effect: 'fast_bombs' },
   goldenTouch: { name: 'Golden Touch', description: '+100% récompenses coffres', trigger: 'passive', effect: 'chest_reward_double' },
+  // DPS
+  bombStorm: { name: 'Tempête de Bombes', description: '5% chance poser 2 bombes simultanément', trigger: 'bomb', effect: 'dual_bomb' },
+  blastRadius: { name: 'Zone de Blast', description: '+1 portée permanente', trigger: 'passive', effect: 'perm_range_up' },
+  piercing: { name: 'Perforant', description: 'Les explosions traversent 1 bloc destructible', trigger: 'explosion', effect: 'pierce_blocks' },
+  // Tank/Survie
+  ironWill: { name: 'Volonté de Fer', description: 'Régénère 5% stamina/coffre ouvert', trigger: 'chest_open', effect: 'stamina_on_chest' },
+  lastStand: { name: 'Dernier Souffle', description: 'Immunité dégâts quand stamina < 15%', trigger: 'passive', effect: 'last_stand_immunity' },
+  fortitude: { name: 'Forteresse', description: '+25% stamina max', trigger: 'passive', effect: 'max_stamina_bonus' },
+  // Support/Utilitaire
+  mapSense: { name: 'Sens de la Carte', description: 'Révèle les coffres proches au départ', trigger: 'on_start', effect: 'reveal_chests' },
+  bombRush: { name: 'Ruée de Bombes', description: 'Cooldown bombe -20%', trigger: 'passive', effect: 'faster_cooldown' },
+  treasureHunter: { name: 'Chasseur de Trésors', description: '+1 coffre possible par carte', trigger: 'passive', effect: 'extra_chest_chance' },
+  // Contrôle/Clan
+  clanBond: { name: 'Lien de Clan', description: '+5% dégâts par allié du même clan', trigger: 'passive', effect: 'clan_damage_bonus' },
+  explosiveAura: { name: 'Aura Explosive', description: "Zone d'explosion +0.5 tuile au centre", trigger: 'explosion', effect: 'aura_explosion' },
 };
 
 const SKILL_POOL_BY_RARITY: Record<Rarity, string[]> = {
   common: [],
-  rare: ['doubleBlast', 'treasureSense'],
-  'super-rare': ['doubleBlast', 'treasureSense', 'chainReaction', 'energyDrain'],
-  epic: ['doubleBlast', 'treasureSense', 'chainReaction', 'energyDrain', 'goldRush', 'ghostWalk'],
-  legend: ['chainReaction', 'energyDrain', 'goldRush', 'ghostWalk', 'auraPower', 'megaBomb'],
-  'super-legend': ['goldRush', 'ghostWalk', 'auraPower', 'megaBomb', 'timeWarp', 'goldenTouch'],
+  rare: ['doubleBlast', 'treasureSense', 'ironWill', 'bombRush'],
+  'super-rare': [
+    'doubleBlast', 'treasureSense', 'chainReaction', 'energyDrain',
+    'ironWill', 'blastRadius', 'bombRush', 'mapSense',
+  ],
+  epic: [
+    'doubleBlast', 'treasureSense', 'chainReaction', 'energyDrain',
+    'goldRush', 'ghostWalk', 'bombStorm', 'fortitude', 'treasureHunter',
+    'lastStand', 'clanBond',
+  ],
+  legend: [
+    'chainReaction', 'energyDrain', 'goldRush', 'ghostWalk',
+    'auraPower', 'megaBomb', 'bombStorm', 'blastRadius', 'piercing',
+    'fortitude', 'lastStand', 'clanBond', 'explosiveAura',
+  ],
+  'super-legend': [
+    'goldRush', 'ghostWalk', 'auraPower', 'megaBomb', 'timeWarp', 'goldenTouch',
+    'bombStorm', 'piercing', 'lastStand', 'clanBond', 'explosiveAura',
+    'treasureHunter', 'mapSense',
+  ],
 };
 
 export function rollRarity(pityCounters: { rare: number; superRare: number; epic: number; legend: number }): Rarity {
