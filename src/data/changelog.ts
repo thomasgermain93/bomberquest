@@ -14,6 +14,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: '2026-03-15',
     title: 'Mises à jour récentes',
     changes: [
+      { type: 'feature', description: 'Add RPC fallback for KPI loading with direct database queries (#176)' },
       { type: 'feature', description: 'Add shard reward system for farming maps (#175)' },
       { type: 'feature', description: 'Onboarding: nouveaux comptes à 2000 points pour 2 invocations de départ (#146)' },
       { type: 'feature', description: 'fix(ui-radar): reduce false positives missingState (issue #136) (#172)' },
