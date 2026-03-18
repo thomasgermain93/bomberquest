@@ -9,6 +9,7 @@ import HeroCard from '@/components/HeroCard';
 import HeroCollectionStats from '@/components/HeroCollectionStats';
 import SummonModal from '@/components/SummonModal';
 import HeroUpgradeModal from '@/components/HeroUpgradeModal';
+import HeroDetailInline from '@/components/HeroDetailInline';
 import HeroPickerModal from '@/components/HeroPickerModal';
 import FusionSlot from '@/components/FusionSlot';
 import StoryMode from '@/components/StoryMode';
@@ -94,6 +95,7 @@ const Index = () => {
   const [screen, setScreen] = useState<Screen>('hub');
   const [page, setPage] = useState(2); // page Combat par défaut
   const [heroesTab, setHeroesTab] = useState<'collection' | 'codex' | 'equipes'>('collection');
+  const [combatTab, setCombatTab] = useState<'treasure' | 'story'>('treasure');
   const [forgeTab, setForgeTab] = useState<'fusion' | 'recycle'>('fusion');
   const [teamPresets, setTeamPresets] = useState<TeamPreset[]>([
     { id: 'team-1', name: 'Équipe 1', heroIds: [] },
@@ -1540,6 +1542,11 @@ const Index = () => {
 
   const upgradeHeroData = upgradeHeroId ? player.heroes.find(h => h.id === upgradeHeroId) ?? null : null;
 
+  const activeClanSkills = useMemo(() => {
+    const activeHeroes = player.heroes.filter(h => selectedHeroes.has(h.id));
+    return getActiveClanSkills(activeHeroes);
+  }, [player.heroes, selectedHeroes]);
+
   const heroRarityOrder: Rarity[] = ['common', 'rare', 'super-rare', 'epic', 'legend', 'super-legend'];
   const codexByName = HERO_NAMES.map((heroName) => {
     const normalized = heroName.toLowerCase();
@@ -1739,6 +1746,18 @@ const Index = () => {
         {/* PAGE 1 — Héros */}
         <div className="w-1/5 h-full overflow-y-auto pb-nav md:pl-16">
           <div className="p-4 max-w-6xl mx-auto">
+            {upgradeHeroId && upgradeHeroData ? (
+              /* VUE DÉTAIL HÉROS — pleine page */
+              <HeroDetailInline
+                hero={upgradeHeroData}
+                coins={player.bomberCoins}
+                allHeroes={player.heroes}
+                onBack={() => setUpgradeHeroId(null)}
+                onUpgrade={handleUpgrade}
+                onAscend={handleAscend}
+              />
+            ) : (
+              <>
             {/* Sub-tabs */}
             <div className="flex gap-1 mb-4 sticky top-0 bg-background/95 backdrop-blur py-2 z-10">
               {(['collection', 'codex', 'equipes'] as const).map(tab => (
@@ -1954,14 +1973,30 @@ const Index = () => {
                 }}
               />
             )}
+              </>
+            )}
           </div>
         </div>
 
         {/* PAGE 2 — Combat */}
         <div className="w-1/5 h-full overflow-y-auto pb-nav md:pl-16">
           <div className="p-4 max-w-6xl mx-auto">
+            {/* Tabs Chasse au Trésor / Mode Histoire */}
+            {!isInBattle && (
+              <div className="flex gap-1 mb-4 sticky top-0 bg-background/95 backdrop-blur py-2 z-10">
+                {(['treasure', 'story'] as const).map(tab => (
+                  <button key={tab} onClick={() => setCombatTab(tab)}
+                    className={`flex-1 font-pixel text-[8px] py-2 rounded transition-colors ${
+                      combatTab === tab ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                    }`}>
+                    {tab === 'treasure' ? '⚔ CHASSE AU TRÉSOR' : '📖 MODE HISTOIRE'}
+                  </button>
+                ))}
+              </div>
+            )}
+
             {/* Mode Histoire */}
-            {screen === 'story' && (
+            {!isInBattle && combatTab === 'story' && (
               <StoryMode
                 player={player}
                 storyProgress={storyProgress}
@@ -1975,17 +2010,9 @@ const Index = () => {
               />
             )}
 
-            {/* Sélecteur carte + équipe (hors bataille, hors story) */}
-            {!isInBattle && screen !== 'story' && (
+            {/* Sélecteur carte + équipe (hors bataille, onglet chasse au trésor) */}
+            {!isInBattle && combatTab === 'treasure' && (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-                {/* Story Mode CTA */}
-                <button
-                  onClick={() => setScreen('story')}
-                  className="pixel-btn w-full font-pixel text-xs flex items-center justify-center gap-2 glow-red"
-                >
-                  <BookOpen size={16} /> MODE HISTOIRE
-                  <span className="text-[8px] opacity-70">({storyProgress.completedStages.length} étapes)</span>
-                </button>
 
                 {/* Treasure Hunt Launcher */}
                 <div className="pixel-border bg-card p-4">
@@ -2122,6 +2149,39 @@ const Index = () => {
                       </div>
                     </details>
                   </div>
+
+                  {/* Charger un preset */}
+                  {teamPresets.some(p => p.heroIds.length > 0) && (
+                    <div className="mb-3">
+                      <p className="font-pixel text-[8px] text-muted-foreground mb-2">Presets sauvegardés :</p>
+                      <div className="flex gap-2 flex-wrap">
+                        {teamPresets.filter(p => p.heroIds.length > 0).map(preset => (
+                          <button
+                            key={preset.id}
+                            onClick={() => {
+                              setSelectedHeroes(new Set(preset.heroIds));
+                              toast({ title: `${preset.name} chargée !` });
+                            }}
+                            className="pixel-btn pixel-btn-secondary font-pixel text-[7px] px-2 py-1 flex items-center gap-1"
+                          >
+                            <Play size={10} /> {preset.name} ({preset.heroIds.length})
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Synergies actives */}
+                  {activeClanSkills.length > 0 && (
+                    <div className="pixel-border bg-primary/5 p-3 space-y-1 mb-3">
+                      <p className="font-pixel text-[8px] text-primary mb-2">✨ SYNERGIES ACTIVES</p>
+                      {activeClanSkills.map((skill, i) => (
+                        <p key={i} className="text-[8px] text-foreground flex items-center gap-1.5">
+                          <span className="text-primary">▸</span> {skill.name} — {skill.description}
+                        </p>
+                      ))}
+                    </div>
+                  )}
 
                   <button onClick={startTreasureHunt} className="pixel-btn pixel-btn-gold w-full font-pixel text-xs flex items-center justify-center gap-2">
                     <Swords size={16} /> LANCER LA CHASSE !
@@ -2433,6 +2493,7 @@ const Index = () => {
                 chestsOpened={gameState.chestsOpened}
                 heroesActive={selectedHeroes.size}
                 onContinue={gameState.isStoryMode ? endStoryBattle : endTreasureHunt}
+                onAutoFarm={!gameState?.isStoryMode ? () => { setAutoFarm(true); collectAndContinue(true); } : undefined}
               />
             )}
           </div>
@@ -2645,14 +2706,7 @@ const Index = () => {
       <MainNav page={page} onNavigate={setPage} />
 
 
-      <HeroUpgradeModal
-        hero={upgradeHeroData}
-        coins={player.bomberCoins}
-        allHeroes={player.heroes}
-        onClose={() => setUpgradeHeroId(null)}
-        onUpgrade={handleUpgrade}
-        onAscend={handleAscend}
-      />
+      {/* HeroUpgradeModal désactivé — détail héros rendu inline dans la Page 1 */}
 
       <SummonModal
         isOpen={summonOpen}

@@ -45,9 +45,10 @@ export function SlimHeader({
 
         {/* Droite : niveau + ressources */}
         <div className="flex items-center gap-2 shrink-0">
-          <div className="flex items-center gap-1 text-xs font-medium text-foreground">
+          <div className="flex items-center gap-1 text-xs font-medium text-foreground" title={`${accountXp} / ${xpToNextLevel} XP`}>
             <Crown size={13} className="text-primary" />
             <span className="text-[11px]">{accountLevel}</span>
+            <span className="text-[9px] text-muted-foreground hidden sm:inline">XP</span>
           </div>
           <div className="flex items-center gap-1 text-xs font-medium text-foreground">
             <Coins size={14} className="text-yellow-400" />
@@ -61,11 +62,15 @@ export function SlimHeader({
       </div>
 
       {/* Barre XP fine en bas du header */}
-      <div className="h-[2px] w-full bg-border relative">
+      <div className="h-1.5 w-full bg-border relative group">
         <div
           className="absolute inset-y-0 left-0 bg-primary transition-all duration-500"
           style={{ width: `${xpPercent}%` }}
         />
+        {/* Label XP au survol */}
+        <div className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <span className="text-[7px] font-pixel text-primary">{xpPercent}%</span>
+        </div>
       </div>
     </header>
   );

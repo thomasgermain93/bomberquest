@@ -96,14 +96,14 @@ const TeamPresets: React.FC<TeamPresetsProps> = ({
                 type="text"
                 value={preset.name}
                 onChange={(e) => handleNameChange(slotIndex, e.target.value)}
-                className="text-xs bg-transparent border-b border-border text-foreground font-semibold outline-none focus:border-yellow-400/60 pb-0.5 w-full"
+                className="font-pixel text-[9px] uppercase bg-transparent border-b border-border text-foreground outline-none focus:border-yellow-400/60 pb-0.5 w-full"
                 maxLength={24}
                 readOnly={!isEditing}
               />
 
               {/* Mini-avatars */}
               {isEmpty ? (
-                <div className="flex items-center justify-center h-16 text-muted-foreground text-xs">
+                <div className="flex items-center justify-center h-16 text-muted-foreground font-pixel text-[8px]">
                   Équipe vide
                 </div>
               ) : (
@@ -144,7 +144,7 @@ const TeamPresets: React.FC<TeamPresetsProps> = ({
                 {isEmpty ? (
                   <button
                     onClick={() => handleEditToggle(slotIndex)}
-                    className="flex-1 flex items-center justify-center gap-1 text-xs py-1 rounded bg-yellow-600/20 hover:bg-yellow-600/40 text-yellow-300 transition-colors"
+                    className="flex-1 flex items-center justify-center gap-1 font-pixel text-[7px] py-1 rounded bg-yellow-600/20 hover:bg-yellow-600/40 text-yellow-300 transition-colors"
                   >
                     <Edit2 size={10} />
                     Créer
@@ -153,7 +153,7 @@ const TeamPresets: React.FC<TeamPresetsProps> = ({
                   <>
                     <button
                       onClick={() => handleLoadTeam(preset)}
-                      className="flex-1 flex items-center justify-center gap-1 text-xs py-1 rounded bg-green-600/20 hover:bg-green-600/40 text-green-300 transition-colors"
+                      className="flex-1 flex items-center justify-center gap-1 font-pixel text-[7px] py-1 rounded bg-green-600/20 hover:bg-green-600/40 text-green-300 transition-colors"
                     >
                       <Play size={10} />
                       Charger
@@ -161,7 +161,7 @@ const TeamPresets: React.FC<TeamPresetsProps> = ({
                     <button
                       onClick={() => handleEditToggle(slotIndex)}
                       className={cn(
-                        'flex-1 flex items-center justify-center gap-1 text-xs py-1 rounded transition-colors',
+                        'flex-1 flex items-center justify-center gap-1 font-pixel text-[7px] py-1 rounded transition-colors',
                         isEditing
                           ? 'bg-red-600/20 hover:bg-red-600/40 text-red-300'
                           : 'bg-accent hover:bg-accent/80 text-foreground/70',
@@ -185,7 +185,7 @@ const TeamPresets: React.FC<TeamPresetsProps> = ({
                 {isEditing && (
                   <button
                     onClick={() => handleSaveSlot(slotIndex)}
-                    className="flex items-center justify-center gap-1 px-2 py-1 rounded bg-yellow-600/30 hover:bg-yellow-600/50 text-yellow-200 text-xs transition-colors"
+                    className="flex items-center justify-center gap-1 px-2 py-1 rounded bg-yellow-600/30 hover:bg-yellow-600/50 text-yellow-200 font-pixel text-[7px] transition-colors"
                   >
                     <Save size={10} />
                   </button>
@@ -195,7 +195,7 @@ const TeamPresets: React.FC<TeamPresetsProps> = ({
               {/* Mode édition : liste des héros */}
               {isEditing && (
                 <div className="mt-2 border-t border-border pt-2">
-                  <p className="text-xs text-muted-foreground mb-2">
+                  <p className="font-pixel text-[8px] text-muted-foreground mb-2">
                     {preset.heroIds.length}/{MAX_HEROES_PER_TEAM} héros sélectionnés
                   </p>
                   <div className="grid grid-cols-3 gap-1 max-h-48 overflow-y-auto">
@@ -227,10 +227,7 @@ const TeamPresets: React.FC<TeamPresetsProps> = ({
                             rarity={hero.rarity}
                             size={24}
                           />
-                          <span
-                            className="truncate w-full text-center"
-                            style={{ fontSize: '9px' }}
-                          >
+                          <span className="font-pixel text-[8px] truncate w-full text-center">
                             {hero.name}
                           </span>
                         </button>

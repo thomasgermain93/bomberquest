@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Coins, Gem, Trophy } from 'lucide-react';
+import { Coins, Gem, Trophy, FastForward } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface VictoryOverlayProps {
@@ -11,6 +11,7 @@ interface VictoryOverlayProps {
   heroesActive: number;
   onContinue: () => void;
   onViewRewards?: () => void;
+  onAutoFarm?: () => void;
 }
 
 export function VictoryOverlay({
@@ -21,6 +22,7 @@ export function VictoryOverlay({
   heroesActive,
   onContinue,
   onViewRewards,
+  onAutoFarm,
 }: VictoryOverlayProps) {
   return (
     <AnimatePresence>
@@ -95,6 +97,11 @@ export function VictoryOverlay({
                 >
                   Voir les récompenses
                 </Button>
+              )}
+              {onAutoFarm && (
+                <button onClick={onAutoFarm} className="pixel-btn pixel-btn-secondary font-pixel text-[8px] flex items-center justify-center gap-2">
+                  <FastForward size={12} /> AUTO-FARM
+                </button>
               )}
               <Button
                 onClick={onContinue}
