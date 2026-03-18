@@ -34,7 +34,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     description: 'Effectuez votre première invocation',
     category: 'invocation',
     target: 1,
-    reward: { type: 'coins', amount: 100 },
+    reward: { type: 'shards', amount: 5 },
   },
   {
     id: 'summon_10',
@@ -42,7 +42,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     description: 'Effectuez 10 invocations',
     category: 'invocation',
     target: 10,
-    reward: { type: 'coins', amount: 500 },
+    reward: { type: 'shards', amount: 20 },
   },
   {
     id: 'summon_50',
@@ -50,7 +50,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     description: 'Effectuez 50 invocations',
     category: 'invocation',
     target: 50,
-    reward: { type: 'coins', amount: 2000 },
+    reward: { type: 'shards', amount: 75 },
   },
   {
     id: 'summon_100',
@@ -58,7 +58,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     description: 'Effectuez 100 invocations',
     category: 'invocation',
     target: 100,
-    reward: { type: 'shards', amount: 10, rarity: 'legend' },
+    reward: { type: 'shards', amount: 100 },
   },
   {
     id: 'summon_500',
@@ -260,6 +260,55 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     target: 10,
     reward: { type: 'shards', amount: 10, rarity: 'rare' },
   },
+  {
+    id: 'summon_25',
+    title: 'Invocateur régulier',
+    description: 'Effectuez 25 invocations',
+    category: 'invocation',
+    target: 25,
+    reward: { type: 'shards', amount: 40 },
+  },
+  {
+    id: 'first_rare',
+    title: 'Première Rare',
+    description: 'Obtenez votre premier héros Rare',
+    category: 'collection',
+    target: 1,
+    reward: { type: 'shards', amount: 15 },
+  },
+  {
+    id: 'first_epic',
+    title: 'Première Épique',
+    description: 'Obtenez votre premier héros Épique',
+    category: 'collection',
+    target: 1,
+    reward: { type: 'shards', amount: 50 },
+  },
+  {
+    id: 'maps_5',
+    title: 'Explorateur junior',
+    description: 'Complétez 5 cartes de Chasse au Trésor',
+    category: 'combat',
+    target: 5,
+    reward: { type: 'coins', amount: 300 },
+  },
+  {
+    id: 'maps_20',
+    title: 'Explorateur chevronné',
+    description: 'Complétez 20 cartes de Chasse au Trésor',
+    category: 'combat',
+    target: 20,
+    reward: { type: 'shards', amount: 30 },
+  },
+  {
+    id: 'quest_streak_3',
+    title: 'Régularité',
+    description: 'Complétez toutes les missions 3 jours de suite',
+    category: 'progression',
+    target: 3,
+    reward: { type: 'shards', amount: 25 },
+    isHidden: true,
+  },
 ];
 
 export const getAchievementDefinitions = () => ACHIEVEMENTS;
@@ -369,6 +418,7 @@ export const trackSummon = (state: AchievementState, totalSummons: number): { ne
   const updates = [
     { id: 'first_summon', value: totalSummons },
     { id: 'summon_10', value: totalSummons },
+    { id: 'summon_25', value: totalSummons },
     { id: 'summon_50', value: totalSummons },
     { id: 'summon_100', value: totalSummons },
     { id: 'summon_500', value: totalSummons },
@@ -392,7 +442,9 @@ export const trackCombatVictory = (state: AchievementState, totalWins: number): 
   
   const updates = [
     { id: 'first_victory', value: totalWins },
+    { id: 'maps_5', value: totalWins },
     { id: 'combat_10', value: totalWins },
+    { id: 'maps_20', value: totalWins },
     { id: 'combat_50', value: totalWins },
     { id: 'combat_100', value: totalWins },
     { id: 'combat_500', value: totalWins },
@@ -437,12 +489,13 @@ export const trackRarityUnlock = (state: AchievementState, rarity: Rarity): { ne
   const newState = { ...state };
   const unlocked: AchievementDefinition[] = [];
   
-  let updateId: string | null = null;
-  if (rarity === 'legend') updateId = 'legend';
-  if (rarity === 'super-legend') updateId = 'super_legend';
-  if (rarity === 'epic') updateId = 'epic';
-  
-  if (updateId) {
+  const updateIds: string[] = [];
+  if (rarity === 'legend') updateIds.push('legend');
+  if (rarity === 'super-legend') updateIds.push('super_legend');
+  if (rarity === 'epic') { updateIds.push('epic'); updateIds.push('first_epic'); }
+  if (rarity === 'rare') updateIds.push('first_rare');
+
+  for (const updateId of updateIds) {
     const { progress, newlyUnlocked } = checkAchievementProgress(newState, updateId, 1);
     newState[updateId] = progress;
     if (newlyUnlocked) {

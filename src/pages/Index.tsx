@@ -2287,16 +2287,21 @@ const Index = () => {
                 if (claimed && reward) {
                   setPlayer(prev => ({
                     ...prev,
-                    bomberCoins: prev.bomberCoins + (reward.type === 'coins' ? reward.amount : 0),
-                    shards: {
-                      ...prev.shards,
-                      [reward.rarity as keyof typeof prev.shards]: (prev.shards[reward.rarity as keyof typeof prev.shards] || 0) + (reward.type === 'shards' ? reward.amount : 0),
-                    },
+                    bomberCoins: reward.type === 'coins' ? prev.bomberCoins + reward.amount : prev.bomberCoins,
+                    universalShards: reward.type === 'shards' && !reward.rarity
+                      ? (prev.universalShards || 0) + reward.amount
+                      : (prev.universalShards || 0),
+                    shards: reward.type === 'shards' && reward.rarity
+                      ? {
+                          ...prev.shards,
+                          [reward.rarity as keyof typeof prev.shards]: (prev.shards[reward.rarity as keyof typeof prev.shards] || 0) + reward.amount,
+                        }
+                      : prev.shards,
                     achievements: newState,
                   }));
                   toast({
                     title: '🎁 Récompense réclamée!',
-                    description: `${reward.amount} ${reward.type === 'coins' ? 'pièces' : 'shards'} ${reward.rarity || ''}`,
+                    description: `${reward.amount} ${reward.type === 'coins' ? 'pièces' : reward.rarity ? `shards ${reward.rarity}` : 'shards universels'}`,
                   });
                 }
               }}
