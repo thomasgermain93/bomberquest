@@ -35,7 +35,7 @@ import HeroAvatar from '@/components/HeroAvatar';
 import BottomNav from '@/components/BottomNav';
 import SlimHeader from '@/components/SlimHeader';
 import MoreDrawer from '@/components/MoreDrawer';
-import { Home, Users, Sparkles, Swords, Map as MapIcon, Trophy, Coins, Star, ChevronLeft, Play, Pause, DoorOpen, Check, Scroll, FastForward, BookOpen, Shield, Skull, Bomb, Lock as LockIcon, Volume2, VolumeX, User, Hammer, ArrowDown, Trash2 } from 'lucide-react';
+import { Home, Users, Sparkles, Swords, Map as MapIcon, Trophy, Coins, Star, ChevronLeft, Play, Pause, DoorOpen, Check, Scroll, FastForward, BookOpen, Shield, Skull, Bomb, Lock as LockIcon, Volume2, VolumeX, User, Hammer, ArrowDown, Trash2, Gem } from 'lucide-react';
 import { SFX, isMuted, setMuted } from '@/game/sfx';
 import { toast } from '@/hooks/use-toast';
 
@@ -94,6 +94,8 @@ const Index = () => {
   );
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [summonOpen, setSummonOpen] = useState(false);
+  const [summonTab, setSummonTab] = useState<'coins' | 'shards'>('coins');
+  const [selectedShardRarity, setSelectedShardRarity] = useState<Rarity>('rare');
   const [lastSummoned, setLastSummoned] = useState<Hero | null>(null);
   const [selectedMap, setSelectedMap] = useState(0);
   const [selectedHeroes, setSelectedHeroes] = useState<Set<string>>(new Set());
@@ -1345,6 +1347,62 @@ const Index = () => {
     setDailyQuests(prev => updateQuestProgress(prev, 'summon_heroes', count));
   };
 
+  const SHARD_COSTS: Record<Rarity, number> = {
+    common: 10, rare: 50, 'super-rare': 150, epic: 400, legend: 1000, 'super-legend': 2500,
+  };
+
+  const handleSummonShards = () => {
+    const cost = SHARD_COSTS[selectedShardRarity];
+    if (player.universalShards < cost) {
+      toast({ title: 'Fragments insuffisants', description: `Il te faut ${cost} Fragments pour cette invocation.` });
+      return;
+    }
+
+    const newHero = generateHero(selectedShardRarity);
+    const newHeroes = [...player.heroes, newHero];
+
+    setLastSummoned(newHero);
+    setSummonedBatch([newHero]);
+
+    const newTotalSummons = player.totalHeroesOwned + 1;
+    const newAchievements = { ...player.achievements };
+    const newAchievementUnlocks: AchievementDefinition[] = [];
+
+    const { newState: summonState, unlocked: summonUnlocks } = trackSummon(player.achievements, newTotalSummons);
+    Object.assign(newAchievements, summonState);
+    newAchievementUnlocks.push(...summonUnlocks);
+
+    const { newState: heroCountState, unlocked: heroCountUnlocks } = trackHeroCount(player.achievements, newHeroes.length);
+    Object.assign(newAchievements, heroCountState);
+    newAchievementUnlocks.push(...heroCountUnlocks);
+
+    setPlayer(prev => ({
+      ...prev,
+      heroes: newHeroes,
+      totalHeroesOwned: newHeroes.length,
+      achievements: newAchievements,
+      universalShards: prev.universalShards - cost,
+    }));
+
+    for (const achievement of newAchievementUnlocks) {
+      toast({ title: 'Succès débloqué!', description: achievement.title });
+    }
+
+    const updatedData = {
+      ...player,
+      heroes: newHeroes,
+      totalHeroesOwned: newHeroes.length,
+      achievements: newAchievements,
+      universalShards: player.universalShards - cost,
+    };
+    savePlayerData(updatedData);
+    markHeroMutation();
+    if (canWriteCloud) {
+      saveHeroesToCloud([newHero]);
+    }
+    setDailyQuests(prev => updateQuestProgress(prev, 'summon_heroes', 1));
+  };
+
   const toggleHeroSelection = (id: string) => {
     setSelectedHeroes(prev => {
       const next = new Set(prev);
@@ -1514,9 +1572,9 @@ const Index = () => {
       return;
     }
     setMoreDrawerOpen(false);
-    // Invoquer → ouvre le modal inline (reste dans la navigation)
+    // Invoquer → écran dédié dans la nav principale
     if (newScreen === 'summon') {
-      setSummonOpen(true);
+      setScreen('summon');
       return;
     }
     setScreen(newScreen as Screen);
@@ -1535,6 +1593,7 @@ const Index = () => {
       case 'treasure-hunt': return 'Chasse au Trésor';
       case 'combat': return 'Combat';
       case 'recycle': return 'Recyclage';
+      case 'summon': return 'Invocations';
       default: return 'BomberQuest';
     }
   })();
@@ -2325,6 +2384,112 @@ const Index = () => {
                 }
               }}
             />
+          </motion.div>
+        )}
+
+        {/* SUMMON SCREEN */}
+        {screen === 'summon' && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+            {/* Ressources */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="pixel-border bg-card p-3 text-center glow-gold">
+                <Coins size={20} className="text-game-gold mx-auto mb-1" />
+                <p className="font-pixel text-[10px] text-foreground">{player.bomberCoins.toLocaleString('fr-FR')}</p>
+                <p className="text-[9px] text-muted-foreground">BomberCoins</p>
+              </div>
+              <div className="pixel-border bg-card p-3 text-center">
+                <Gem size={20} className="text-blue-400 mx-auto mb-1" />
+                <p className="font-pixel text-[10px] text-foreground">{player.universalShards.toLocaleString('fr-FR')}</p>
+                <p className="text-[9px] text-muted-foreground">Fragments</p>
+              </div>
+            </div>
+
+            {/* Tabs */}
+            <div className="flex gap-2">
+              <button onClick={() => setSummonTab('coins')} className={`flex-1 pixel-btn font-pixel text-[8px] flex items-center justify-center gap-2 ${summonTab === 'coins' ? 'pixel-btn-gold' : 'pixel-btn-secondary'}`}>
+                <Coins size={12} /> BomberCoins
+              </button>
+              <button onClick={() => setSummonTab('shards')} className={`flex-1 pixel-btn font-pixel text-[8px] flex items-center justify-center gap-2 ${summonTab === 'shards' ? 'pixel-btn-gold' : 'pixel-btn-secondary'}`}>
+                <Gem size={12} /> Fragments
+              </button>
+            </div>
+
+            {/* BC Tab */}
+            {summonTab === 'coins' && (
+              <div className="pixel-border bg-card p-4 space-y-3">
+                <h3 className="font-pixel text-[9px] text-foreground flex items-center gap-2"><Sparkles size={12} /> INVOCATION BC</h3>
+                <div className="grid grid-cols-3 gap-2">
+                  {([['single', '×1', 1000], ['x10', '×10', 9000], ['x100', '×100', 80000]] as const).map(([type, label, cost]) => (
+                    <button key={type} onClick={() => handleSummon(type)} disabled={player.bomberCoins < cost}
+                      className="pixel-btn pixel-btn-gold font-pixel text-[8px] flex flex-col items-center gap-1 disabled:opacity-40">
+                      <span>{label}</span>
+                      <span className="text-[7px]">{cost.toLocaleString('fr-FR')} BC</span>
+                    </button>
+                  ))}
+                </div>
+                {/* Pity counters */}
+                <div className="grid grid-cols-2 gap-1 mt-2">
+                  {[
+                    { label: 'Rare', count: player.pityCounters.rare, max: 10 },
+                    { label: 'Super-Rare', count: player.pityCounters.superRare, max: 30 },
+                    { label: 'Epic', count: player.pityCounters.epic, max: 50 },
+                    { label: 'Legend', count: player.pityCounters.legend, max: 200 },
+                  ].map(({ label, count, max }) => (
+                    <div key={label} className="text-[8px] text-muted-foreground flex justify-between items-center px-2 py-1 bg-muted/30 rounded">
+                      <span>{label}</span>
+                      <span className="font-pixel text-[7px] text-foreground">{count}/{max}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Shards Tab */}
+            {summonTab === 'shards' && (
+              <div className="pixel-border bg-card p-4 space-y-3">
+                <h3 className="font-pixel text-[9px] text-foreground flex items-center gap-2"><Gem size={12} /> INVOCATION FRAGMENTS</h3>
+                <div className="grid grid-cols-3 gap-1">
+                  {(['rare', 'super-rare', 'epic', 'legend', 'super-legend'] as Rarity[]).map(r => {
+                    const costs: Record<string, number> = { rare: 50, 'super-rare': 150, epic: 400, legend: 1000, 'super-legend': 2500 };
+                    return (
+                      <button key={r} onClick={() => setSelectedShardRarity(r)}
+                        className={`pixel-border p-2 font-pixel text-[7px] text-center transition-all ${selectedShardRarity === r ? 'ring-2 ring-primary bg-primary/10' : 'bg-muted/30'}`}
+                        style={{ color: `hsl(var(--game-rarity-${r}))` }}>
+                        {RARITY_CONFIG[r].label}<br />
+                        <span className="text-muted-foreground">{costs[r]} 💎</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <button onClick={handleSummonShards} disabled={player.universalShards < ({ rare: 50, 'super-rare': 150, epic: 400, legend: 1000, 'super-legend': 2500 }[selectedShardRarity] || 0)}
+                  className="pixel-btn pixel-btn-gold w-full font-pixel text-[8px] flex items-center justify-center gap-2 disabled:opacity-40">
+                  <Sparkles size={14} /> INVOQUER — {({ rare: 50, 'super-rare': 150, epic: 400, legend: 1000, 'super-legend': 2500 }[selectedShardRarity])} 💎
+                </button>
+              </div>
+            )}
+
+            {/* Dernière invocation */}
+            {lastSummoned && (
+              <div className="pixel-border bg-card p-4">
+                <h3 className="font-pixel text-[9px] text-foreground mb-3">DERNIÈRE INVOCATION</h3>
+                {summonedBatch.length > 1 ? (
+                  <div className="grid grid-cols-5 gap-1">
+                    {summonedBatch.slice(0, 10).map(h => (
+                      <div key={h.id} className="flex flex-col items-center gap-1 p-1">
+                        <HeroAvatar heroId={h.id} heroName={h.name} rarity={h.rarity} size={32} />
+                        <p className="font-pixel text-[6px] truncate w-full text-center" style={{ color: `hsl(var(--game-rarity-${h.rarity}))` }}>{RARITY_CONFIG[h.rarity].label}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center gap-2">
+                    <HeroAvatar heroId={lastSummoned.id} heroName={lastSummoned.name} rarity={lastSummoned.rarity} size={64} />
+                    <p className="font-pixel text-[9px] text-foreground">{lastSummoned.name}</p>
+                    <p className="font-pixel text-[8px]" style={{ color: `hsl(var(--game-rarity-${lastSummoned.rarity}))` }}>{RARITY_CONFIG[lastSummoned.rarity].label}</p>
+                  </div>
+                )}
+              </div>
+            )}
           </motion.div>
         )}
 

@@ -1,9 +1,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Home, Swords, Users, BookOpen, MoreHorizontal } from 'lucide-react';
+import { Home, Swords, Users, Sparkles, MoreHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-type BottomNavScreen = 'hub' | 'combat' | 'story' | 'heroes' | 'more';
+type BottomNavScreen = 'hub' | 'combat' | 'summon' | 'heroes' | 'more';
 
 interface BottomNavProps {
   screen: BottomNavScreen | string;
@@ -13,7 +13,7 @@ interface BottomNavProps {
 const NAV_ITEMS: { id: BottomNavScreen; label: string; icon: React.ComponentType<{ size?: number; className?: string }> }[] = [
   { id: 'hub', label: 'Hub', icon: Home },
   { id: 'combat', label: 'Combat', icon: Swords },
-  { id: 'story', label: 'Histoire', icon: BookOpen },
+  { id: 'summon', label: 'Invoquer', icon: Sparkles },
   { id: 'heroes', label: 'Héros', icon: Users },
   { id: 'more', label: 'Plus', icon: MoreHorizontal },
 ];
