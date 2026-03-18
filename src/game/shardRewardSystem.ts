@@ -1,4 +1,4 @@
-import { Rarity, MAP_CONFIGS } from './types';
+import { Rarity } from './types';
 
 export type FarmTier = 'low' | 'medium' | 'high';
 
@@ -53,51 +53,31 @@ export interface ShardReward {
   quantity: number;
 }
 
-export function rollRarityFromRates(dropRates: ShardDropRates): Rarity {
-  const roll = Math.random();
+export function rollRarityFromRates(dropRates: ShardDropRates, roll: number): Rarity {
   let cumulative = 0;
-  
+
   cumulative += dropRates.common;
   if (roll < cumulative) return 'common';
-  
+
   cumulative += dropRates.rare;
   if (roll < cumulative) return 'rare';
-  
+
   cumulative += dropRates.epic;
   if (roll < cumulative) return 'epic';
-  
+
   return 'legend';
 }
 
 export function generateShardRewards(mapIndex: number, rng?: () => number): ShardReward[] {
   const dropRates = getDropRatesForMap(mapIndex);
   const random = rng ?? Math.random;
-  
+
   const shardCount = Math.floor(random() * 3) + 1;
   const rewards: ShardReward[] = [];
-  
+
   for (let i = 0; i < shardCount; i++) {
-    const roll = random();
-    let cumulative = 0;
-    let rarity: Rarity = 'common';
-    
-    cumulative += dropRates.common;
-    if (roll < cumulative) {
-      rarity = 'common';
-    } else {
-      cumulative += dropRates.rare;
-      if (roll < cumulative) {
-        rarity = 'rare';
-      } else {
-        cumulative += dropRates.epic;
-        if (roll < cumulative) {
-          rarity = 'epic';
-        } else {
-          rarity = 'legend';
-        }
-      }
-    }
-    
+    const rarity = rollRarityFromRates(dropRates, random());
+
     const existing = rewards.find(r => r.rarity === rarity);
     if (existing) {
       existing.quantity += 1;
@@ -105,7 +85,7 @@ export function generateShardRewards(mapIndex: number, rng?: () => number): Shar
       rewards.push({ rarity, quantity: 1 });
     }
   }
-  
+
   return rewards;
 }
 
@@ -122,20 +102,3 @@ export function applyShardRewards(
   return newShards;
 }
 
-export function getMapTierName(tier: FarmTier): string {
-  switch (tier) {
-    case 'low': return 'Débutant';
-    case 'medium': return 'Intermédiaire';
-    case 'high': return 'Avancé';
-  }
-}
-
-export function getMapInfoForTier(mapIndex: number): { tier: FarmTier; tierName: string; mapName: string } {
-  const tier = getFarmTier(mapIndex);
-  const mapConfig = MAP_CONFIGS[mapIndex];
-  return {
-    tier,
-    tierName: getMapTierName(tier),
-    mapName: mapConfig?.name ?? 'Inconnu',
-  };
-}

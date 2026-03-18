@@ -4,6 +4,7 @@ import {
   getDropRatesForMap,
   generateShardRewards,
   applyShardRewards,
+  rollRarityFromRates,
   SHARD_DROP_RATES,
   FARM_TIER_THRESHOLDS,
 } from '@/game/shardRewardSystem';
@@ -143,9 +144,9 @@ describe('shardRewardSystem', () => {
 
   describe('SHARD_DROP_RATES', () => {
     it('should have rates that sum to 1 for each tier', () => {
-      expect(SHARD_DROP_RATES.low.common + SHARD_DROP_RATES.low.rare + SHARD_DROP_RATES.low.epic + SHARD_DROP_RATES.low.legend).toBe(1);
-      expect(SHARD_DROP_RATES.medium.common + SHARD_DROP_RATES.medium.rare + SHARD_DROP_RATES.medium.epic + SHARD_DROP_RATES.medium.legend).toBe(1);
-      expect(SHARD_DROP_RATES.high.common + SHARD_DROP_RATES.high.rare + SHARD_DROP_RATES.high.epic + SHARD_DROP_RATES.high.legend).toBe(1);
+      expect(SHARD_DROP_RATES.low.common + SHARD_DROP_RATES.low.rare + SHARD_DROP_RATES.low.epic + SHARD_DROP_RATES.low.legend).toBeCloseTo(1);
+      expect(SHARD_DROP_RATES.medium.common + SHARD_DROP_RATES.medium.rare + SHARD_DROP_RATES.medium.epic + SHARD_DROP_RATES.medium.legend).toBeCloseTo(1);
+      expect(SHARD_DROP_RATES.high.common + SHARD_DROP_RATES.high.rare + SHARD_DROP_RATES.high.epic + SHARD_DROP_RATES.high.legend).toBeCloseTo(1);
     });
 
     it('should have probabilities that make sense for each tier', () => {
@@ -160,6 +161,26 @@ describe('shardRewardSystem', () => {
       for (let i = 0; i < 6; i++) {
         expect(FARM_TIER_THRESHOLDS[i]).toBeDefined();
       }
+    });
+  });
+
+  describe('rollRarityFromRates', () => {
+    it('should return common for low rolls', () => {
+      expect(rollRarityFromRates(SHARD_DROP_RATES.low, 0.0)).toBe('common');
+      expect(rollRarityFromRates(SHARD_DROP_RATES.low, 0.69)).toBe('common');
+    });
+
+    it('should return rare for mid rolls', () => {
+      expect(rollRarityFromRates(SHARD_DROP_RATES.low, 0.71)).toBe('rare');
+      expect(rollRarityFromRates(SHARD_DROP_RATES.low, 0.94)).toBe('rare');
+    });
+
+    it('should return epic for high rolls', () => {
+      expect(rollRarityFromRates(SHARD_DROP_RATES.low, 0.96)).toBe('epic');
+    });
+
+    it('should return legend for highest rolls on high tier', () => {
+      expect(rollRarityFromRates(SHARD_DROP_RATES.high, 0.99)).toBe('legend');
     });
   });
 });

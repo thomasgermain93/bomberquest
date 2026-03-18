@@ -21,7 +21,7 @@ import { StoryProgress, StoryStage, BOSS_LEVEL_BY_TYPE, BOSS_RARITY_REWARD, Boss
 import { spawnEnemy, spawnBoss, tickEnemies, tickBoss, damageEnemiesFromExplosion, damageBossFromExplosion, checkEnemyHeroCollision, checkBossHeroCollision } from '@/game/enemyAI';
 import { STORY_REGIONS } from '@/game/storyData';
 import { getExplosionTiles } from '@/game/engine';
-import { generateShardRewards, applyShardRewards, ShardReward, getMapInfoForTier } from '@/game/shardRewardSystem';
+import { generateShardRewards, applyShardRewards, ShardReward } from '@/game/shardRewardSystem';
 import DailyQuests from '@/components/DailyQuests';
 import Achievements from '@/components/Achievements';
 import PixelIcon from '@/components/PixelIcon';
@@ -674,6 +674,7 @@ const Index = () => {
       deployedHeroes.push(firstHero);
     }
 
+    setLastShardRewards([]);
     setGameState({
       map,
       heroes: deployedHeroes,
