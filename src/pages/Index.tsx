@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useCloudSave } from '@/hooks/useCloudSave';
 import GameGrid from '@/components/GameGrid';
 import HeroCard from '@/components/HeroCard';
+import HeroCollectionStats from '@/components/HeroCollectionStats';
 import SummonModal from '@/components/SummonModal';
 import HeroUpgradeModal from '@/components/HeroUpgradeModal';
 import HeroPickerModal from '@/components/HeroPickerModal';
@@ -55,6 +56,8 @@ type HeroFilters = {
   clan: 'all' | HeroFamilyId;
   rarity: 'all' | Rarity;
   level: HeroLevelFilter;
+  showDuplicatesOnly?: boolean;
+  showLockedOnly?: boolean;
 };
 
 const HERO_FILTERS_SESSION_KEY = 'bq_heroes_filters_v1';
@@ -63,6 +66,8 @@ const DEFAULT_HERO_FILTERS: HeroFilters = {
   clan: 'all',
   rarity: 'all',
   level: 'all',
+  showDuplicatesOnly: false,
+  showLockedOnly: false,
 };
 
 // Merge system - ratios from issue #93
@@ -155,6 +160,13 @@ const Index = () => {
   }, [heroFilters]);
 
   const filteredHeroes = useMemo(() => {
+    // Précalcul des noms de base pour le filtre doublons
+    const nameCounts = new Map<string, number>();
+    player.heroes.forEach(h => {
+      const baseName = h.name.split(' #')[0];
+      nameCounts.set(baseName, (nameCounts.get(baseName) || 0) + 1);
+    });
+
     return [...player.heroes]
       .filter((hero) => {
         if (heroFilters.clan !== 'all') {
@@ -172,6 +184,15 @@ const Index = () => {
           if (heroFilters.level === '21-40' && !(hero.level >= 21 && hero.level <= 40)) return false;
           if (heroFilters.level === '41-60' && !(hero.level >= 41 && hero.level <= 60)) return false;
           if (heroFilters.level === '61+' && hero.level < 61) return false;
+        }
+
+        if (heroFilters.showDuplicatesOnly) {
+          const baseName = hero.name.split(' #')[0];
+          if ((nameCounts.get(baseName) || 0) <= 1) return false;
+        }
+
+        if (heroFilters.showLockedOnly && !hero.isLocked) {
+          return false;
         }
 
         return true;
@@ -2090,13 +2111,15 @@ const Index = () => {
               </button>
             </div>
 
+            <HeroCollectionStats heroes={player.heroes} />
+
             <div className="pixel-border bg-card p-3 sm:p-4 space-y-3">
               <div className="flex items-center justify-between gap-2">
                 <h3 className="font-pixel text-[9px] text-foreground">FILTRES</h3>
                 <button
                   onClick={() => setHeroFilters(DEFAULT_HERO_FILTERS)}
                   className="pixel-btn pixel-btn-secondary font-pixel text-[8px] min-h-[36px] px-3"
-                  disabled={heroFilters.clan === 'all' && heroFilters.rarity === 'all' && heroFilters.level === 'all'}
+                  disabled={heroFilters.clan === 'all' && heroFilters.rarity === 'all' && heroFilters.level === 'all' && !heroFilters.showDuplicatesOnly && !heroFilters.showLockedOnly}
                 >
                   Réinitialiser
                 </button>
@@ -2145,6 +2168,26 @@ const Index = () => {
                     <option value="61+">Niv. 61+</option>
                   </select>
                 </label>
+              </div>
+
+              {/* Filtres rapides */}
+              <div className="flex gap-2 flex-wrap">
+                <button
+                  className={`text-xs px-2 py-1 rounded border transition-colors ${
+                    heroFilters.showDuplicatesOnly ? 'border-orange-400 text-orange-400 bg-orange-400/10' : 'border-border text-muted-foreground'
+                  }`}
+                  onClick={() => setHeroFilters(f => ({ ...f, showDuplicatesOnly: !f.showDuplicatesOnly }))}
+                >
+                  Doublons
+                </button>
+                <button
+                  className={`text-xs px-2 py-1 rounded border transition-colors ${
+                    heroFilters.showLockedOnly ? 'border-yellow-400 text-yellow-400 bg-yellow-400/10' : 'border-border text-muted-foreground'
+                  }`}
+                  onClick={() => setHeroFilters(f => ({ ...f, showLockedOnly: !f.showLockedOnly }))}
+                >
+                  🔒 Lockés
+                </button>
               </div>
 
               <p className="text-[8px] text-muted-foreground">
