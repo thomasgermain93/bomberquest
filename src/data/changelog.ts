@@ -14,6 +14,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: '2026-03-18',
     title: 'Mises à jour récentes',
     changes: [
+      { type: 'feature', description: 'Architecture: Clan Bomb System (data model + intégration combat/render/UI) (#169)' },
       { type: 'feature', description: 'Progression héros: amélioration de compétences via doublons (#149)' },
       { type: 'feature', description: 'Balancing: passe globale progression early-game après refonte récompenses (#147)' },
       { type: 'feature', description: 'Box management: outils anti-encombrement et nettoyage massif des doublons (#151)' },
