@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { User, Loader2, AlertTriangle, LogOut, Trash2, ArrowLeft } from 'lucide-react';
+import { User, Loader2, AlertTriangle, LogOut, Trash2, ArrowLeft, BookOpen } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 const USERNAME_RE = /^[A-Za-z0-9_]{3,20}$/;
@@ -203,6 +203,31 @@ export default function Profile() {
             </CardContent>
           </Card>
           
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BookOpen className="w-5 h-5" />
+                Tutoriel
+              </CardTitle>
+              <CardDescription>
+                Revoir les bases du jeu
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  localStorage.setItem('bq_restart_tutorial', '1');
+                  toast({ title: 'Tutoriel relance', description: 'Le tutoriel reprendra au prochain chargement du jeu.' });
+                  navigate('/game');
+                }}
+              >
+                <BookOpen className="w-4 h-4 mr-2" />
+                Revoir le tutoriel
+              </Button>
+            </CardContent>
+          </Card>
+
           <Card className="border-destructive/50">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-destructive">

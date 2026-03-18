@@ -29,6 +29,7 @@ export function getDefaultPlayerData(): PlayerData {
     universalShards: 0,
     huntSpeed: 1,
     achievements: getDefaultAchievementState(),
+    tutorialStep: 0,
   };
 }
 

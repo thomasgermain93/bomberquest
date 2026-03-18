@@ -152,6 +152,7 @@ export interface PlayerData {
   universalShards: number;
   huntSpeed?: number;
   achievements: AchievementState;
+  tutorialStep?: number; // undefined ou absent = tutoriel terminé, 0+ = étape en cours
 }
 
 export const RARITY_CONFIG: Record<Rarity, {
