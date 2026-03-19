@@ -95,35 +95,32 @@ export function useCloudSave(userId: string | undefined, canWriteCloud: boolean)
 
     let heroes: Hero[] = [];
 
-    if (heroesResult.data) {
-      if (heroesResult.data.length > 0) {
-        // Normal case: heroes in dedicated table
-        heroes = heroesResult.data.map(rowToHero);
-      } else if (saveData?.save_data) {
-        // One-shot migration: old account with heroes embedded in save_data JSONB
-        const oldData = saveData.save_data as any;
-        if (Array.isArray(oldData?.heroes) && oldData.heroes.length > 0) {
-          const rows = oldData.heroes.map((h: Hero) => heroToRow(h, userId));
+    if (heroesResult.data && heroesResult.data.length > 0) {
+      // Cas normal : héros dans la table dédiée
+      heroes = heroesResult.data.map(rowToHero);
+    } else {
+      // Fallback 1 : migration depuis l'ancien format JSONB (save_data.heroes)
+      const oldData = saveData.save_data as any;
+      if (Array.isArray(oldData?.heroes) && oldData.heroes.length > 0) {
+        const rows = oldData.heroes.map((h: Hero) => heroToRow(h, userId));
+        await supabase.from('player_heroes').upsert(rows, { onConflict: 'id,user_id' });
+        heroes = rows.map(rowToHero);
+      }
+
+      // Fallback 2 : backup récent stocké dans save_data.heroes_backup
+      if (heroes.length === 0) {
+        const backup = (saveData.save_data as any)?.heroes_backup;
+        if (Array.isArray(backup) && backup.length > 0) {
+          const rows = backup.map((h: Hero) => heroToRow(h, userId));
           await supabase.from('player_heroes').upsert(rows, { onConflict: 'id,user_id' });
           heroes = rows.map(rowToHero);
         }
       }
     }
 
-    // Si saveData existe mais heroes = 0 : race condition auth mobile → retry une fois
-    if (heroes.length === 0 && saveData) {
-      await new Promise(resolve => setTimeout(resolve, 1200));
-      const retryResult = await supabase
-        .from('player_heroes')
-        .select('*')
-        .eq('user_id', userId);
-      if (!retryResult.error && retryResult.data && retryResult.data.length > 0) {
-        heroes = retryResult.data.map(rowToHero);
-      }
-    }
-
     const rawStats = saveData.save_data as any;
-    const { heroes: _removedHeroes, ...statsOnly } = rawStats ?? {};
+    // Exclure les champs heroes/* du spread stats (ils restent dans player_heroes)
+    const { heroes: _h, heroes_backup: _hb, ...statsOnly } = rawStats ?? {};
 
     const playerData: PlayerData = {
       ...(statsOnly as PlayerData),
@@ -133,7 +130,7 @@ export function useCloudSave(userId: string | undefined, canWriteCloud: boolean)
     console.log('CLOUD_LOAD_ROWS', {
       hasSave: !!saveData,
       heroRows: heroes.length,
-      migratedFromLegacy: heroesResult.data?.length === 0 && heroes.length > 0,
+      source: heroesResult.data?.length > 0 ? 'player_heroes' : heroes.length > 0 ? 'migration' : 'empty',
     });
 
     setIsSyncing(false);
@@ -170,13 +167,17 @@ export function useCloudSave(userId: string | undefined, canWriteCloud: boolean)
     saveTimerRef.current = setTimeout(async () => {
       setIsSyncing(true);
       try {
-        // Strip heroes from save_data — they live in player_heroes
         const { heroes: _, ...statsOnly } = playerData;
+        // Inclure heroes_backup dans save_data comme filet de sécurité
+        // Au cas où player_heroes serait corrompu ou vidé
+        const saveDataWithBackup = playerData.heroes.length > 0
+          ? { ...statsOnly, heroes_backup: playerData.heroes }
+          : statsOnly;
         await supabase
           .from('player_saves')
           .upsert({
             user_id: userId,
-            save_data: statsOnly as any,
+            save_data: saveDataWithBackup as any,
             story_progress: storyProgress as any,
             daily_quests: dailyQuests as any,
           }, { onConflict: 'user_id' });
@@ -188,6 +189,8 @@ export function useCloudSave(userId: string | undefined, canWriteCloud: boolean)
 
   const syncHeroesSnapshotToCloud = useCallback((heroes: Hero[]) => {
     if (!userId || !canWriteCloud) return;
+    // GUARD : ne jamais sync si le roster est vide (évite la suppression accidentelle)
+    if (heroes.length === 0) return;
     if (heroSyncTimerRef.current) clearTimeout(heroSyncTimerRef.current);
 
     heroSyncTimerRef.current = setTimeout(async () => {
@@ -195,9 +198,7 @@ export function useCloudSave(userId: string | undefined, canWriteCloud: boolean)
       try {
         const rows = heroes.map(h => heroToRow(h, userId));
 
-        if (rows.length > 0) {
-          await supabase.from('player_heroes').upsert(rows, { onConflict: 'id,user_id' });
-        }
+        await supabase.from('player_heroes').upsert(rows, { onConflict: 'id,user_id' });
 
         const { data: existingRows, error } = await supabase
           .from('player_heroes')
@@ -213,7 +214,8 @@ export function useCloudSave(userId: string | undefined, canWriteCloud: boolean)
           .map((row: any) => row.id as string)
           .filter(id => !keepIds.has(id));
 
-        if (idsToDelete.length > 0) {
+        // Double guard : ne supprimer que si on a des héros à conserver
+        if (idsToDelete.length > 0 && rows.length > 0) {
           await supabase.from('player_heroes').delete().eq('user_id', userId).in('id', idsToDelete);
         }
       } finally {
