@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Hero, PlayerData } from '@/game/types';
 import { StoryProgress } from '@/game/storyTypes';
 import { DailyQuestData } from '@/game/questSystem';
+import { getDefaultPlayerData } from '@/game/saveSystem';
 import type { Database } from '@/integrations/supabase/types';
 
 type PlayerHeroRow = Database['public']['Tables']['player_heroes']['Row'];
@@ -123,6 +124,7 @@ export function useCloudSave(userId: string | undefined, canWriteCloud: boolean)
     const { heroes: _h, heroes_backup: _hb, ...statsOnly } = rawStats ?? {};
 
     const playerData: PlayerData = {
+      ...getDefaultPlayerData(),  // valeurs par défaut pour tout champ manquant
       ...(statsOnly as PlayerData),
       heroes,
     };
