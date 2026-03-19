@@ -54,18 +54,6 @@ import { toast } from '@/hooks/use-toast';
 type Screen = 'hub' | 'treasure-hunt' | 'heroes' | 'codex' | 'fusion' | 'summon' | 'story' | 'story-battle' | 'achievements' | 'combat' | 'recycle';
 
 
-const LOCAL_SAVE_TS_KEY = 'bq_last_local_save_ts';
-const LOCAL_HERO_MUTATION_TS_KEY = 'bq_last_hero_mutation_ts';
-
-const markLocalSave = () => {
-  localStorage.setItem(LOCAL_SAVE_TS_KEY, String(Date.now()));
-};
-
-const markHeroMutation = () => {
-  const now = Date.now();
-  localStorage.setItem(LOCAL_HERO_MUTATION_TS_KEY, String(now));
-  localStorage.setItem(LOCAL_SAVE_TS_KEY, String(now));
-};
 
 type HeroLevelFilter = 'all' | '1-20' | '21-40' | '41-60' | '61+';
 type HeroSortBy = 'rarity' | 'level';
@@ -176,9 +164,7 @@ const Index = () => {
   const huntSpeedRef = useRef(1);
   const gameLoopRef = useRef<number>();
   const cloudLoadedRef = useRef(false);
-  const lastLocalSaveRef = useRef<number>(0);
   const isInitialMountRef = useRef(true);
-  const localHeroCountRef = useRef(0);
 
   useEffect(() => {
     // For guests: restore speed from localStorage. For auth users: cloud load handles it.
@@ -258,14 +244,14 @@ const Index = () => {
   }, [user?.id]);
 
   // Save to localStorage when player data changes (offline mode + authenticated safety backup)
+  // Invités uniquement — les users authentifiés passent par le cloud
   useEffect(() => {
+    if (user) return;
     if (isCloudLoading) return;
     if (!isInitialMountRef.current) {
       savePlayerData(player);
       saveDailyQuests(dailyQuests);
       saveStoryProgress(storyProgress);
-      markLocalSave();
-      lastLocalSaveRef.current = Date.now();
     }
   }, [player, dailyQuests, storyProgress, user, isCloudLoading]);
 
@@ -310,109 +296,28 @@ const Index = () => {
     };
 
     loadWithRetry().then(data => {
+      const today = new Date().toISOString().split('T')[0];
       if (data) {
-        const cloudHeroes = data.playerData?.heroes || [];
-        const cloudHeroCount = cloudHeroes.length;
-        const localBackupData = loadPlayerData();
-        const localBackupHeroes = localBackupData.heroes || [];
-        const localBackupHeroCount = localBackupHeroes.length;
-        const runtimeLocalHeroCount = localHeroCountRef.current;
-        const trustedLocalHeroCount = Math.max(localBackupHeroCount, runtimeLocalHeroCount);
-
-        const cloudHeroIds = new Set(cloudHeroes.map(h => h.id));
-        const localHeroIds = new Set(localBackupHeroes.map(h => h.id));
-        const heroesDiverged = cloudHeroCount !== localBackupHeroCount
-          || localBackupHeroes.some(h => !cloudHeroIds.has(h.id))
-          || cloudHeroes.some(h => !localHeroIds.has(h.id));
-
-        const lastHeroMutationTs = Number(localStorage.getItem(LOCAL_HERO_MUTATION_TS_KEY) || '0');
-        const lastLocalSaveTs = Number(localStorage.getItem(LOCAL_SAVE_TS_KEY) || '0');
-        const freshestLocalTs = Math.max(lastHeroMutationTs, lastLocalSaveTs, lastLocalSaveRef.current || 0);
-        const LOCAL_FRESH_WINDOW_MS = 10 * 60 * 1000; // 10 min
-        const hasFreshLocalState = freshestLocalTs > 0 && (Date.now() - freshestLocalTs) <= LOCAL_FRESH_WINDOW_MS;
-
-        // Detect potential rollback both directions:
-        // - cloud has fewer heroes than trusted local
-        // - OR cloud/local hero sets diverge right after a recent local hero mutation (typical profile round-trip race)
-        const isPotentialRollback =
-          (trustedLocalHeroCount > cloudHeroCount && trustedLocalHeroCount > 1)
-          || (hasFreshLocalState && heroesDiverged && localBackupHeroCount > 1);
-
-        if (isPotentialRollback) {
-          console.warn('CLOUD_ROLLBACK_GUARD', {
-            trustedLocalHeroCount,
-            localBackupHeroCount,
-            runtimeLocalHeroCount,
-            cloudHeroCount,
-            heroesDiverged,
-            hasFreshLocalState,
-            freshestLocalTs,
-            action: 'keep_local_read_only',
-          });
-          setPlayer(localBackupData);
-          setStoryProgress(loadStoryProgress());
-          const localQuests = loadDailyQuests();
-          const today = new Date().toISOString().split('T')[0];
-          setDailyQuests(localQuests?.date === today ? localQuests : generateDailyQuests());
-          // Keep local state (newer than cloud) and allow a write-back to heal cloud drift.
-          // Blocking writes here caused users to stay in permanent "Sync cloud en attente" mode.
-          setCloudValidated(true);
-          cloudLoadedRef.current = true;
-          toast({ title: 'Sync cloud en cours', description: 'Sauvegarde locale conservée. Mise à jour cloud en arrière-plan.', duration: 4500 });
-          return;
-        }
-
         setPlayer(data.playerData);
-        setStoryProgress(data.storyProgress ?? { completedStages: [], currentRegion: 'forest', bossesDefeated: [], highestStage: 0 });
-        const today = new Date().toISOString().split('T')[0];
+        setStoryProgress(data.storyProgress ?? { completedStages: [], currentRegion: 'forest', bossesDefeated: [], highestStage: 0, bossFirstClearRewards: [] });
         setDailyQuests(data.dailyQuests?.date === today ? data.dailyQuests : generateDailyQuests());
         const cloudSpeed = data.playerData.huntSpeed;
-        if (cloudSpeed === 2 || cloudSpeed === 3) {
-          huntSpeedRef.current = cloudSpeed;
-        }
+        if (cloudSpeed === 2 || cloudSpeed === 3) huntSpeedRef.current = cloudSpeed;
         setCloudValidated(true);
-        cloudLoadedRef.current = true;
-        console.log('CLOUD_LOAD_SUCCESS', {
-          hasPlayerData: !!data.playerData,
-          heroCount: data.playerData?.heroes?.length || 0,
-          hasStoryProgress: !!data.storyProgress,
-          timestamp: Date.now()
-        });
       } else {
-        const localData = loadPlayerData();
-        const localStory = loadStoryProgress();
-        const localQuests = loadDailyQuests();
-        setPlayer(localData);
-        setStoryProgress(localStory);
-        const today = new Date().toISOString().split('T')[0];
-        setDailyQuests(localQuests?.date === today ? localQuests : generateDailyQuests());
-        const localSpeed = Number(localStorage.getItem('hunt-speed') || '1');
-        if (localSpeed === 2 || localSpeed === 3) {
-          huntSpeedRef.current = localSpeed;
-          setPlayer(prev => ({ ...prev, huntSpeed: localSpeed }));
-        }
-        setCloudValidated(false);
-        console.warn('CLOUD_LOAD_FAILED', {
-          code: 'CLOUD_UNAVAILABLE',
-          message: 'Cloud load failed, using local data in read-only mode',
-          localHeroCount: localData.heroes?.length || 0
-        });
-        cloudLoadedRef.current = true;
-        toast({ title: 'Cloud indisponible', description: 'Données locales chargées. Mode lecture seule.', duration: 4000 });
+        // Pas de save cloud → nouvel utilisateur
+        setPlayer(getDefaultPlayerData());
+        setStoryProgress({ completedStages: [], currentRegion: 'forest', bossesDefeated: [], highestStage: 0, bossFirstClearRewards: [] });
+        setDailyQuests(generateDailyQuests());
+        setCloudValidated(true);
       }
+      cloudLoadedRef.current = true;
     }).catch((err) => {
       const error = err as Error & { code?: string };
       console.error('CLOUD_LOAD_UNEXPECTED_ERROR', { code: error.code || 'UNKNOWN', message: error.message });
       setCloudValidated(false);
-      const localData = loadPlayerData();
-      const localStory = loadStoryProgress();
-      const localQuests = loadDailyQuests();
-      setPlayer(localData);
-      setStoryProgress(localStory);
-      const today = new Date().toISOString().split('T')[0];
-      setDailyQuests(localQuests?.date === today ? localQuests : generateDailyQuests());
       cloudLoadedRef.current = true;
-      toast({ title: 'Cloud indisponible', description: 'Données locales chargées. Mode lecture seule.', duration: 4000 });
+      toast({ title: 'Cloud indisponible', description: 'Impossible de charger la sauvegarde. Réessaie.', duration: 4000 });
     }).finally(() => {
       setIsCloudLoading(false);
     });
@@ -464,10 +369,6 @@ const Index = () => {
     }
   }, [player.xp, player.accountLevel, player.achievements]);
 
-  // Track local hero count for rollback detection
-  useEffect(() => {
-    localHeroCountRef.current = player.heroes.length;
-  }, [player.heroes]);
 
   // Save periodically + passive stamina regen
   useEffect(() => {
@@ -922,7 +823,6 @@ const Index = () => {
       heroes: mergedHeroes,
       totalHeroesOwned: mergedHeroes.length,
     }));
-    markHeroMutation();
 
     if (canWriteCloud) {
       saveHeroesToCloud([newHero]);
@@ -958,7 +858,6 @@ const Index = () => {
       heroes: mergedHeroes,
       totalHeroesOwned: mergedHeroes.length,
     }));
-    markHeroMutation();
 
     if (canWriteCloud) {
       saveHeroesToCloud([newHero]);
@@ -1023,7 +922,6 @@ const Index = () => {
     
     if (mergeCount > 0) {
       setPlayer(prev => ({ ...prev, heroes: currentHeroes, totalHeroesOwned: currentHeroes.length }));
-      markHeroMutation();
 
       if (canWriteCloud) {
         const addedHeroes = currentHeroes.filter(h => !player.heroes.some(existing => existing.id === h.id));
@@ -1387,7 +1285,6 @@ const Index = () => {
       });
     }
     
-    markHeroMutation();
     if (canWriteCloud) {
       const addedHeroes = mergedHeroes.filter(h => !player.heroes.some(existing => existing.id === h.id));
       const removedExistingHeroIds = player.heroes
@@ -1441,15 +1338,6 @@ const Index = () => {
       toast({ title: 'Succès débloqué!', description: achievement.title });
     }
 
-    const updatedData = {
-      ...player,
-      heroes: newHeroes,
-      totalHeroesOwned: newHeroes.length,
-      achievements: newAchievements,
-      universalShards: player.universalShards - cost,
-    };
-    savePlayerData(updatedData);
-    markHeroMutation();
     if (canWriteCloud) {
       saveHeroesToCloud([newHero]);
     }
@@ -1551,8 +1439,6 @@ const Index = () => {
     const { remainingHeroes } = recycleHeroes(player.heroes, ids);
     const updatedPlayer = { ...player, heroes: remainingHeroes, universalShards: player.universalShards + shardsGained };
     setPlayer(updatedPlayer);
-    // Sauvegarde immédiate pour ne pas perdre les shards si reload
-    savePlayerData(updatedPlayer);
     if (canWriteCloud) {
       saveHeroesToCloud(remainingHeroes);
       removeHeroesFromCloud(ids);

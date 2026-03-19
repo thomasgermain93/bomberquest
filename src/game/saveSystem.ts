@@ -4,6 +4,8 @@ import { StoryProgress } from './storyTypes';
 import { getDefaultAchievementState } from './achievements';
 
 const SAVE_KEY = 'bomberquest_save';
+const SAVE_TS_KEY = 'bomberquest_save_ts';
+const GUEST_TTL_MS = 24 * 60 * 60 * 1000; // 24h
 
 export function getDefaultPlayerData(): PlayerData {
   const starterHero = generateHero('common');
@@ -36,6 +38,7 @@ export function getDefaultPlayerData(): PlayerData {
 export function savePlayerData(data: PlayerData): void {
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+    localStorage.setItem(SAVE_TS_KEY, String(Date.now()));
   } catch {
     console.warn('Échec de la sauvegarde');
   }
@@ -45,6 +48,12 @@ export function loadPlayerData(): PlayerData {
   try {
     const saved = localStorage.getItem(SAVE_KEY);
     if (saved) {
+      const savedTs = Number(localStorage.getItem(SAVE_TS_KEY) || '0');
+      if (savedTs > 0 && (Date.now() - savedTs) > GUEST_TTL_MS) {
+        localStorage.removeItem(SAVE_KEY);
+        localStorage.removeItem(SAVE_TS_KEY);
+        return getDefaultPlayerData();
+      }
       const parsed = JSON.parse(saved);
       if (!parsed.achievements) {
         parsed.achievements = getDefaultAchievementState();
@@ -76,6 +85,7 @@ export function loadPlayerData(): PlayerData {
 
 export function clearSaveData(): void {
   localStorage.removeItem(SAVE_KEY);
+  localStorage.removeItem(SAVE_TS_KEY);
 }
 
 const STORY_KEY = 'bq_story';
