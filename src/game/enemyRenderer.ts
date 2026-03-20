@@ -1,6 +1,7 @@
 import { Enemy, Boss, ENEMY_CONFIG } from './storyTypes';
 
 const TILE = 40;
+const STUN_COLOR = '#FF0';
 
 export function drawEnemy(ctx: CanvasRenderingContext2D, enemy: Enemy, time: number) {
   if (enemy.hp <= 0) return;
@@ -64,7 +65,7 @@ export function drawEnemy(ctx: CanvasRenderingContext2D, enemy: Enemy, time: num
     ctx.lineTo(cx + 5, by + 12);
     ctx.fill();
     // Eyes
-    ctx.fillStyle = '#FF0';
+    ctx.fillStyle = STUN_COLOR;
     ctx.fillRect(cx - 4, by + 9, 3, 3);
     ctx.fillRect(cx + 1, by + 9, 3, 3);
     ctx.fillStyle = '#000';
@@ -154,7 +155,7 @@ export function drawEnemy(ctx: CanvasRenderingContext2D, enemy: Enemy, time: num
     ctx.lineTo(cx + 4, by + 6);
     ctx.fill();
     // Eyes
-    ctx.fillStyle = '#FF0';
+    ctx.fillStyle = STUN_COLOR;
     ctx.fillRect(cx - 4, by + 8, 3, 3);
     ctx.fillRect(cx + 1, by + 8, 3, 3);
     // Legs
@@ -240,7 +241,7 @@ export function drawBoss(ctx: CanvasRenderingContext2D, boss: Boss, time: number
   ctx.fillStyle = '#FFF';
   ctx.fillRect(cx - 6, by + 5, 5, 4);
   ctx.fillRect(cx + 1, by + 5, 5, 4);
-  ctx.fillStyle = boss.phase >= 3 ? '#FF0' : '#F44';
+  ctx.fillStyle = boss.phase >= 3 ? STUN_COLOR : '#F44';
   ctx.fillRect(cx - 5, by + 6, 3, 2);
   ctx.fillRect(cx + 2, by + 6, 3, 2);
 
