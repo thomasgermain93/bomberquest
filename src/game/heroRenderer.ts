@@ -1,10 +1,10 @@
 // Pixel-art hero sprite renderer for canvas
 // Each hero gets a unique look based on rarity with proper body parts
 
-import { HeroFamilyId } from './types';
+import { HeroFamilyId, TILE_SIZE } from './types';
 import { CLAN_VISUAL_PROFILES, HeroSkinVariant, resolveHeroVisualIdentity } from './heroVisualSystem';
 
-const TILE = 40;
+const TILE = TILE_SIZE;
 
 interface HeroSpriteConfig {
   bodyColor: string;

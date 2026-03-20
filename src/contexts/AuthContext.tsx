@@ -97,10 +97,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setProfile(null);
         }
 
-        console.log('AUTH_INIT_SESSION', {
-          hasSession: !!initialSession,
-          hasUser: !!currentUser,
-        });
       })
       .catch((err) => {
         console.error('AUTH_SESSION_GET_ERROR', { code: 'SESSION_GET_FAILED', message: err.message });

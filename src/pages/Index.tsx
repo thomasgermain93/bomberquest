@@ -236,11 +236,6 @@ const Index = () => {
     }
 
     setIsCloudLoading(true);
-    console.log('CLOUD_LOAD_ARMED', {
-      userId: user.id,
-      authLoading,
-      hasAccessToken: !!session?.access_token,
-    });
   }, [user?.id]);
 
   // Save to localStorage when player data changes (offline mode + authenticated safety backup)
@@ -265,7 +260,6 @@ const Index = () => {
     if (!user) return;
     if (!cloudSessionReady) return;
     if (cloudLoadedRef.current) {
-      console.log('CLOUD_LOAD_SKIP', { reason: 'already_loaded', heroCount: player.heroes.length });
       return;
     }
 

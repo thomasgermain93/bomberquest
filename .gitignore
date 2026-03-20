@@ -32,3 +32,8 @@ dist-ssr
 
 # Supabase temp
 supabase/.temp/
+
+# CI/CD artifacts and audit reports
+reports/
+artifacts/
+docs/evidence/
