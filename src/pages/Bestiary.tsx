@@ -13,7 +13,7 @@ const statusClasses: Record<AssetStatus, string> = {
   ready: 'bg-green-500/10 text-green-400 border-green-500/30',
 };
 
-const AssetPreview: React.FC<{ label: string; src?: string; status: AssetStatus; rarity?: BestiaryBomber['rarity']; mode?: 'sprite' | 'portrait'; heroId?: string }> = ({ label, src, status, rarity, mode = 'sprite', heroId }) => {
+const AssetPreview: React.FC<{ label: string; src?: string; status: AssetStatus; rarity?: BestiaryBomber['rarity']; heroId?: string; mode?: 'sprite' | 'portrait' }> = ({ label, src, status, rarity, heroId, mode = 'sprite' }) => {
   const [hasLoadError, setHasLoadError] = useState(false);
 
   const generatedSprite = useMemo(() => {
@@ -32,12 +32,12 @@ const AssetPreview: React.FC<{ label: string; src?: string; status: AssetStatus;
     if (mode === 'portrait') {
       drawHeroPortrait(ctx, rarity, 0, heroId);
     } else {
-      drawHeroSprite(ctx, 0, 0, rarity, 'idle', 0, heroId || 'bestiary-preview', 100, 100);
+      drawHeroSprite(ctx, 0, 0, rarity, 'idle', 0, heroId ?? 'bestiary-preview', 100, 100);
     }
     ctx.restore();
 
     return canvas.toDataURL('image/png');
-  }, [mode, rarity, heroId]);
+  }, [heroId, mode, rarity]);
 
   const resolvedSrc = !hasLoadError && src ? src : generatedSprite;
 
@@ -115,8 +115,8 @@ const BomberCard: React.FC<{ bomber: BestiaryBomber }> = ({ bomber }) => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-        <AssetPreview label="Sprite" src={bomber.assets.spriteSheet} status={bomber.assetStatus} rarity={bomber.rarity} mode="sprite" heroId={bomber.id} />
-        <AssetPreview label="Portrait" src={bomber.assets.portrait} status={bomber.assetStatus} rarity={bomber.rarity} mode="portrait" heroId={bomber.id} />
+        <AssetPreview label="Sprite" src={bomber.assets.spriteSheet} status={bomber.assetStatus} rarity={bomber.rarity} heroId={bomber.id} mode="sprite" />
+        <AssetPreview label="Portrait" src={bomber.assets.portrait} status={bomber.assetStatus} rarity={bomber.rarity} heroId={bomber.id} mode="portrait" />
       </div>
     </article>
   );
