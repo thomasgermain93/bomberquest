@@ -9,7 +9,7 @@ import { summonHero, generateHero } from '@/game/summoning';
 import { loadPlayerData, savePlayerData, loadStoryProgress } from '@/game/saveSystem';
 import { loadDailyQuests } from '@/game/questSystem';
 import { trackSummon, trackRarityUnlock, trackHeroCount } from '@/game/achievements';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { ArrowLeft, Sparkles, Star, Coins, Gem, ArrowRight } from 'lucide-react';
 import { SummonParticles, SummonExplosion, HeroRevealCard } from '@/components/summon/SummonAnimations';
 
@@ -60,7 +60,7 @@ const Summon: React.FC = () => {
   const handleSummonBC = (type: 'single' | 'x10' | 'x100') => {
     const cost = BC_COSTS[type];
     if (player.bomberCoins < cost) {
-      toast({ title: 'BC insuffisants', description: `Il te faut ${cost} BC pour cette invocation.` });
+      toast('BC insuffisants', { description: `Il te faut ${cost} BC pour cette invocation.` });
       return;
     }
 
@@ -128,10 +128,7 @@ const Summon: React.FC = () => {
     }));
 
     for (const achievement of newAchievementUnlocks) {
-      toast({
-        title: 'Succès débloqué!',
-        description: achievement.title,
-      });
+      toast('Succès débloqué!', { description: achievement.title });
     }
 
     const raritiesAnim = ['common', 'rare', 'super-rare', 'epic', 'legend', 'super-legend'];
@@ -165,10 +162,7 @@ const Summon: React.FC = () => {
     const cost = UNIVERSAL_SHARD_COSTS[selectedShardRarity];
 
     if (player.universalShards < cost) {
-      toast({
-        title: 'Fragments insuffisants',
-        description: `Il te faut ${cost} Shards Universels pour cette invocation.`,
-      });
+      toast('Fragments insuffisants', { description: `Il te faut ${cost} Shards Universels pour cette invocation.` });
       return;
     }
 
@@ -203,10 +197,7 @@ const Summon: React.FC = () => {
     }));
 
     for (const achievement of newAchievementUnlocks) {
-      toast({
-        title: 'Succès débloqué!',
-        description: achievement.title,
-      });
+      toast('Succès débloqué!', { description: achievement.title });
     }
 
     setCurrentRarity(selectedShardRarity);

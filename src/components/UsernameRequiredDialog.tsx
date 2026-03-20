@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useAuth, useProfile } from '@/contexts/AuthContext';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { USERNAME_RE } from '@/lib/constants';
 
 export default function UsernameRequiredDialog() {
@@ -50,11 +50,11 @@ export default function UsernameRequiredDialog() {
     setSaving(false);
 
     if (error) {
-      toast({ title: 'Erreur', description: error, variant: 'destructive' });
+      toast.error('Erreur', { description: error });
       return;
     }
 
-    toast({ title: 'Pseudo enregistré', description: 'Ton profil est prêt ✅' });
+    toast('Pseudo enregistré', { description: 'Ton profil est prêt ✅' });
   };
 
   return (

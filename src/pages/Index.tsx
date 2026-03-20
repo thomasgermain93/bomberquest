@@ -49,7 +49,7 @@ import TutorialOverlay from '@/components/TutorialOverlay';
 import { useTutorial } from '@/hooks/useTutorial';
 import DailyResetTimer from '@/components/DailyResetTimer';
 import { SFX, isMuted, setMuted } from '@/game/sfx';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 type Screen = 'hub' | 'treasure-hunt' | 'heroes' | 'codex' | 'fusion' | 'summon' | 'story' | 'story-battle' | 'achievements' | 'combat' | 'recycle';
 
@@ -314,7 +314,7 @@ const Index = () => {
       console.error('CLOUD_LOAD_UNEXPECTED_ERROR', { code: error.code || 'UNKNOWN', message: error.message });
       setCloudValidated(false);
       cloudLoadedRef.current = true;
-      toast({ title: 'Cloud indisponible', description: 'Impossible de charger la sauvegarde. Réessaie.', duration: 4000 });
+      toast('Cloud indisponible', { description: 'Impossible de charger la sauvegarde. Réessaie.', duration: 4000 });
     }).finally(() => {
       if (!cancelled) setIsCloudLoading(false);
     });
@@ -373,10 +373,7 @@ const Index = () => {
     if (toasts.length > 0) {
       pendingLevelUpToastsRef.current = [];
       for (const achievement of toasts) {
-        toast({
-          title: '🏆 Succès débloqué!',
-          description: achievement.title,
-        });
+        toast('🏆 Succès débloqué!', { description: achievement.title });
       }
     }
   }, [player.accountLevel]);
@@ -758,10 +755,7 @@ const Index = () => {
     }));
     
     for (const achievement of newAchievementUnlocks) {
-      toast({
-        title: '🏆 Succès débloqué!',
-        description: achievement.title,
-      });
+      toast('🏆 Succès débloqué!', { description: achievement.title });
     }
     if (canWriteCloud) {
       saveHeroesToCloud(updatedHeroes.filter(h => gameState.heroes.some(dh => dh.id === h.id)));
@@ -824,8 +818,7 @@ const Index = () => {
     const maxLevel = RARITY_CONFIG[from].maxLevel;
     const available = player.heroes.filter(h => h.rarity === from && h.level >= maxLevel);
     if (available.length < count) {
-      toast({
-        title: "Fusion impossible",
+      toast('Fusion impossible', {
         description: `Vous avez besoin de ${count} héros ${RARITY_CONFIG[from].label} niveau ${maxLevel}`,
       });
       return;
@@ -847,8 +840,7 @@ const Index = () => {
       removeHeroesFromCloud(removedIds);
     }
 
-    toast({
-      title: "Fusion réussie!",
+    toast('Fusion réussie!', {
       description: `${RARITY_CONFIG[from].label} → ${RARITY_CONFIG[to].label}`,
     });
   };
@@ -859,8 +851,7 @@ const Index = () => {
     const filledSlots = fusionSlots.filter(s => s !== null) as Hero[];
     
     if (filledSlots.length !== recipe.count) {
-      toast({
-        title: "Slots incomplets",
+      toast('Slots incomplets', {
         description: `Vous devez remplir ${recipe.count} slots`,
       });
       return;
@@ -884,8 +875,7 @@ const Index = () => {
 
     setLastFusedHero(newHero);
 
-    toast({
-      title: "Fusion réussie!",
+    toast('Fusion réussie!', {
       description: `${RARITY_CONFIG[recipe.from].label} → ${RARITY_CONFIG[recipe.to].label}`,
     });
 
@@ -951,13 +941,11 @@ const Index = () => {
         if (removedHeroIds.length > 0) removeHeroesFromCloud(removedHeroIds);
       }
 
-      toast({
-        title: "Fusion terminée",
+      toast('Fusion terminée', {
         description: `${mergeCount} fusion(s) effectuée(s)`,
       });
     } else {
-      toast({
-        title: "Aucune fusion possible",
+      toast('Aucune fusion possible', {
         description: "Vous n'avez pas assez de héros pour fusionner",
       });
     }
@@ -1116,8 +1104,7 @@ const Index = () => {
       });
 
       if (bossFirstClearShards > 0) {
-        toast({
-          title: "🎉 Boss vaincu!",
+        toast('🎉 Boss vaincu!', {
           description: `Première victoire! Tu reçois ${bossFirstClearShards} Shards Universels!`,
           duration: 6000,
         });
@@ -1155,10 +1142,7 @@ const Index = () => {
       }));
 
       for (const achievement of newAchievementUnlocks) {
-        toast({
-          title: '🏆 Succès débloqué!',
-          description: achievement.title,
-        });
+        toast('🏆 Succès débloqué!', { description: achievement.title });
       }
 
       if (canWriteCloud) {
@@ -1297,12 +1281,9 @@ const Index = () => {
     }));
     
     for (const achievement of newAchievementUnlocks) {
-      toast({
-        title: '🏆 Succès débloqué!',
-        description: achievement.title,
-      });
+      toast('🏆 Succès débloqué!', { description: achievement.title });
     }
-    
+
     if (canWriteCloud) {
       const addedHeroes = mergedHeroes.filter(h => !player.heroes.some(existing => existing.id === h.id));
       const removedExistingHeroIds = player.heroes
@@ -1322,7 +1303,7 @@ const Index = () => {
   const handleSummonShards = () => {
     const cost = SHARD_COSTS[selectedShardRarity];
     if (player.universalShards < cost) {
-      toast({ title: 'Fragments insuffisants', description: `Il te faut ${cost} Fragments pour cette invocation.` });
+      toast('Fragments insuffisants', { description: `Il te faut ${cost} Fragments pour cette invocation.` });
       return;
     }
 
@@ -1353,7 +1334,7 @@ const Index = () => {
     }));
 
     for (const achievement of newAchievementUnlocks) {
-      toast({ title: 'Succès débloqué!', description: achievement.title });
+      toast('Succès débloqué!', { description: achievement.title });
     }
 
     if (canWriteCloud) {
@@ -1437,7 +1418,7 @@ const Index = () => {
   const handleSkillUpgrade = (heroId: string, skillIndex: number) => {
     const result = upgradeSkillWithDuplicate(player.heroes, heroId, skillIndex);
     if (!result.success) {
-      toast({ title: 'Impossible', description: result.message, variant: 'destructive' });
+      toast.error('Impossible', { description: result.message });
       return;
     }
     setPlayer(prev => ({
@@ -1450,7 +1431,7 @@ const Index = () => {
         removeHeroesFromCloud(result.removedIds);
       }
     }
-    toast({ title: '⚡ Compétence améliorée!', description: result.message });
+    toast('⚡ Compétence améliorée!', { description: result.message });
   };
 
   const handleRecycle = (ids: string[], shardsGained: number) => {
@@ -1462,7 +1443,7 @@ const Index = () => {
       removeHeroesFromCloud(ids);
       saveStatsToCloud(updatedPlayer, storyProgress, dailyQuests);
     }
-    toast({ title: `♻️ Recyclage!`, description: `${ids.length} héros recyclés → +${shardsGained} 💎` });
+    toast(`♻️ Recyclage!`, { description: `${ids.length} héros recyclés → +${shardsGained} 💎` });
   };
 
   const handleToggleLock = (heroId: string) => {
@@ -2068,7 +2049,7 @@ const Index = () => {
                 onSave={setTeamPresets}
                 onLoadTeam={(heroIds) => {
                   setSelectedHeroes(new Set(heroIds));
-                  toast({ title: 'Équipe chargée !', description: 'Prête pour le combat.' });
+                  toast('Équipe chargée !', { description: 'Prête pour le combat.' });
                 }}
               />
             )}
@@ -2243,7 +2224,7 @@ const Index = () => {
                               key={preset.id}
                               onClick={() => {
                                 setSelectedHeroes(new Set(preset.heroIds));
-                                toast({ title: `${preset.name} chargée !` });
+                                toast(`${preset.name} chargée !`);
                               }}
                               className="pixel-btn pixel-btn-secondary font-pixel text-[7px] px-2 py-1 flex items-center gap-1"
                             >
@@ -2603,8 +2584,7 @@ const Index = () => {
                         : prev.shards,
                       achievements: newState,
                     }));
-                    toast({
-                      title: 'Récompense réclamée!',
+                    toast('Récompense réclamée!', {
                       description: `${reward.amount} ${reward.type === 'coins' ? 'pièces' : reward.rarity ? `shards ${reward.rarity}` : 'shards universels'}`,
                     });
                   }
@@ -2627,8 +2607,7 @@ const Index = () => {
                     universalShards: (prev.universalShards || 0) + totalShards,
                     achievements: currentAchievements,
                   }));
-                  toast({
-                    title: `${ids.length} succès récupérés !`,
+                  toast(`${ids.length} succès récupérés !`, {
                     description: [
                       totalCoins > 0 ? `${totalCoins} pièces` : '',
                       totalShards > 0 ? `${totalShards} shards` : '',

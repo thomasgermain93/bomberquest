@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { User, Loader2, AlertTriangle, LogOut, Trash2, ArrowLeft, BookOpen } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { USERNAME_RE } from '@/lib/constants';
 
 export default function Profile() {
@@ -51,20 +51,18 @@ export default function Profile() {
     setSaving(false);
     
     if (error) {
-      toast({ title: 'Erreur', description: error, variant: 'destructive' });
+      toast.error('Erreur', { description: error });
       return;
     }
-    
-    toast({ title: 'Pseudo enregistré', description: 'Ton pseudo a été mis à jour.' });
+
+    toast('Pseudo enregistré', { description: 'Ton pseudo a été mis à jour.' });
   };
   
   const handleDeleteAccount = async () => {
     if (!user || !profileDisplayName) return;
     if (confirmUsername !== profileDisplayName) {
-      toast({ 
-        title: 'Confirmation incorrecte', 
-        description: 'Le pseudo doit correspondre exactement pour supprimer le compte.', 
-        variant: 'destructive' 
+      toast.error('Confirmation incorrecte', {
+        description: 'Le pseudo doit correspondre exactement pour supprimer le compte.',
       });
       return;
     }
@@ -76,9 +74,7 @@ export default function Profile() {
 
       if (deleteError) {
         console.error('Error deleting account:', deleteError);
-        toast({
-          variant: 'destructive',
-          title: 'Erreur',
+        toast.error('Erreur', {
           description: 'Impossible de supprimer le compte. Veuillez réessayer.',
         });
         setDeleting(false);
@@ -86,14 +82,12 @@ export default function Profile() {
       }
 
       await signOut();
-      toast({ title: 'Compte supprimé', description: 'Ton compte a été supprimé avec succès.' });
+      toast('Compte supprimé', { description: 'Ton compte a été supprimé avec succès.' });
       navigate('/');
     } catch (err) {
       console.error('Error deleting account:', err);
-      toast({
-        title: 'Erreur',
+      toast.error('Erreur', {
         description: 'Une erreur est survenue lors de la suppression du compte.',
-        variant: 'destructive'
       });
       setDeleting(false);
     }
@@ -216,7 +210,7 @@ export default function Profile() {
                 variant="outline"
                 onClick={() => {
                   localStorage.setItem('bq_restart_tutorial', '1');
-                  toast({ title: 'Tutoriel relance', description: 'Le tutoriel reprendra au prochain chargement du jeu.' });
+                  toast('Tutoriel relance', { description: 'Le tutoriel reprendra au prochain chargement du jeu.' });
                   navigate('/game');
                 }}
               >
