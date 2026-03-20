@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { AchievementState, AchievementDefinition, ACHIEVEMENTS } from '@/game/achievements';
 import { getUnlockedAchievements, getInProgressAchievements, getLockedAchievements } from '@/game/achievements';
@@ -127,13 +127,14 @@ const AchievementItem: React.FC<AchievementItemProps> = ({ achievement, progress
 const Achievements: React.FC<AchievementsProps> = ({ achievements, onClose, onClaimReward, onClaimAll }) => {
   const [activeTab, setActiveTab] = useState('all');
 
-  const unlocked = getUnlockedAchievements(achievements);
-  const inProgress = getInProgressAchievements(achievements);
-  const locked = getLockedAchievements(achievements);
-
-  const claimableIds = ACHIEVEMENTS
-    .filter(a => achievements[a.id]?.unlocked && !achievements[a.id]?.claimedAt)
-    .map(a => a.id);
+  const { unlocked, inProgress, locked, claimableIds } = useMemo(() => ({
+    unlocked: getUnlockedAchievements(achievements),
+    inProgress: getInProgressAchievements(achievements),
+    locked: getLockedAchievements(achievements),
+    claimableIds: ACHIEVEMENTS
+      .filter(a => achievements[a.id]?.unlocked && !achievements[a.id]?.claimedAt)
+      .map(a => a.id),
+  }), [achievements]);
 
   const renderAchievements = (list: AchievementDefinition[], emptyMessage: string, emptyDescription?: string) => {
     if (list.length === 0) {

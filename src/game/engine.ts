@@ -1,10 +1,39 @@
 import { GameState, GameMap, Hero, Bomb, Explosion, Chest, TileType, CHEST_CONFIG, ChestTier } from './types';
 import { addXp, getMaxLevel } from './upgradeSystem';
-import { getActiveClanSkills } from './clanSystem';
+import { getActiveClanSkills, ClanSkillEffect } from './clanSystem';
 import { Boss } from './storyTypes';
 
 let nextId = 1;
 const genId = () => `id_${nextId++}`;
+
+// --- Helpers locaux (non exportés) ---
+
+/**
+ * Retourne la somme des bonus d'un type d'effet de clan skill donné.
+ * Evite de répéter getActiveClanSkills().filter().reduce() à chaque appel.
+ */
+function getClanBonus(effectType: ClanSkillEffect['type'], heroes: Hero[]): number {
+  return getActiveClanSkills(heroes)
+    .filter(s => s.effect.type === effectType)
+    .reduce((acc, s) => acc + s.effect.value, 0);
+}
+
+/**
+ * Construit la liste des cibles Story (ennemis + éventuellement boss) normalisée
+ * avec la propriété isBoss. Utilisée par les deux appels à findNearestTarget dans tickGame.
+ */
+function buildStoryTargets(
+  state: Pick<GameState, 'enemies' | 'boss' | 'isStoryMode'>
+): { position: { x: number; y: number }; hp: number; isBoss?: boolean }[] | undefined {
+  if (!state.isStoryMode) return state.enemies;
+  if (state.boss && (state.boss as any).hp > 0) {
+    return [
+      ...(state.enemies || []).map(e => ({ ...e, isBoss: false as const })),
+      { ...(state.boss as any), isBoss: true as const },
+    ];
+  }
+  return state.enemies;
+}
 
 const XP_REWARDS = {
   bombPlaced: 5,
@@ -456,10 +485,7 @@ export function tickGame(state: GameState, deltaMs: number): GameState {
         chest.hp = Math.max(0, chest.hp - bomb.power);
         if (chest.hp <= 0) {
           // Bonus coin_bonus (shadow-core clan skill)
-          const activeSkillsForCoins = getActiveClanSkills(heroes);
-          const coinBonus = activeSkillsForCoins
-            .filter(s => s.effect.type === 'coin_bonus')
-            .reduce((acc, s) => acc + s.effect.value, 0);
+          const coinBonus = getClanBonus('coin_bonus', heroes);
           coinsEarned += Math.round(chest.reward * (1 + coinBonus));
           chestsOpened++;
           eventLog.push(`Coffre ${chest.tier} ouvert! +${chest.reward} BC`);
@@ -610,10 +636,7 @@ export function tickGame(state: GameState, deltaMs: number): GameState {
         }
       } else {
         // Bonus move_speed (wild-pack clan skill)
-        const activeSkillsForSpeed = getActiveClanSkills(heroes);
-        const speedBonus = activeSkillsForSpeed
-          .filter(s => s.effect.type === 'move_speed')
-          .reduce((acc, s) => acc + s.effect.value, 0);
+        const speedBonus = getClanBonus('move_speed', heroes);
         const speed = hero.stats.spd * (hero.currentStamina < hero.maxStamina * 0.5 ? 0.75 : 1.0) * (1 + speedBonus);
         if (Math.abs(dx) > 0.05) {
           hero.position.x += Math.sign(dx) * Math.min(Math.abs(dx), speed * dt);
@@ -632,13 +655,8 @@ export function tickGame(state: GameState, deltaMs: number): GameState {
         const by = Math.round(hero.position.y);
         if (!bombs.some(b => b.position.x === bx && b.position.y === by)) {
           // Calculer les bonus de clan skills actifs
-          const activeSkills = getActiveClanSkills(heroes);
-          const rangBonus = activeSkills
-            .filter(s => s.effect.type === 'bomb_range')
-            .reduce((acc, s) => acc + s.effect.value, 0);
-          const timerBonus = activeSkills
-            .filter(s => s.effect.type === 'bomb_timer')
-            .reduce((acc, s) => acc + s.effect.value, 0);
+          const rangBonus = getClanBonus('bomb_range', heroes);
+          const timerBonus = getClanBonus('bomb_timer', heroes);
           bombs.push({
             id: genId(),
             heroId: hero.id,
@@ -695,12 +713,7 @@ export function tickGame(state: GameState, deltaMs: number): GameState {
       // In story mode with enemies alive, re-target faster (0.15s vs 0.3s)
       const hasAliveEnemies = state.enemies?.some(e => e.hp > 0) || (state.isStoryMode && state.boss && (state.boss as Boss).hp > 0);
       const retargetDelay = (state.isStoryMode && hasAliveEnemies) ? 0.15 : 0.3;
-      const storyTargets = state.isStoryMode && state.boss && (state.boss as Boss).hp > 0
-        ? [
-            ...(state.enemies || []).map(e => ({ ...e, isBoss: false })),
-            { ...(state.boss as Boss), isBoss: true },
-          ]
-        : state.enemies;
+      const storyTargets = buildStoryTargets(state);
 
       if (hero.stuckTimer >= retargetDelay) {
         const target = findNearestTarget(map, hero, bombs, map.chests, storyTargets, state.isStoryMode);
@@ -727,12 +740,7 @@ export function tickGame(state: GameState, deltaMs: number): GameState {
       // Every 0.8s, re-evaluate if there's a closer enemy
       if (hero.stuckTimer >= 0.8) {
         hero.stuckTimer = 0;
-        const retargets = state.boss && (state.boss as Boss).hp > 0
-          ? [
-              ...(state.enemies || []).map(e => ({ ...e, isBoss: false })),
-              { ...(state.boss as Boss), isBoss: true },
-            ]
-          : state.enemies;
+        const retargets = buildStoryTargets(state);
         const betterTarget = findNearestTarget(map, hero, bombs, map.chests, retargets, true);
         if (betterTarget && hero.targetPosition) {
           const currentDist = Math.abs(hero.targetPosition.x - hx) + Math.abs(hero.targetPosition.y - hy);
