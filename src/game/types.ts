@@ -1,3 +1,5 @@
+import { Enemy, Boss } from './storyTypes';
+
 export type TileType = 'floor' | 'wall' | 'block';
 
 export type Rarity = 'common' | 'rare' | 'super-rare' | 'epic' | 'legend' | 'super-legend';
@@ -117,8 +119,8 @@ export interface GameState {
   chestsOpened: number;
   blocksDestroyed: number;
   // Story mode fields
-  enemies?: any[];
-  boss?: any | null;
+  enemies?: Enemy[];
+  boss?: Boss | null;
   isStoryMode?: boolean;
   storyStageId?: string;
   enemiesKilled?: number;

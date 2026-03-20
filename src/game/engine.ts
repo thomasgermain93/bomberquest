@@ -1,6 +1,7 @@
 import { GameState, GameMap, Hero, Bomb, Explosion, Chest, TileType, CHEST_CONFIG, ChestTier } from './types';
 import { addXp, getMaxLevel } from './upgradeSystem';
 import { getActiveClanSkills } from './clanSystem';
+import { Boss } from './storyTypes';
 
 let nextId = 1;
 const genId = () => `id_${nextId++}`;
@@ -566,8 +567,8 @@ export function tickGame(state: GameState, deltaMs: number): GameState {
             hero.stuckTimer = 0;
           } else {
             // Check if adjacent to a target - should bomb (include boss)
-            const adjacentTargets = state.isStoryMode && state.boss && (state.boss as any).hp > 0
-              ? [...(state.enemies || []), state.boss as any]
+            const adjacentTargets = state.isStoryMode && state.boss && (state.boss as Boss).hp > 0
+              ? [...(state.enemies || []), state.boss as Boss]
               : state.enemies;
             if (isAdjacentToTarget(hero, map, adjacentTargets)) {
               hero.state = 'bombing';
@@ -662,12 +663,12 @@ export function tickGame(state: GameState, deltaMs: number): GameState {
       hero.position.y = Math.round(hero.position.y);
 
       // In story mode with enemies alive, re-target faster (0.15s vs 0.3s)
-      const hasAliveEnemies = state.enemies?.some(e => e.hp > 0) || (state.isStoryMode && state.boss && (state.boss as any).hp > 0);
+      const hasAliveEnemies = state.enemies?.some(e => e.hp > 0) || (state.isStoryMode && state.boss && (state.boss as Boss).hp > 0);
       const retargetDelay = (state.isStoryMode && hasAliveEnemies) ? 0.15 : 0.3;
-      const storyTargets = state.isStoryMode && state.boss && (state.boss as any).hp > 0
+      const storyTargets = state.isStoryMode && state.boss && (state.boss as Boss).hp > 0
         ? [
             ...(state.enemies || []).map(e => ({ ...e, isBoss: false })),
-            { ...(state.boss as any), isBoss: true },
+            { ...(state.boss as Boss), isBoss: true },
           ]
         : state.enemies;
 
@@ -690,16 +691,16 @@ export function tickGame(state: GameState, deltaMs: number): GameState {
     }
 
     // In story mode, interrupt current movement to retarget enemies that moved
-    const hasStoryTargets = state.isStoryMode && (state.enemies?.some(e => e.hp > 0) || (state.boss && (state.boss as any).hp > 0));
+    const hasStoryTargets = state.isStoryMode && (state.enemies?.some(e => e.hp > 0) || (state.boss && (state.boss as Boss).hp > 0));
     if (hasStoryTargets && hero.state === 'moving') {
       hero.stuckTimer += dt;
       // Every 0.8s, re-evaluate if there's a closer enemy
       if (hero.stuckTimer >= 0.8) {
         hero.stuckTimer = 0;
-        const retargets = state.boss && (state.boss as any).hp > 0
+        const retargets = state.boss && (state.boss as Boss).hp > 0
           ? [
               ...(state.enemies || []).map(e => ({ ...e, isBoss: false })),
-              { ...(state.boss as any), isBoss: true },
+              { ...(state.boss as Boss), isBoss: true },
             ]
           : state.enemies;
         const betterTarget = findNearestTarget(map, hero, bombs, map.chests, retargets, true);
