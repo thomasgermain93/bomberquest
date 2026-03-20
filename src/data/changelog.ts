@@ -14,6 +14,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: '2026-03-20',
     title: 'Mises à jour récentes',
     changes: [
+      { type: 'feature', description: 'fix(M3): Code mort & nettoyage — hooks, variables CSS, docs (#315)' },
       { type: 'feature', description: 'fix(M2): Type Safety — éliminer les casts  dans tout le codebase (#314)' },
       { type: 'feature', description: 'fix(M1): 6 bugs critiques — pathfinding, race conditions, shuffle biaisé (#313)' },
       { type: 'feature', description: 'fix: restaurer l\'accès à la page profil (pseudo, suppression compte) (#237)' },
