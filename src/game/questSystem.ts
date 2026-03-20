@@ -100,6 +100,14 @@ const QUEST_TEMPLATES: {
   },
 ];
 
+function fisherYatesSeeded<T>(arr: T[], rng: () => number): T[] {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
 function getTodayString(): string {
   return new Date().toISOString().split('T')[0];
 }
@@ -126,7 +134,7 @@ export function generateDailyQuests(): DailyQuestData {
   const rng = seededRandom(dateToSeed(today));
 
   // Mélanger les templates de façon déterministe
-  const shuffled = [...QUEST_TEMPLATES].sort(() => rng() - 0.5);
+  const shuffled = fisherYatesSeeded([...QUEST_TEMPLATES], rng);
 
   // Assure au moins une quête de farm, une de combat, une de progression
   const farmQuests = shuffled.filter(t => ['complete_maps', 'open_chests', 'earn_coins'].includes(t.type));
