@@ -27,6 +27,7 @@ export interface UseFusionLogicReturn {
   fusionSlots: (Hero | null)[];
   /** Last hero obtained through fusion */
   lastFusedHero: Hero | null;
+  setLastFusedHero: React.Dispatch<React.SetStateAction<Hero | null>>;
   /** Hero picker modal open state */
   heroPickerOpen: boolean;
   setHeroPickerOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -222,6 +223,7 @@ export function useFusionLogic({
     setSelectedRecipeIdx,
     fusionSlots,
     lastFusedHero,
+    setLastFusedHero,
     heroPickerOpen,
     setHeroPickerOpen,
     activeSlotIdx,
