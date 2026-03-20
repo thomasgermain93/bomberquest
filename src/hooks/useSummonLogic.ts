@@ -125,10 +125,7 @@ export function useSummonLogic({
     }));
 
     for (const achievement of newAchievementUnlocks) {
-      toast({
-        title: 'Succès débloqué!',
-        description: achievement.title,
-      });
+      toast('🏆 Succès débloqué!', { description: achievement.title });
     }
 
     if (canWriteCloud) {
@@ -146,7 +143,7 @@ export function useSummonLogic({
   const handleSummonShards = () => {
     const cost = SHARD_COSTS[selectedShardRarity];
     if (player.universalShards < cost) {
-      toast({ title: 'Fragments insuffisants', description: `Il te faut ${cost} Fragments pour cette invocation.` });
+      toast('Fragments insuffisants', { description: `Il te faut ${cost} Fragments pour cette invocation.` });
       return;
     }
 
@@ -177,7 +174,7 @@ export function useSummonLogic({
     }));
 
     for (const achievement of newAchievementUnlocks) {
-      toast({ title: 'Succès débloqué!', description: achievement.title });
+      toast('🏆 Succès débloqué!', { description: achievement.title });
     }
 
     if (canWriteCloud) {

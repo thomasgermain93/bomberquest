@@ -95,10 +95,7 @@ export function useFusionLogic({
     const maxLevel = RARITY_CONFIG[from].maxLevel;
     const available = player.heroes.filter(h => h.rarity === from && h.level >= maxLevel);
     if (available.length < count) {
-      toast({
-        title: "Fusion impossible",
-        description: `Vous avez besoin de ${count} héros ${RARITY_CONFIG[from].label} niveau ${maxLevel}`,
-      });
+      toast("Fusion impossible", { description: `Vous avez besoin de ${count} héros ${RARITY_CONFIG[from].label} niveau ${maxLevel}` });
       return;
     }
 
@@ -118,10 +115,7 @@ export function useFusionLogic({
       removeHeroesFromCloud(removedIds);
     }
 
-    toast({
-      title: "Fusion réussie!",
-      description: `${RARITY_CONFIG[from].label} → ${RARITY_CONFIG[to].label}`,
-    });
+    toast("Fusion réussie!", { description: `${RARITY_CONFIG[from].label} → ${RARITY_CONFIG[to].label}` });
   };
 
   const executeFusionFromSlots = () => {
@@ -129,10 +123,7 @@ export function useFusionLogic({
     const filledSlots = fusionSlots.filter(s => s !== null) as Hero[];
 
     if (filledSlots.length !== recipe.count) {
-      toast({
-        title: "Slots incomplets",
-        description: `Vous devez remplir ${recipe.count} slots`,
-      });
+      toast("Slots incomplets", { description: `Vous devez remplir ${recipe.count} slots` });
       return;
     }
 
@@ -154,10 +145,7 @@ export function useFusionLogic({
 
     setLastFusedHero(newHero);
 
-    toast({
-      title: "Fusion réussie!",
-      description: `${RARITY_CONFIG[recipe.from].label} → ${RARITY_CONFIG[recipe.to].label}`,
-    });
+    toast("Fusion réussie!", { description: `${RARITY_CONFIG[recipe.from].label} → ${RARITY_CONFIG[recipe.to].label}` });
 
     // Reset slots
     setFusionSlots(Array(recipe.count).fill(null));
@@ -221,15 +209,9 @@ export function useFusionLogic({
         if (removedHeroIds.length > 0) removeHeroesFromCloud(removedHeroIds);
       }
 
-      toast({
-        title: "Fusion terminée",
-        description: `${mergeCount} fusion(s) effectuée(s)`,
-      });
+      toast("Fusion terminée", { description: `${mergeCount} fusion(s) effectuée(s)` });
     } else {
-      toast({
-        title: "Aucune fusion possible",
-        description: "Vous n'avez pas assez de héros pour fusionner",
-      });
+      toast("Aucune fusion possible", { description: "Vous n'avez pas assez de héros pour fusionner" });
     }
 
     setIsMerging(false);
