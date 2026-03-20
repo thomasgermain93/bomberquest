@@ -14,6 +14,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: '2026-03-20',
     title: 'Mises à jour récentes',
     changes: [
+      { type: 'feature', description: 'feat: interface équipe refactorisée — slots cliquables, picker filtré, synergies clan (#336)' },
       { type: 'feature', description: 'fix: bouton mute déplacé dans la SlimHeader — HUD combat équilibré (#335)' },
       { type: 'feature', description: 'feat: compétences débloquées progressivement tous les 20 niveaux + héritage niveau fusion (#334)' },
       { type: 'feature', description: 'fix: tutoriel se relance à chaque connexion — conserver tutorialStep undefined (#331)' },
