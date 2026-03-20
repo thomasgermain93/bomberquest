@@ -1,6 +1,6 @@
 import React from 'react';
 import { Hero, RARITY_CONFIG, MAX_LEVEL_BY_RARITY } from '@/game/types';
-import { getXpProgress } from '@/game/upgradeSystem';
+import { getXpProgress, getUnlockedSkills } from '@/game/upgradeSystem';
 import { Swords, Zap, Target, Bomb, Battery, Clover, Shield, Star, Moon, Check, Sparkles } from 'lucide-react';
 import HeroAvatar from '@/components/HeroAvatar';
 
@@ -167,9 +167,9 @@ const HeroCard: React.FC<HeroCardProps> = ({ hero, compact, onClick, selected })
           ))}
         </div>
 
-        {hero.skills.length > 0 && (
+        {getUnlockedSkills(hero).length > 0 && (
           <div className="mt-2 space-y-0.5">
-            {hero.skills.map((skill, i) => (
+            {getUnlockedSkills(hero).map((skill, i) => (
               <p key={i} className="text-[8px] text-accent truncate flex items-center gap-1" title={skill.description}>
                 <Zap size={8} /> {skill.name}
               </p>

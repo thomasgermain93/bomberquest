@@ -400,6 +400,14 @@ export function countDuplicates(heroes: Hero[], heroId: string, rarity: Rarity):
   return heroes.filter(h => h.id !== heroId && h.rarity === rarity).length;
 }
 
+/**
+ * Retourne uniquement les compétences débloquées du héros.
+ * Règle : skill[i] (0-indexed) se débloque au niveau (i+1) * 20.
+ */
+export function getUnlockedSkills(hero: Hero): Skill[] {
+  return hero.skills.filter((_, i) => hero.level >= (i + 1) * 20);
+}
+
 // Coût en nombre de doublons par level de skill (index = level actuel)
 const SKILL_UPGRADE_COST = [0, 1, 2, 3, 5]; // Pour passer du level 1→2, 2→3, 3→4, 4→5
 
