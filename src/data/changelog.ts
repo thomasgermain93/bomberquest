@@ -14,6 +14,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: '2026-03-20',
     title: 'Mises à jour récentes',
     changes: [
+      { type: 'feature', description: 'feat: compétences débloquées progressivement tous les 20 niveaux + héritage niveau fusion (#334)' },
       { type: 'feature', description: 'fix: tutoriel se relance à chaque connexion — conserver tutorialStep undefined (#331)' },
       { type: 'feature', description: '[K-1] Décomposer Index.tsx (god component 2800+ lignes) en hooks custom (#253)' },
       { type: 'feature', description: '[K-3] Unifier le système toast sur sonner (supprimer @radix-ui/react-toast + use-toast.ts) (#265)' },
