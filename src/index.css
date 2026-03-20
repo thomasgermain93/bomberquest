@@ -56,15 +56,6 @@
     --game-rarity-super-legend: 300 100% 70%;
     --game-explosion: 25 100% 55%;
 
-    --sidebar-background: 230 25% 12%;
-    --sidebar-foreground: 0 0% 95%;
-    --sidebar-primary: 348 80% 58%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 230 20% 18%;
-    --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 230 20% 22%;
-    --sidebar-ring: 348 80% 58%;
-
     /* Layout nav */
     --bottom-nav-h: 4rem;      /* 64px — hauteur BottomNav mobile */
     --header-h: 3rem;           /* 48px — hauteur SlimHeader */

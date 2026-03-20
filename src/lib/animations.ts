@@ -1,4 +1,4 @@
-import { type Variants, type Transition, useReducedMotion } from 'framer-motion';
+import { type Variants, type Transition } from 'framer-motion';
 
 // --- Transition presets ---
 export const SPRING_SNAPPY: Transition = { type: 'spring', stiffness: 350, damping: 30 };
@@ -57,16 +57,3 @@ export const staggerItem: Variants = {
   visible: { opacity: 1, x: 0, transition: TWEEN_NORMAL },
 };
 
-/** Hook prefers-reduced-motion */
-export function usePixelMotion() {
-  const prefersReduced = useReducedMotion();
-  return {
-    transition: prefersReduced ? { duration: 0 } : undefined,
-    safeVariants: <T extends Variants>(v: T): T =>
-      prefersReduced
-        ? Object.fromEntries(
-            Object.entries(v).map(([k, val]) => [k, { ...val, transition: { duration: 0 } }])
-          ) as T
-        : v,
-  };
-}

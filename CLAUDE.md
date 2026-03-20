@@ -60,8 +60,7 @@ bomberquest/
 │   │   └── AuthContext.tsx # Supabase auth context (signUp, signIn, signOut)
 │   ├── hooks/
 │   │   ├── useCloudSave.ts # Hybrid save: Supabase + localStorage
-│   │   ├── use-toast.ts    # Toast notifications (Sonner)
-│   │   └── use-mobile.ts   # Mobile breakpoint detection
+│   │   └── use-toast.ts    # Toast notifications (Sonner)
 │   ├── integrations/
 │   │   └── supabase/       # Supabase client and generated types
 │   ├── data/
@@ -148,7 +147,7 @@ The integration client at `src/integrations/supabase/client.ts` also accepts `VI
 | `PascalCase` | React components, TypeScript types/interfaces |
 | `camelCase` | Variables, functions, hook return values |
 | `UPPER_SNAKE_CASE` | Constants (e.g., `RARITY_CONFIG`, `MAP_CONFIGS`) |
-| `use` prefix | Custom hooks (`useCloudSave`, `use-mobile`) |
+| `use` prefix | Custom hooks (`useCloudSave`, `use-toast`) |
 | `draw` prefix | Canvas rendering functions (`drawHero`, `drawTile`) |
 | `spawn` prefix | Entity factory functions (`spawnEnemy`, `spawnBoss`) |
 | `tick` prefix | Per-frame update functions (`tickGame`, `tickBoss`) |
