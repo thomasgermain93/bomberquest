@@ -14,6 +14,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: '2026-03-20',
     title: 'Mises à jour récentes',
     changes: [
+      { type: 'feature', description: '[K-4] Extraire HeroDetailContent partagé entre HeroUpgradeModal et HeroDetailInline (#266)' },
       { type: 'feature', description: '[K-5] Extraire les composants animation partagés entre SummonModal et page Summon (#267)' },
       { type: 'feature', description: '[I-1] Supprimer BottomNav.tsx et MoreDrawer.tsx (composants jamais utilisés) (#239)' },
       { type: 'fix', description: '[J-3] Bug : prix BC incohérents entre SummonModal (x10) et page Summon (#256)' },
