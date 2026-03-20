@@ -4,7 +4,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { pixelFade } from '@/lib/animations';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { useCloudSave } from '@/hooks/useCloudSave';
+import { useCloudSync } from '@/hooks/useCloudSync';
+import { useSummonLogic } from '@/hooks/useSummonLogic';
+import { useFusionLogic, MERGE_RECIPES } from '@/hooks/useFusionLogic';
 import GameGrid from '@/components/GameGrid';
 import CombatHeroPanel from '@/components/CombatHeroPanel';
 import HeroCard from '@/components/HeroCard';
@@ -17,10 +19,10 @@ import FusionSlot from '@/components/FusionSlot';
 import StoryMode from '@/components/StoryMode';
 import { GameState, Hero, MAP_CONFIGS, PlayerData, RARITY_CONFIG, RARITY_ORDER, sortByRarity, Rarity, HERO_NAMES, HERO_FAMILIES, HERO_FAMILY_MAP, HeroFamilyId, MAX_LEVEL_BY_RARITY } from '@/game/types';
 import { generateMap, tickGame } from '@/game/engine';
-import { summonHero, generateHero } from '@/game/summoning';
+// summonHero and generateHero are now used inside useSummonLogic / useFusionLogic
 import { loadPlayerData, savePlayerData, getDefaultPlayerData, saveStoryProgress, loadStoryProgress } from '@/game/saveSystem';
 import { getUpgradeCost, upgradeHero, ascendHero, getAscensionCost, countDuplicates, upgradeSkillWithDuplicate } from '@/game/upgradeSystem';
-import { trackSummon, trackCombatVictory, trackLevelUp, trackRarityUnlock, trackChestsOpened, trackBossDefeated, trackHeroCount, claimAchievementReward, AchievementDefinition, ACHIEVEMENTS } from '@/game/achievements';
+import { trackCombatVictory, trackLevelUp, trackChestsOpened, trackBossDefeated, claimAchievementReward, AchievementDefinition, ACHIEVEMENTS } from '@/game/achievements';
 import { DailyQuestData, loadDailyQuests, saveDailyQuests, generateDailyQuests, updateQuestProgress, ALL_CLAIMED_BONUS, ALL_CLAIMED_XP_BONUS } from '@/game/questSystem';
 import { StoryProgress, StoryStage, BOSS_LEVEL_BY_TYPE, BossType, EnemyType } from '@/game/storyTypes';
 import { getHeroFamily, getClanAffinityMultiplier, getActiveClanSkills } from '@/game/clanSystem';
@@ -76,15 +78,7 @@ const DEFAULT_HERO_FILTERS: HeroFilters = {
   showLockedOnly: false,
 };
 
-// Merge system - ratios from issue #93
-// Declared at module level to avoid TDZ when used in useEffect before const declaration inside component
-const MERGE_RECIPES: { from: Rarity; to: Rarity; count: number }[] = [
-  { from: 'common', to: 'rare', count: 2 },
-  { from: 'rare', to: 'super-rare', count: 3 },
-  { from: 'super-rare', to: 'epic', count: 4 },
-  { from: 'epic', to: 'legend', count: 5 },
-  { from: 'legend', to: 'super-legend', count: 6 },
-];
+// MERGE_RECIPES is now imported from useFusionLogic
 
 const Index = () => {
   usePageMeta({ title: 'Jeu', noIndex: true });
@@ -105,9 +99,6 @@ const Index = () => {
   );
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [summonOpen, setSummonOpen] = useState(false);
-  const [summonTab, setSummonTab] = useState<'coins' | 'shards'>('coins');
-  const [selectedShardRarity, setSelectedShardRarity] = useState<Rarity>('rare');
-  const [lastSummoned, setLastSummoned] = useState<Hero | null>(null);
   const [selectedMap, setSelectedMap] = useState(0);
   const [selectedHeroes, setSelectedHeroes] = useState<Set<string>>(new Set());
   const [upgradeHeroId, setUpgradeHeroId] = useState<string | null>(null);
@@ -121,20 +112,11 @@ const Index = () => {
   );
   const [currentStoryStage, setCurrentStoryStage] = useState<StoryStage | null>(null);
   const [muted, setMutedState] = useState(isMuted());
-  const [isCloudLoading, setIsCloudLoading] = useState(!!user);
-  const [cloudValidated, setCloudValidated] = useState(false);
   const [autoFarm, setAutoFarm] = useState(false);
-  const [isMerging, setIsMerging] = useState(false);
   const [farmStats, setFarmStats] = useState({ runs: 0, totalCoins: 0 });
   const [lastShardRewards, setLastShardRewards] = useState<ShardReward[]>([]);
   const [storyRegionIdx, setStoryRegionIdx] = useState(0);
   
-  // Fusion UI state
-  const [selectedRecipeIdx, setSelectedRecipeIdx] = useState<number>(0);
-  const [fusionSlots, setFusionSlots] = useState<(Hero | null)[]>([null, null]);
-  const [lastFusedHero, setLastFusedHero] = useState<Hero | null>(null);
-  const [heroPickerOpen, setHeroPickerOpen] = useState(false);
-  const [activeSlotIdx, setActiveSlotIdx] = useState<number | null>(null);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [heroFilters, setHeroFilters] = useState<HeroFilters>(DEFAULT_HERO_FILTERS);
   const [codexClanFilter, setCodexClanFilter] = useState<'all' | HeroFamilyId>('all');
@@ -157,13 +139,8 @@ const Index = () => {
     onAdvance: handleTutorialAdvance,
   });
 
-  // Reset fusion slots when recipe changes
-  useEffect(() => {
-    setFusionSlots(Array(MERGE_RECIPES[selectedRecipeIdx].count).fill(null));
-  }, [selectedRecipeIdx]);
   const huntSpeedRef = useRef(1);
   const gameLoopRef = useRef<number>();
-  const cloudLoadedRef = useRef(false);
   const isInitialMountRef = useRef(true);
 
   useEffect(() => {
@@ -216,27 +193,74 @@ const Index = () => {
       });
   }, [player.heroes, heroFilters]);
 
-  const cloudSessionReady = Boolean(user?.id && session?.access_token && !authLoading);
-  const canWriteCloud = cloudSessionReady && cloudValidated;
-  const { loadFromCloud, saveHeroesToCloud, removeHeroesFromCloud, saveStatsToCloud, syncHeroesSnapshotToCloud } = useCloudSave(user?.id, canWriteCloud);
+  // Cloud sync hook — handles session readiness, initial load, and provides save helpers
+  const {
+    canWriteCloud,
+    isCloudLoading,
+    saveHeroesToCloud,
+    removeHeroesFromCloud,
+    saveStatsToCloud,
+    syncHeroesSnapshotToCloud,
+  } = useCloudSync(
+    { userId: user?.id, sessionAccessToken: session?.access_token, authLoading },
+    setPlayer,
+    setStoryProgress,
+    setDailyQuests,
+    huntSpeedRef,
+  );
+
+  // Summon logic hook
+  const {
+    lastSummoned,
+    summonedBatch,
+    showSummonFlash,
+    summonTab,
+    setSummonTab,
+    selectedShardRarity,
+    setSelectedShardRarity,
+    handleSummon,
+    handleSummonShards,
+    SHARD_COSTS,
+  } = useSummonLogic({
+    player,
+    setPlayer,
+    setDailyQuests,
+    canWriteCloud,
+    saveHeroesToCloud,
+    removeHeroesFromCloud,
+  });
+
+  // Fusion logic hook
+  const {
+    selectedRecipeIdx,
+    setSelectedRecipeIdx,
+    fusionSlots,
+    lastFusedHero,
+    heroPickerOpen,
+    setHeroPickerOpen,
+    activeSlotIdx,
+    isMerging,
+    isHeroEligibleForMerge,
+    getAvailableForMerge,
+    handleMerge,
+    executeFusionFromSlots,
+    handleSlotClick,
+    handleHeroSelect,
+    handleSlotClear,
+    mergeAll,
+  } = useFusionLogic({
+    player,
+    setPlayer,
+    canWriteCloud,
+    saveHeroesToCloud,
+    removeHeroesFromCloud,
+  });
 
   const toggleMute = () => {
     const newVal = !muted;
     setMutedState(newVal);
     setMuted(newVal);
   };
-
-  useEffect(() => {
-    cloudLoadedRef.current = false;
-    setCloudValidated(false);
-
-    if (!user) {
-      setIsCloudLoading(false);
-      return;
-    }
-
-    setIsCloudLoading(true);
-  }, [user?.id]);
 
   // Save to localStorage when player data changes (offline mode + authenticated safety backup)
   // Invités uniquement — les users authentifiés passent par le cloud
@@ -254,72 +278,6 @@ const Index = () => {
   useEffect(() => {
     isInitialMountRef.current = false;
   }, []);
-
-  // Load from cloud on mount (connected users only) - prevents rollback on navigation
-  useEffect(() => {
-    if (!user) return;
-    if (!cloudSessionReady) return;
-    if (cloudLoadedRef.current) {
-      return;
-    }
-
-    setIsCloudLoading(true);
-
-    const CLOUD_LOAD_TIMEOUT = 3500;
-    const RETRY_DELAY_MS = 400;
-    const MAX_RETRIES = 0;
-
-    const loadWithRetry = async (retryCount = 0): Promise<any> => {
-      const timeoutPromise = new Promise<null>((resolve) => {
-        setTimeout(() => resolve(null), CLOUD_LOAD_TIMEOUT);
-      });
-
-      try {
-        const data = await Promise.race([loadFromCloud(), timeoutPromise]);
-        return data;
-      } catch (err) {
-        const error = err as Error & { code?: string };
-        console.error('CLOUD_LOAD_ERROR', { code: error.code || 'UNKNOWN', message: error.message, retryCount });
-        
-        if (retryCount < MAX_RETRIES) {
-          await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
-          return loadWithRetry(retryCount + 1);
-        }
-        return null;
-      }
-    };
-
-    let cancelled = false;
-    loadWithRetry().then(data => {
-      if (cancelled) return;
-      const today = new Date().toISOString().split('T')[0];
-      if (data) {
-        setPlayer(data.playerData);
-        setStoryProgress(data.storyProgress ?? { completedStages: [], currentRegion: 'forest', bossesDefeated: [], highestStage: 0, bossFirstClearRewards: [] });
-        setDailyQuests(data.dailyQuests?.date === today ? data.dailyQuests : generateDailyQuests());
-        const cloudSpeed = data.playerData.huntSpeed;
-        if (cloudSpeed === 2 || cloudSpeed === 3) huntSpeedRef.current = cloudSpeed;
-        setCloudValidated(true);
-      } else {
-        // Pas de save cloud → nouvel utilisateur
-        setPlayer(getDefaultPlayerData());
-        setStoryProgress({ completedStages: [], currentRegion: 'forest', bossesDefeated: [], highestStage: 0, bossFirstClearRewards: [] });
-        setDailyQuests(generateDailyQuests());
-        setCloudValidated(true);
-      }
-      cloudLoadedRef.current = true;
-    }).catch((err) => {
-      if (cancelled) return;
-      const error = err as Error & { code?: string };
-      console.error('CLOUD_LOAD_UNEXPECTED_ERROR', { code: error.code || 'UNKNOWN', message: error.message });
-      setCloudValidated(false);
-      cloudLoadedRef.current = true;
-      toast('Cloud indisponible', { description: 'Impossible de charger la sauvegarde. Réessaie.', duration: 4000 });
-    }).finally(() => {
-      if (!cancelled) setIsCloudLoading(false);
-    });
-    return () => { cancelled = true; };
-  }, [user?.id, cloudSessionReady, loadFromCloud]);
 
   // Calculate account level from XP
   const getAccountLevel = (xp: number) => {
@@ -794,165 +752,6 @@ const Index = () => {
     }
   }, [autoFarm, gameState?.mapCompleted, gameState?.isStoryMode, collectAndContinue]);
 
-  // MERGE_RECIPES is now declared at module level (above) to prevent TDZ crash
-
-  const isHeroEligibleForMerge = (hero: Hero, rarity: Rarity, requiredCount: number): { eligible: boolean; reason: string } => {
-    const maxLevel = RARITY_CONFIG[rarity].maxLevel;
-    if (hero.rarity !== rarity) {
-      return { eligible: false, reason: `Rareté ${RARITY_CONFIG[rarity].label} requise` };
-    }
-    if (hero.level < maxLevel) {
-      return { eligible: false, reason: `Niveau ${maxLevel} requis (${hero.level}/${maxLevel})` };
-    }
-    return { eligible: true, reason: '' };
-  };
-
-  const getAvailableForMerge = (rarity: Rarity): { total: number; maxed: number } => {
-    const heroesOfRarity = player.heroes.filter(h => h.rarity === rarity);
-    const maxLevel = RARITY_CONFIG[rarity].maxLevel;
-    const maxed = heroesOfRarity.filter(h => h.level >= maxLevel).length;
-    return { total: heroesOfRarity.length, maxed };
-  };
-
-  const handleMerge = (from: Rarity, to: Rarity, count: number) => {
-    const maxLevel = RARITY_CONFIG[from].maxLevel;
-    const available = player.heroes.filter(h => h.rarity === from && h.level >= maxLevel);
-    if (available.length < count) {
-      toast('Fusion impossible', {
-        description: `Vous avez besoin de ${count} héros ${RARITY_CONFIG[from].label} niveau ${maxLevel}`,
-      });
-      return;
-    }
-    
-    const toRemove = new Set(available.slice(0, count).map(h => h.id));
-    const removedIds = Array.from(toRemove);
-    const newHero = generateHero(to);
-    const mergedHeroes = [...player.heroes.filter(h => !toRemove.has(h.id)), newHero];
-    
-    setPlayer(prev => ({
-      ...prev,
-      heroes: mergedHeroes,
-      totalHeroesOwned: mergedHeroes.length,
-    }));
-
-    if (canWriteCloud) {
-      saveHeroesToCloud([newHero]);
-      removeHeroesFromCloud(removedIds);
-    }
-
-    toast('Fusion réussie!', {
-      description: `${RARITY_CONFIG[from].label} → ${RARITY_CONFIG[to].label}`,
-    });
-  };
-
-  // Execute fusion from fusion slots UI
-  const executeFusionFromSlots = () => {
-    const recipe = MERGE_RECIPES[selectedRecipeIdx];
-    const filledSlots = fusionSlots.filter(s => s !== null) as Hero[];
-    
-    if (filledSlots.length !== recipe.count) {
-      toast('Slots incomplets', {
-        description: `Vous devez remplir ${recipe.count} slots`,
-      });
-      return;
-    }
-
-    const toRemove = new Set(filledSlots.map(h => h.id));
-    const removedIds = Array.from(toRemove);
-    const newHero = generateHero(recipe.to);
-    const mergedHeroes = [...player.heroes.filter(h => !toRemove.has(h.id)), newHero];
-    
-    setPlayer(prev => ({
-      ...prev,
-      heroes: mergedHeroes,
-      totalHeroesOwned: mergedHeroes.length,
-    }));
-
-    if (canWriteCloud) {
-      saveHeroesToCloud([newHero]);
-      removeHeroesFromCloud(removedIds);
-    }
-
-    setLastFusedHero(newHero);
-
-    toast('Fusion réussie!', {
-      description: `${RARITY_CONFIG[recipe.from].label} → ${RARITY_CONFIG[recipe.to].label}`,
-    });
-
-    // Reset slots
-    setFusionSlots(Array(recipe.count).fill(null));
-  };
-
-  const handleSlotClick = (index: number) => {
-    setActiveSlotIdx(index);
-    setHeroPickerOpen(true);
-  };
-
-  const handleHeroSelect = (hero: Hero) => {
-    if (activeSlotIdx !== null) {
-      const newSlots = [...fusionSlots];
-      newSlots[activeSlotIdx] = hero;
-      setFusionSlots(newSlots);
-    }
-    setHeroPickerOpen(false);
-    setActiveSlotIdx(null);
-  };
-
-  const handleSlotClear = (index: number) => {
-    const newSlots = [...fusionSlots];
-    newSlots[index] = null;
-    setFusionSlots(newSlots);
-  };
-
-  const mergeAll = useCallback(() => {
-    if (isMerging) return;
-    setIsMerging(true);
-    
-    let mergeCount = 0;
-    let currentHeroes = [...player.heroes];
-    let madeProgress = true;
-    
-    while (madeProgress) {
-      madeProgress = false;
-      for (const recipe of MERGE_RECIPES) {
-        const maxLevel = RARITY_CONFIG[recipe.from].maxLevel;
-        const available = currentHeroes.filter(h => h.rarity === recipe.from && h.level >= maxLevel);
-        if (available.length >= recipe.count) {
-          const toRemove = new Set(available.slice(0, recipe.count).map(h => h.id));
-          const newHero = generateHero(recipe.to);
-          currentHeroes = [...currentHeroes.filter(h => !toRemove.has(h.id)), newHero];
-          mergeCount++;
-          madeProgress = true;
-          break;
-        }
-      }
-    }
-    
-    if (mergeCount > 0) {
-      setPlayer(prev => ({ ...prev, heroes: currentHeroes, totalHeroesOwned: currentHeroes.length }));
-
-      if (canWriteCloud) {
-        const addedHeroes = currentHeroes.filter(h => !player.heroes.some(existing => existing.id === h.id));
-        const removedHeroIds = player.heroes
-          .filter(h => !currentHeroes.some(ch => ch.id === h.id))
-          .map(h => h.id);
-
-        if (addedHeroes.length > 0) saveHeroesToCloud(addedHeroes);
-        if (removedHeroIds.length > 0) removeHeroesFromCloud(removedHeroIds);
-      }
-
-      toast('Fusion terminée', {
-        description: `${mergeCount} fusion(s) effectuée(s)`,
-      });
-    } else {
-      toast('Aucune fusion possible', {
-        description: "Vous n'avez pas assez de héros pour fusionner",
-      });
-    }
-    
-    setIsMerging(false);
-  }, [player.heroes, isMerging, canWriteCloud, saveHeroesToCloud, removeHeroesFromCloud]);
-
   const startStoryStage = (stage: StoryStage) => {
     const map = generateMap(stage.width, stage.height, stage.blockDensity, 0); // no chests in story
 
@@ -1206,142 +1005,6 @@ const Index = () => {
   };
 
   const endStoryBattle = () => finalizeStoryBattle(false);
-
-  const [summonedBatch, setSummonedBatch] = useState<Hero[]>([]);
-  const [showSummonFlash, setShowSummonFlash] = useState(false);
-  const prevSummonedBatchRef = useRef<Hero[]>([]);
-
-  useEffect(() => {
-    if (summonedBatch.length > 0 && summonedBatch !== prevSummonedBatchRef.current) {
-      prevSummonedBatchRef.current = summonedBatch;
-      setShowSummonFlash(true);
-      const t = setTimeout(() => setShowSummonFlash(false), 200);
-      return () => clearTimeout(t);
-    }
-  }, [summonedBatch]);
-
-  const handleSummon = (type: 'single' | 'x10' | 'x100') => {
-    const cost = type === 'single' ? 1000 : type === 'x10' ? 9000 : 80000;
-    if (player.bomberCoins < cost) return;
-
-    const count = type === 'single' ? 1 : type === 'x10' ? 10 : 100;
-    let currentPity = { ...player.pityCounters };
-    let newCoins = player.bomberCoins - cost;
-    const newHeroes = [...player.heroes];
-    const batch: Hero[] = [];
-
-    for (let i = 0; i < count; i++) {
-      const { hero, updatedPity } = summonHero(currentPity);
-      currentPity = updatedPity;
-      newHeroes.push(hero);
-      batch.push(hero);
-    }
-
-    const mergedHeroes = newHeroes;
-
-    setLastSummoned(batch[batch.length - 1]);
-    setSummonedBatch(batch);
-    
-    const newTotalSummons = player.totalHeroesOwned + count;
-    const newAchievements = { ...player.achievements };
-    const newAchievementUnlocks: AchievementDefinition[] = [];
-    
-    const { newState: summonState, unlocked: summonUnlocks } = trackSummon(player.achievements, newTotalSummons);
-    Object.assign(newAchievements, summonState);
-    newAchievementUnlocks.push(...summonUnlocks);
-    
-    const hasLegend = batch.some(h => h.rarity === 'legend');
-    const hasSuperLegend = batch.some(h => h.rarity === 'super-legend');
-    const hasEpic = batch.some(h => h.rarity === 'epic');
-    if (hasSuperLegend) {
-      const { newState, unlocked } = trackRarityUnlock(player.achievements, 'super-legend');
-      Object.assign(newAchievements, newState);
-      newAchievementUnlocks.push(...unlocked);
-    } else if (hasLegend) {
-      const { newState, unlocked } = trackRarityUnlock(player.achievements, 'legend');
-      Object.assign(newAchievements, newState);
-      newAchievementUnlocks.push(...unlocked);
-    } else if (hasEpic) {
-      const { newState, unlocked } = trackRarityUnlock(player.achievements, 'epic');
-      Object.assign(newAchievements, newState);
-      newAchievementUnlocks.push(...unlocked);
-    }
-
-    const { newState: heroCountState, unlocked: heroCountUnlocks } = trackHeroCount(player.achievements, mergedHeroes.length);
-    Object.assign(newAchievements, heroCountState);
-    newAchievementUnlocks.push(...heroCountUnlocks);
-    
-    setPlayer(prev => ({
-      ...prev,
-      bomberCoins: newCoins,
-      heroes: mergedHeroes,
-      pityCounters: currentPity,
-      totalHeroesOwned: mergedHeroes.length,
-      achievements: newAchievements,
-    }));
-    
-    for (const achievement of newAchievementUnlocks) {
-      toast('🏆 Succès débloqué!', { description: achievement.title });
-    }
-
-    if (canWriteCloud) {
-      const addedHeroes = mergedHeroes.filter(h => !player.heroes.some(existing => existing.id === h.id));
-      const removedExistingHeroIds = player.heroes
-        .filter(h => !mergedHeroes.some(m => m.id === h.id))
-        .map(h => h.id);
-
-      if (addedHeroes.length > 0) saveHeroesToCloud(addedHeroes);
-      if (removedExistingHeroIds.length > 0) removeHeroesFromCloud(removedExistingHeroIds);
-    }
-    setDailyQuests(prev => updateQuestProgress(prev, 'summon_heroes', count));
-  };
-
-  const SHARD_COSTS: Record<Rarity, number> = {
-    common: 10, rare: 50, 'super-rare': 150, epic: 400, legend: 1000, 'super-legend': 2500,
-  };
-
-  const handleSummonShards = () => {
-    const cost = SHARD_COSTS[selectedShardRarity];
-    if (player.universalShards < cost) {
-      toast('Fragments insuffisants', { description: `Il te faut ${cost} Fragments pour cette invocation.` });
-      return;
-    }
-
-    const newHero = generateHero(selectedShardRarity);
-    const newHeroes = [...player.heroes, newHero];
-
-    setLastSummoned(newHero);
-    setSummonedBatch([newHero]);
-
-    const newTotalSummons = player.totalHeroesOwned + 1;
-    const newAchievements = { ...player.achievements };
-    const newAchievementUnlocks: AchievementDefinition[] = [];
-
-    const { newState: summonState, unlocked: summonUnlocks } = trackSummon(player.achievements, newTotalSummons);
-    Object.assign(newAchievements, summonState);
-    newAchievementUnlocks.push(...summonUnlocks);
-
-    const { newState: heroCountState, unlocked: heroCountUnlocks } = trackHeroCount(player.achievements, newHeroes.length);
-    Object.assign(newAchievements, heroCountState);
-    newAchievementUnlocks.push(...heroCountUnlocks);
-
-    setPlayer(prev => ({
-      ...prev,
-      heroes: newHeroes,
-      totalHeroesOwned: newHeroes.length,
-      achievements: newAchievements,
-      universalShards: prev.universalShards - cost,
-    }));
-
-    for (const achievement of newAchievementUnlocks) {
-      toast('Succès débloqué!', { description: achievement.title });
-    }
-
-    if (canWriteCloud) {
-      saveHeroesToCloud([newHero]);
-    }
-    setDailyQuests(prev => updateQuestProgress(prev, 'summon_heroes', 1));
-  };
 
   const toggleHeroSelection = (id: string) => {
     setSelectedHeroes(prev => {
