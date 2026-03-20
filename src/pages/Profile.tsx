@@ -9,8 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { User, Loader2, AlertTriangle, LogOut, Trash2, ArrowLeft, BookOpen } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-
-const USERNAME_RE = /^[A-Za-z0-9_]{3,20}$/;
+import { USERNAME_RE } from '@/lib/constants';
 
 export default function Profile() {
   const { user, signOut } = useAuth();

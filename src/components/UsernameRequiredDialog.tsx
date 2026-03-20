@@ -6,8 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/contexts/ProfileContext';
 import { toast } from '@/hooks/use-toast';
-
-const USERNAME_RE = /^[A-Za-z0-9_]{3,20}$/;
+import { USERNAME_RE } from '@/lib/constants';
 
 export default function UsernameRequiredDialog() {
   const { user } = useAuth();
