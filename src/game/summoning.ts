@@ -72,6 +72,14 @@ export function rollRarity(pityCounters: { rare: number; superRare: number; epic
   return 'common';
 }
 
+function fisherYates<T>(arr: T[]): T[] {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
 export function generateHero(rarity: Rarity): Hero {
   const config = RARITY_CONFIG[rarity];
   const name = HERO_NAMES[Math.floor(Math.random() * HERO_NAMES.length)];
@@ -93,7 +101,7 @@ export function generateHero(rarity: Rarity): Hero {
   // Pick skills
   const skillPool = SKILL_POOL_BY_RARITY[rarity];
   const numSkills = config.skills;
-  const shuffled = [...skillPool].sort(() => Math.random() - 0.5);
+  const shuffled = fisherYates([...skillPool]);
   const skills = shuffled.slice(0, numSkills).map(k => ALL_SKILLS[k]);
 
   const id = `hero_${heroIdCounter++}`;

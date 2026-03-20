@@ -83,6 +83,38 @@ export function generateMap(width: number, height: number, blockDensity: number,
   return { width, height, tiles, chests };
 }
 
+type AStarNode = { x: number; y: number; g: number; f: number; parent: AStarNode | null };
+
+function heapPush(heap: AStarNode[], node: AStarNode): void {
+  heap.push(node);
+  let i = heap.length - 1;
+  while (i > 0) {
+    const p = (i - 1) >> 1;
+    if (heap[p].f <= heap[i].f) break;
+    [heap[p], heap[i]] = [heap[i], heap[p]];
+    i = p;
+  }
+}
+
+function heapPop(heap: AStarNode[]): AStarNode {
+  const top = heap[0];
+  const last = heap.pop()!;
+  if (heap.length > 0) {
+    heap[0] = last;
+    let i = 0;
+    while (true) {
+      let s = i;
+      const l = 2 * i + 1, r = 2 * i + 2;
+      if (l < heap.length && heap[l].f < heap[s].f) s = l;
+      if (r < heap.length && heap[r].f < heap[s].f) s = r;
+      if (s === i) break;
+      [heap[i], heap[s]] = [heap[s], heap[i]];
+      i = s;
+    }
+  }
+  return top;
+}
+
 export function findPath(
   map: GameMap,
   from: { x: number; y: number },
@@ -99,31 +131,33 @@ export function findPath(
     return true;
   };
 
-  // Allow walking to own tile even if bomb is there
   if (!isWalkable(to.x, to.y) && !(to.x === from.x && to.y === from.y)) return null;
 
-  const openSet: { x: number; y: number; g: number; f: number; parent: any }[] = [];
+  const heap: AStarNode[] = [];
   const closedSet = new Set<string>();
+  const gScore = new Map<string, number>();
   const h = (a: { x: number; y: number }) => Math.abs(a.x - to.x) + Math.abs(a.y - to.y);
 
-  openSet.push({ x: from.x, y: from.y, g: 0, f: h(from), parent: null });
+  const startKey = `${from.x},${from.y}`;
+  gScore.set(startKey, 0);
+  heapPush(heap, { x: from.x, y: from.y, g: 0, f: h(from), parent: null });
 
-  while (openSet.length > 0) {
-    openSet.sort((a, b) => a.f - b.f);
-    const current = openSet.shift()!;
+  while (heap.length > 0) {
+    const current = heapPop(heap);
     const key = `${current.x},${current.y}`;
+
+    if (closedSet.has(key)) continue;
+    closedSet.add(key);
 
     if (current.x === to.x && current.y === to.y) {
       const path: { x: number; y: number }[] = [];
-      let node: any = current;
+      let node: AStarNode | null = current;
       while (node) {
         path.unshift({ x: node.x, y: node.y });
         node = node.parent;
       }
       return path;
     }
-
-    closedSet.add(key);
 
     for (const [dx, dy] of [[0, -1], [0, 1], [-1, 0], [1, 0]]) {
       const nx = current.x + dx;
@@ -133,13 +167,9 @@ export function findPath(
       if (!isWalkable(nx, ny) || closedSet.has(nKey)) continue;
 
       const g = current.g + 1;
-      const existing = openSet.find(n => n.x === nx && n.y === ny);
-      if (!existing) {
-        openSet.push({ x: nx, y: ny, g, f: g + h({ x: nx, y: ny }), parent: current });
-      } else if (g < existing.g) {
-        existing.g = g;
-        existing.f = g + h({ x: nx, y: ny });
-        existing.parent = current;
+      if (g < (gScore.get(nKey) ?? Infinity)) {
+        gScore.set(nKey, g);
+        heapPush(heap, { x: nx, y: ny, g, f: g + h({ x: nx, y: ny }), parent: current });
       }
     }
   }

@@ -295,7 +295,9 @@ const Index = () => {
       }
     };
 
+    let cancelled = false;
     loadWithRetry().then(data => {
+      if (cancelled) return;
       const today = new Date().toISOString().split('T')[0];
       if (data) {
         setPlayer(data.playerData);
@@ -313,14 +315,16 @@ const Index = () => {
       }
       cloudLoadedRef.current = true;
     }).catch((err) => {
+      if (cancelled) return;
       const error = err as Error & { code?: string };
       console.error('CLOUD_LOAD_UNEXPECTED_ERROR', { code: error.code || 'UNKNOWN', message: error.message });
       setCloudValidated(false);
       cloudLoadedRef.current = true;
       toast({ title: 'Cloud indisponible', description: 'Impossible de charger la sauvegarde. Réessaie.', duration: 4000 });
     }).finally(() => {
-      setIsCloudLoading(false);
+      if (!cancelled) setIsCloudLoading(false);
     });
+    return () => { cancelled = true; };
   }, [user?.id, cloudSessionReady, loadFromCloud]);
 
   // Calculate account level from XP
@@ -770,7 +774,7 @@ const Index = () => {
       setGameState(null);
       setScreen('hub');
     }
-  }, [gameState, selectedMap, selectedHeroes]);
+  }, [gameState, selectedMap]);
 
   const endTreasureHunt = () => collectAndContinue(false);
 
@@ -780,7 +784,7 @@ const Index = () => {
       const timer = setTimeout(() => collectAndContinue(true), 1500);
       return () => clearTimeout(timer);
     }
-  }, [autoFarm, gameState?.mapCompleted, collectAndContinue]);
+  }, [autoFarm, gameState?.mapCompleted, gameState?.isStoryMode, collectAndContinue]);
 
   // MERGE_RECIPES is now declared at module level (above) to prevent TDZ crash
 
