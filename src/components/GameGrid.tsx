@@ -249,12 +249,17 @@ const GameGrid: React.FC<GameGridProps> = ({ gameState }) => {
       drawBoss(ctx, gameState.boss, time);
     }
 
-    animFrameRef.current = requestAnimationFrame(draw);
   }, [gameState]);
 
   useEffect(() => {
-    animFrameRef.current = requestAnimationFrame(draw);
-    return () => cancelAnimationFrame(animFrameRef.current);
+    let id: number;
+    const loop = () => {
+      draw();
+      id = requestAnimationFrame(loop);
+    };
+    id = requestAnimationFrame(loop);
+    animFrameRef.current = id;
+    return () => cancelAnimationFrame(id);
   }, [draw]);
 
   return (

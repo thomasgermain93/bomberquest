@@ -11,8 +11,9 @@ const BOMB_COOLDOWN = 0.5;          // secondes entre deux bombes
 
 // --- Helpers locaux (non exportés) ---
 
-function getClanBonus(effectType: ClanSkillEffect['type'], heroes: Hero[]): number {
-  return getActiveClanSkills(heroes)
+function getClanBonus(effectType: ClanSkillEffect['type'], heroes: Hero[], precomputedSkills?: ReturnType<typeof getActiveClanSkills>): number {
+  const skills = precomputedSkills ?? getActiveClanSkills(heroes);
+  return skills
     .filter(s => s.effect.type === effectType)
     .reduce((acc, s) => acc + s.effect.value, 0);
 }
@@ -376,11 +377,25 @@ export function findNearestTarget(
   return null;
 }
 
+export function buildDangerSet(bombs: Bomb[], map: GameMap): Set<string> {
+  const danger = new Set<string>();
+  for (const bomb of bombs) {
+    for (const t of getExplosionTiles(map, bomb.position, bomb.range)) {
+      danger.add(`${t.x},${t.y}`);
+    }
+  }
+  return danger;
+}
+
 export function isInDangerZone(
   pos: { x: number; y: number },
   bombs: Bomb[],
-  map: GameMap
+  map: GameMap,
+  precomputedDanger?: Set<string>
 ): boolean {
+  if (precomputedDanger) {
+    return precomputedDanger.has(`${pos.x},${pos.y}`);
+  }
   for (const bomb of bombs) {
     const explosionTiles = getExplosionTiles(map, bomb.position, bomb.range);
     if (explosionTiles.some(t => t.x === pos.x && t.y === pos.y)) {
@@ -393,7 +408,8 @@ export function isInDangerZone(
 export function findSafeSpot(
   map: GameMap,
   hero: Hero,
-  bombs: Bomb[]
+  bombs: Bomb[],
+  dangerSet?: Set<string>
 ): { x: number; y: number } | null {
   const startX = Math.round(hero.position.x);
   const startY = Math.round(hero.position.y);
@@ -401,11 +417,12 @@ export function findSafeSpot(
   const queue: { x: number; y: number }[] = [{ x: startX, y: startY }];
   visited.add(`${startX},${startY}`);
   const bombSet = new Set(bombs.map(b => `${b.position.x},${b.position.y}`));
+  const danger = dangerSet ?? buildDangerSet(bombs, map);
 
   while (queue.length > 0) {
     const current = queue.shift()!;
 
-    if (!isInDangerZone(current, bombs, map) && (current.x !== startX || current.y !== startY)) {
+    if (!danger.has(`${current.x},${current.y}`) && (current.x !== startX || current.y !== startY)) {
       return current;
     }
 
@@ -432,6 +449,8 @@ export function tickGame(state: GameState, deltaMs: number): GameState {
   let newState = { ...state };
   let map = { ...newState.map, tiles: newState.map.tiles.map(row => [...row]), chests: [...newState.map.chests] };
   let heroes = newState.heroes.map(h => ({ ...h, position: { ...h.position } }));
+  // Pré-calculer les clan skills une seule fois par tick (#271)
+  const activeClanSkills = getActiveClanSkills(heroes);
   let bombs = [...newState.bombs];
   let explosions = [...newState.explosions];
   let coinsEarned = newState.coinsEarned;
@@ -530,6 +549,9 @@ export function tickGame(state: GameState, deltaMs: number): GameState {
     .map(e => ({ ...e, timer: e.timer - dt }))
     .filter(e => e.timer > 0);
 
+  // Pré-calculer les tuiles de danger (bombes) une seule fois par tick (#272)
+  const dangerSet = buildDangerSet(bombs, map);
+
   // Update heroes
   for (let i = 0; i < heroes.length; i++) {
     const hero = heroes[i];
@@ -585,8 +607,8 @@ export function tickGame(state: GameState, deltaMs: number): GameState {
     const hy = Math.round(hero.position.y);
 
     // Check if in danger - retreat immediately
-    if (isInDangerZone({ x: hx, y: hy }, bombs, map) && hero.state !== 'retreating') {
-      const safe = findSafeSpot(map, hero, bombs);
+    if (isInDangerZone({ x: hx, y: hy }, bombs, map, dangerSet) && hero.state !== 'retreating') {
+      const safe = findSafeSpot(map, hero, bombs, dangerSet);
       if (safe) {
         const path = findPath(map, { x: hx, y: hy }, safe, []);  // ignore bombs for escape path
         if (path && path.length > 1) {
@@ -618,9 +640,7 @@ export function tickGame(state: GameState, deltaMs: number): GameState {
             hero.stuckTimer = 0;
           } else {
             // Check if adjacent to a target - should bomb (include boss)
-            const adjacentTargets = state.isStoryMode && state.boss && (state.boss as Boss).hp > 0
-              ? [...(state.enemies || []), state.boss as Boss]
-              : state.enemies;
+            const adjacentTargets = buildStoryTargets(state);
             if (isAdjacentToTarget(hero, map, adjacentTargets)) {
               hero.state = 'bombing';
             } else {
@@ -631,7 +651,7 @@ export function tickGame(state: GameState, deltaMs: number): GameState {
         }
       } else {
         // Bonus move_speed (wild-pack clan skill)
-        const speedBonus = getClanBonus('move_speed', heroes);
+        const speedBonus = getClanBonus('move_speed', heroes, activeClanSkills);
         const speed = hero.stats.spd * (hero.currentStamina < hero.maxStamina * LOW_STAMINA_THRESHOLD ? 0.75 : 1.0) * (1 + speedBonus);
         if (Math.abs(dx) > 0.05) {
           hero.position.x += Math.sign(dx) * Math.min(Math.abs(dx), speed * dt);
@@ -650,8 +670,8 @@ export function tickGame(state: GameState, deltaMs: number): GameState {
         const by = Math.round(hero.position.y);
         if (!bombs.some(b => b.position.x === bx && b.position.y === by)) {
           // Calculer les bonus de clan skills actifs
-          const rangBonus = getClanBonus('bomb_range', heroes);
-          const timerBonus = getClanBonus('bomb_timer', heroes);
+          const rangBonus = getClanBonus('bomb_range', heroes, activeClanSkills);
+          const timerBonus = getClanBonus('bomb_timer', heroes, activeClanSkills);
           bombs.push({
             id: genId(),
             heroId: hero.id,
