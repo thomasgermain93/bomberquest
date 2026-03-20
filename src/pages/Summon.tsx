@@ -7,6 +7,7 @@ import PixelIcon from '@/components/PixelIcon';
 import { Hero, PlayerData, RARITY_CONFIG, Rarity } from '@/game/types';
 import { summonHero, generateHero } from '@/game/summoning';
 import { loadPlayerData, savePlayerData, loadStoryProgress } from '@/game/saveSystem';
+import { loadDailyQuests } from '@/game/questSystem';
 import { trackSummon, trackRarityUnlock, trackHeroCount } from '@/game/achievements';
 import { toast } from '@/hooks/use-toast';
 import { ArrowLeft, Sparkles, Star, Coins, Gem, ArrowRight } from 'lucide-react';
@@ -269,7 +270,7 @@ const Summon: React.FC = () => {
     if (canWriteCloud) {
       const addedHeroes = mergedHeroes.filter(h => !player.heroes.some(existing => existing.id === h.id));
       if (addedHeroes.length > 0) saveHeroesToCloud(addedHeroes);
-      saveStatsToCloud(updatedData, loadStoryProgress(), null as any);
+      saveStatsToCloud(updatedData, loadStoryProgress(), loadDailyQuests());
     }
   };
 
@@ -339,7 +340,7 @@ const Summon: React.FC = () => {
     savePlayerData(updatedData);
     if (canWriteCloud) {
       saveHeroesToCloud([newHero]);
-      saveStatsToCloud(updatedData, loadStoryProgress(), null as any);
+      saveStatsToCloud(updatedData, loadStoryProgress(), loadDailyQuests());
     }
   };
 

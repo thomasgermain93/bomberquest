@@ -116,8 +116,8 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     try {
       const { data: conflictExists, error: conflictError } = await supabase.rpc('is_display_name_taken', {
-        p_display_name: normalized,
-        p_current_user_id: user.id,
+        display_name: normalized,
+        current_user_id: user.id,
       });
 
       if (conflictError) {

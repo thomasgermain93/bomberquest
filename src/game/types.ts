@@ -1,5 +1,8 @@
 import { Enemy, Boss } from './storyTypes';
 
+/** Taille d'une tuile canvas en pixels. Utilisé dans engine.ts, heroRenderer.ts et enemyRenderer.ts. */
+export const TILE_SIZE = 40;
+
 export type TileType = 'floor' | 'wall' | 'block';
 
 export type Rarity = 'common' | 'rare' | 'super-rare' | 'epic' | 'legend' | 'super-legend';

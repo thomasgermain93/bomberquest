@@ -1,6 +1,7 @@
 import { Enemy, Boss, ENEMY_CONFIG } from './storyTypes';
+import { TILE_SIZE } from './types';
 
-const TILE = 40;
+const TILE = TILE_SIZE;
 const STUN_COLOR = '#FF0';
 
 export function drawEnemy(ctx: CanvasRenderingContext2D, enemy: Enemy, time: number) {
