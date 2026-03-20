@@ -59,6 +59,7 @@ export const BESTIARY_BOMBERS: BestiaryBomber[] = [
   { id: 'rex', name: 'Rex', familyId: 'forge-guard', rarity: 'rare', assetStatus: 'missing', assets: {} },
   { id: 'atlas', name: 'Atlas', familyId: 'forge-guard', rarity: 'legend', assetStatus: 'missing', assets: {} },
   { id: 'duke', name: 'Duke', familyId: 'forge-guard', rarity: 'super-rare', assetStatus: 'missing', assets: {} },
+  { id: 'brick', name: 'Brick', familyId: 'forge-guard', rarity: 'super-legend', assetStatus: 'missing', assets: {} },
   { id: 'ash', name: 'Ash', familyId: 'shadow-core', rarity: 'rare', assetStatus: 'wip', assets: {} },
   { id: 'nova', name: 'Nova', familyId: 'shadow-core', rarity: 'legend', assetStatus: 'ready', assets: {} },
   { id: 'echo', name: 'Echo', familyId: 'shadow-core', rarity: 'super-rare', assetStatus: 'missing', assets: {} },
@@ -73,12 +74,15 @@ export const BESTIARY_BOMBERS: BestiaryBomber[] = [
   { id: 'flash', name: 'Flash', familyId: 'wild-pack', rarity: 'epic', assetStatus: 'missing', assets: {} },
   { id: 'blast', name: 'Blast', familyId: 'ember-clan', rarity: 'legend', assetStatus: 'missing', assets: {} },
   { id: 'luna', name: 'Luna', familyId: 'shadow-core', rarity: 'epic', assetStatus: 'missing', assets: {} },
+  { id: 'shade', name: 'Shade', familyId: 'shadow-core', rarity: 'common', assetStatus: 'missing', assets: {} },
   { id: 'sol', name: 'Sol', familyId: 'ember-clan', rarity: 'super-legend', assetStatus: 'missing', assets: {} },
   { id: 'vega', name: 'Vega', familyId: 'storm-riders', rarity: 'legend', assetStatus: 'missing', assets: {} },
   { id: 'jet', name: 'Jet', familyId: 'wild-pack', rarity: 'rare', assetStatus: 'missing', assets: {} },
   { id: 'max', name: 'Max', familyId: 'forge-guard', rarity: 'common', assetStatus: 'missing', assets: {} },
   { id: 'ace', name: 'Ace', familyId: 'wild-pack', rarity: 'super-rare', assetStatus: 'missing', assets: {} },
   { id: 'dash', name: 'Dash', familyId: 'storm-riders', rarity: 'common', assetStatus: 'missing', assets: {} },
+  { id: 'glitch', name: 'Glitch', familyId: 'arcane-circuit', rarity: 'epic', assetStatus: 'missing', assets: {} },
+  { id: 'rune', name: 'Rune', familyId: 'arcane-circuit', rarity: 'super-legend', assetStatus: 'missing', assets: {} },
 ].map((bomber) => ({
   ...bomber,
   assets: {

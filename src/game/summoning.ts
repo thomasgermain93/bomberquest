@@ -1,3 +1,4 @@
+import { BESTIARY_BOMBERS } from '@/data/bestiary';
 import { Hero, Rarity, RARITY_CONFIG, HERO_NAMES, HERO_ICON_KEYS, Skill, HERO_VISUALS, HeroFamilyId } from './types';
 
 let heroIdCounter = Date.now();
@@ -57,6 +58,24 @@ const SKILL_POOL_BY_RARITY: Record<Rarity, string[]> = {
   ],
 };
 
+const CANONICAL_HERO_POOL_BY_RARITY: Record<Rarity, { id: string; name: string; iconKey: string }[]> = {
+  common: [],
+  rare: [],
+  'super-rare': [],
+  epic: [],
+  legend: [],
+  'super-legend': [],
+};
+
+for (const bomber of BESTIARY_BOMBERS) {
+  if (!bomber.rarity) continue;
+  CANONICAL_HERO_POOL_BY_RARITY[bomber.rarity].push({
+    id: bomber.id,
+    name: bomber.name,
+    iconKey: bomber.assets.iconKey ?? HERO_ICON_KEYS[HERO_NAMES.indexOf(bomber.name) % HERO_ICON_KEYS.length] ?? HERO_ICON_KEYS[0],
+  });
+}
+
 export function rollRarity(pityCounters: { rare: number; superRare: number; epic: number; legend: number }): Rarity {
   // Check pity
   if (pityCounters.legend >= 200) return 'legend';
@@ -85,8 +104,13 @@ function fisherYates<T>(arr: T[]): T[] {
 
 export function generateHero(rarity: Rarity): Hero {
   const config = RARITY_CONFIG[rarity];
-  const name = HERO_NAMES[Math.floor(Math.random() * HERO_NAMES.length)];
-  const icon = HERO_ICON_KEYS[Math.floor(Math.random() * HERO_ICON_KEYS.length)];
+  const canonicalPool = CANONICAL_HERO_POOL_BY_RARITY[rarity];
+  const pickedCanonicalHero = canonicalPool.length > 0
+    ? canonicalPool[Math.floor(Math.random() * canonicalPool.length)]
+    : null;
+
+  const name = pickedCanonicalHero?.name ?? HERO_NAMES[Math.floor(Math.random() * HERO_NAMES.length)];
+  const icon = pickedCanonicalHero?.iconKey ?? HERO_ICON_KEYS[Math.floor(Math.random() * HERO_ICON_KEYS.length)];
   const family = (HERO_VISUALS[name.toLowerCase()]?.family || undefined) as HeroFamilyId | undefined;
 
   // Random variance ±10%
