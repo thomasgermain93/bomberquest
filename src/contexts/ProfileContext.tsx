@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { USERNAME_RE, RETRY_DELAY_MS } from '@/lib/constants';
 
 interface ProfileData {
   id: string;
@@ -17,8 +18,6 @@ interface ProfileContextType {
   setDisplayName: (value: string) => Promise<{ error: string | null }>;
 }
 
-const USERNAME_RE = /^[A-Za-z0-9_]{3,20}$/;
-const RETRY_DELAY_MS = 500;
 const MAX_RETRIES = 1;
 
 const ProfileContext = createContext<ProfileContextType | undefined>(undefined);

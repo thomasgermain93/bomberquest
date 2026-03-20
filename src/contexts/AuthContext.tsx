@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { User, Session, AuthError } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { getProfile, createProfileIfNotExists, updateProfileDisplayName, Profile } from '@/hooks/useProfile';
+import { getProfile, createProfileIfNotExists, updateProfileDisplayName, Profile } from '@/lib/profileService';
+import { RETRY_DELAY_MS } from '@/lib/constants';
 
 interface AuthContextType {
   user: User | null;
@@ -24,7 +25,6 @@ export const useAuth = () => {
   return ctx;
 };
 
-const RETRY_DELAY_MS = 500;
 const MAX_RETRIES = 1;
 
 async function fetchProfileWithRetry(userId: string, retryCount = 0): Promise<Profile | null> {

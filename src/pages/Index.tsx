@@ -349,23 +349,37 @@ const Index = () => {
   };
 
   // Update account level when XP changes
+  // Note: player.achievements retiré des deps pour éviter une boucle (setPlayer met à jour achievements)
+  // On lit prev.achievements dans le updater fonctionnel pour éviter la dépendance stale.
+  const pendingLevelUpToastsRef = useRef<AchievementDefinition[]>([]);
   useEffect(() => {
     const newLevel = getAccountLevel(player.xp);
     if (newLevel !== player.accountLevel) {
-      const { newState, unlocked } = trackLevelUp(player.achievements, newLevel);
-      setPlayer(prev => ({ 
-        ...prev, 
-        accountLevel: getAccountLevel(prev.xp),
-        achievements: newState,
-      }));
-      for (const achievement of unlocked) {
+      setPlayer(prev => {
+        const { newState, unlocked } = trackLevelUp(prev.achievements, newLevel);
+        pendingLevelUpToastsRef.current = unlocked;
+        return {
+          ...prev,
+          accountLevel: getAccountLevel(prev.xp),
+          achievements: newState,
+        };
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [player.xp, player.accountLevel]);
+
+  useEffect(() => {
+    const toasts = pendingLevelUpToastsRef.current;
+    if (toasts.length > 0) {
+      pendingLevelUpToastsRef.current = [];
+      for (const achievement of toasts) {
         toast({
           title: '🏆 Succès débloqué!',
           description: achievement.title,
         });
       }
     }
-  }, [player.xp, player.accountLevel, player.achievements]);
+  }, [player.accountLevel]);
 
 
   // Save periodically + passive stamina regen
