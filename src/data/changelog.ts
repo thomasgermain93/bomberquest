@@ -14,6 +14,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: '2026-03-20',
     title: 'Mises à jour récentes',
     changes: [
+      { type: 'feature', description: 'fix: bouton mute manquant + colonne vide desktop en battle (#319)' },
       { type: 'feature', description: 'test(M6): 146 tests — gacha, IA ennemie, saveSystem, hooks cloud (#318)' },
       { type: 'feature', description: 'quality(M5): Maintenabilité — constantes nommées, rendu refactoré, i18n (#317)' },
       { type: 'feature', description: 'perf(M4): Performance — dedup clan bonus, hero picker, achievements (#316)' },
