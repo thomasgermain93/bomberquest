@@ -14,6 +14,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: '2026-03-20',
     title: 'Mises à jour récentes',
     changes: [
+      { type: 'feature', description: '[K-1] Décomposer Index.tsx (god component 2800+ lignes) en hooks custom (#253)' },
       { type: 'feature', description: '[K-3] Unifier le système toast sur sonner (supprimer @radix-ui/react-toast + use-toast.ts) (#265)' },
       { type: 'feature', description: '[K-2] Fusionner AuthContext et ProfileContext (deux sources de vérité pour le profil) (#264)' },
       { type: 'feature', description: '[K-4] Extraire HeroDetailContent partagé entre HeroUpgradeModal et HeroDetailInline (#266)' },
