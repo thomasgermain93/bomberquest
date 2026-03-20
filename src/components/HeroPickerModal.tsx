@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -51,10 +51,13 @@ const HeroPickerModal: React.FC<HeroPickerModalProps> = ({
     return { hero, isEligible: true, reason: '' };
   };
 
-  const eligibleHeroes = heroes.filter(h => getEligibility(h).isEligible);
-  const ineligibleHeroes = heroes.filter(h => !getEligibility(h).isEligible);
-
-  const sortedHeroes = [...eligibleHeroes, ...ineligibleHeroes];
+  const { eligibleHeroes, ineligibleHeroes, sortedHeroes } = useMemo(() => {
+    const eligible: Hero[] = [], ineligible: Hero[] = [];
+    for (const h of heroes) {
+      (getEligibility(h).isEligible ? eligible : ineligible).push(h);
+    }
+    return { eligibleHeroes: eligible, ineligibleHeroes: ineligible, sortedHeroes: [...eligible, ...ineligible] };
+  }, [heroes, requiredRarity, alreadySelectedIds]);
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
