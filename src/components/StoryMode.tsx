@@ -132,7 +132,7 @@ const StoryMode: React.FC<StoryModeProps> = ({
             {region.stages.map((stage, i) => {
               const isCompleted = storyProgress.completedStages.includes(stage.id);
               const prevCompleted = i === 0 || storyProgress.completedStages.includes(region.stages[i - 1].id);
-              const isLocked = !prevCompleted || player.accountLevel < stage.unlockLevel;
+              const isLocked = !prevCompleted;
 
               return (
                 <button

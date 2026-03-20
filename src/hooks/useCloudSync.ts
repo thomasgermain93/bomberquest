@@ -123,7 +123,7 @@ export function useCloudSync(
       console.error('CLOUD_LOAD_UNEXPECTED_ERROR', { code: error.code || 'UNKNOWN', message: error.message });
       setCloudValidated(false);
       cloudLoadedRef.current = true;
-      toast({ title: 'Cloud indisponible', description: 'Impossible de charger la sauvegarde. Réessaie.', duration: 4000 });
+      toast('Cloud indisponible', { description: 'Impossible de charger la sauvegarde. Réessaie.', duration: 4000 });
     }).finally(() => {
       if (!cancelled) setIsCloudLoading(false);
     });
