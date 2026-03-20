@@ -1236,6 +1236,8 @@ const Index = () => {
         xpToNextLevel={getXpInCurrentLevel(player.xp).xpNeeded}
         title={PAGE_TITLES[page]}
         onProfileClick={user ? () => navigate("/profile") : undefined}
+        muted={muted}
+        onToggleMute={toggleMute}
       />
 
       {/* Container swipeable 5 pages */}
@@ -2002,18 +2004,7 @@ const Index = () => {
                         : <><Pause size={14} className="shrink-0" /><span className="leading-none">Pause</span></>}
                     </button>
 
-                    {/* Contrôle 3 — Son */}
-                    <button
-                      onClick={toggleMute}
-                      className="pixel-btn pixel-btn-secondary font-pixel text-[9px] flex flex-col items-center justify-center gap-0.5 px-2 py-1.5 min-h-0"
-                      title={muted ? 'Activer le son' : 'Couper le son'}
-                    >
-                      {muted
-                        ? <><VolumeX size={14} className="shrink-0" /><span className="leading-none">Son</span></>
-                        : <><Volume2 size={14} className="shrink-0" /><span className="leading-none">Son</span></>}
-                    </button>
-
-                    {/* Contrôle 4 — Quitter / Récupérer */}
+                    {/* Contrôle 3 — Quitter / Récupérer */}
                     <button
                       onClick={gameState.isStoryMode ? endStoryBattle : endTreasureHunt}
                       className={`pixel-btn font-pixel text-[9px] flex flex-col items-center justify-center gap-0.5 px-2 py-1.5 min-h-0 ${

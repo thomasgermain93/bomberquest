@@ -1,5 +1,5 @@
 import React from 'react';
-import { Coins, Gem, Crown, User } from 'lucide-react';
+import { Coins, Gem, Crown, User, Volume2, VolumeX } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import PixelIcon from '@/components/PixelIcon';
 
@@ -11,6 +11,8 @@ interface SlimHeaderProps {
   xpToNextLevel?: number;
   title?: string;
   onProfileClick?: () => void;
+  muted?: boolean;
+  onToggleMute?: () => void;
 }
 
 export function SlimHeader({
@@ -21,6 +23,8 @@ export function SlimHeader({
   xpToNextLevel = 100,
   title,
   onProfileClick,
+  muted,
+  onToggleMute,
 }: SlimHeaderProps) {
   const xpPercent = xpToNextLevel > 0
     ? Math.min(100, Math.round((accountXp / xpToNextLevel) * 100))
@@ -59,6 +63,15 @@ export function SlimHeader({
             <Gem size={13} style={{ color: 'hsl(var(--game-rarity-rare))' }} />
             <span>{universalShards.toLocaleString('fr-FR')}</span>
           </div>
+          {onToggleMute && (
+            <button
+              onClick={onToggleMute}
+              className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              title={muted ? 'Activer le son' : 'Couper le son'}
+            >
+              {muted ? <VolumeX size={14} /> : <Volume2 size={14} />}
+            </button>
+          )}
           {onProfileClick && (
             <button
               onClick={onProfileClick}
