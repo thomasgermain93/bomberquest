@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Hero } from '@/game/types';
 import HeroAvatar from '@/components/HeroAvatar';
 import { getActiveClanSkills } from '@/game/clanSystem';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { Save, Play, Edit2, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -40,7 +40,7 @@ const TeamPresets: React.FC<TeamPresetsProps> = ({
 
   const handleLoadTeam = (preset: TeamPreset) => {
     onLoadTeam(preset.heroIds);
-    toast({ title: 'Équipe chargée !', description: preset.name });
+    toast('Équipe chargée !', { description: preset.name });
   };
 
   const handleEditToggle = (slotIndex: number) => {
@@ -74,7 +74,7 @@ const TeamPresets: React.FC<TeamPresetsProps> = ({
   const handleSaveSlot = (slotIndex: number) => {
     onSave(localPresets);
     setEditingSlot(null);
-    toast({ title: 'Équipe sauvegardée !' });
+    toast('Équipe sauvegardée !');
   };
 
   return (
