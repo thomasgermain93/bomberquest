@@ -1,7 +1,7 @@
 import { Hero, HeroStats, Rarity, Skill, RARITY_CONFIG, MAX_LEVEL_BY_RARITY } from './types';
 
 /** XP required per level (level 1 requires 0 XP, level 2 requires XP_FOR_LEVEL[1], etc.) */
-export const XP_FOR_LEVEL: Record<number, number> = {
+const XP_FOR_LEVEL: Record<number, number> = {
   1: 0,
   2: 100,
   3: 250,
@@ -125,7 +125,7 @@ export const XP_FOR_LEVEL: Record<number, number> = {
 };
 
 /** Skill unlock levels (every 20 levels) */
-export const SKILL_UNLOCK_LEVELS: Record<Rarity, number[]> = {
+const SKILL_UNLOCK_LEVELS: Record<Rarity, number[]> = {
   common: [20],
   rare: [20, 40],
   'super-rare': [20, 40, 60],
@@ -135,7 +135,7 @@ export const SKILL_UNLOCK_LEVELS: Record<Rarity, number[]> = {
 };
 
 /** Stat multiplier at each level */
-export const LEVEL_MULTIPLIERS: Record<number, number> = {
+const LEVEL_MULTIPLIERS: Record<number, number> = {
   1: 1.0,
   2: 1.05,
   3: 1.10,
@@ -259,7 +259,7 @@ export const LEVEL_MULTIPLIERS: Record<number, number> = {
 };
 
 /** Ascension (star) config: cost in BC and duplicates needed per star */
-export const ASCENSION_CONFIG: Record<number, { cost: number; duplicates: number; statBonus: number }> = {
+const ASCENSION_CONFIG: Record<number, { cost: number; duplicates: number; statBonus: number }> = {
   1: { cost: 500, duplicates: 3, statBonus: 0.20 },
   2: { cost: 1000, duplicates: 5, statBonus: 0.40 },
   3: { cost: 2000, duplicates: 8, statBonus: 0.60 },
@@ -283,15 +283,15 @@ export function getMaxLevel(rarity: Rarity): number {
   return MAX_LEVEL_BY_RARITY[rarity];
 }
 
-export function getXpForLevel(level: number): number {
+function getXpForLevel(level: number): number {
   return XP_FOR_LEVEL[level] ?? 0;
 }
 
-export function getXpForNextLevel(currentLevel: number): number {
+function getXpForNextLevel(currentLevel: number): number {
   return XP_FOR_LEVEL[currentLevel + 1] ?? XP_FOR_LEVEL[currentLevel];
 }
 
-export function canLevelUp(hero: Hero): boolean {
+function canLevelUp(hero: Hero): boolean {
   const maxLevel = getMaxLevel(hero.rarity);
   return hero.level < maxLevel;
 }
@@ -391,7 +391,7 @@ export function ascendHero(hero: Hero): Hero {
   };
 }
 
-export function isHeroMaxLevel(hero: Hero): boolean {
+function isHeroMaxLevel(hero: Hero): boolean {
   return hero.level >= getMaxLevel(hero.rarity);
 }
 
@@ -404,7 +404,7 @@ export function countDuplicates(heroes: Hero[], heroId: string, rarity: Rarity):
 const SKILL_UPGRADE_COST = [0, 1, 2, 3, 5]; // Pour passer du level 1→2, 2→3, 3→4, 4→5
 
 // Niveau max d'un skill selon la rareté du héros
-export const MAX_SKILL_LEVEL_BY_RARITY: Record<Rarity, number> = {
+const MAX_SKILL_LEVEL_BY_RARITY: Record<Rarity, number> = {
   common: 1,
   rare: 2,
   'super-rare': 3,
@@ -414,7 +414,7 @@ export const MAX_SKILL_LEVEL_BY_RARITY: Record<Rarity, number> = {
 };
 
 // Retourne la description d'un skill avec son niveau si > 1
-export function getSkillDescription(skill: Skill): string {
+function getSkillDescription(skill: Skill): string {
   const level = skill.skillLevel || 1;
   const levelSuffix = level > 1 ? ` (Niveau ${level})` : '';
   return skill.description + levelSuffix;

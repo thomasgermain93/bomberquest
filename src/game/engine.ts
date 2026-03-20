@@ -38,7 +38,6 @@ const XP_REWARDS = {
   enemyKilled: 15,
 };
 
-export { XP_REWARDS };
 
 export function generateMap(width: number, height: number, blockDensity: number, numChests: number): GameMap {
   const tiles: TileType[][] = [];
@@ -239,7 +238,7 @@ function isAdjacentToTarget(hero: Hero, map: GameMap, enemies?: { position: { x:
   return false;
 }
 
-export function findNearestTarget(
+function findNearestTarget(
   map: GameMap,
   hero: Hero,
   bombs: Bomb[],
@@ -387,7 +386,7 @@ export function buildDangerSet(bombs: Bomb[], map: GameMap): Set<string> {
   return danger;
 }
 
-export function isInDangerZone(
+function isInDangerZone(
   pos: { x: number; y: number },
   bombs: Bomb[],
   map: GameMap,
@@ -405,7 +404,7 @@ export function isInDangerZone(
   return false;
 }
 
-export function findSafeSpot(
+function findSafeSpot(
   map: GameMap,
   hero: Hero,
   bombs: Bomb[],

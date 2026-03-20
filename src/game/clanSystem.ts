@@ -20,7 +20,7 @@ export interface ClanSkillEffect {
   value: number; // Valeur du bonus (absolu ou multiplicateur selon le type)
 }
 
-export const CLAN_SKILLS: ClanSkill[] = [
+const CLAN_SKILLS: ClanSkill[] = [
   {
     id: 'ember-perpetual-fire',
     clanId: 'ember-clan',
@@ -98,7 +98,7 @@ export function getActiveClanSkills(heroes: Hero[]): ClanSkill[] {
 // ============================================================
 
 // Multiplicateur de dégâts : > 1.0 = avantage, < 1.0 = désavantage
-export const CLAN_ENEMY_AFFINITY: Partial<Record<HeroFamilyId, Partial<Record<EnemyType, number>>>> = {
+const CLAN_ENEMY_AFFINITY: Partial<Record<HeroFamilyId, Partial<Record<EnemyType, number>>>> = {
   'ember-clan': {
     demon: 1.25,  // Le feu contre les démons
     slime: 0.85,  // Le feu sèche les slimes... mais pas si efficace
@@ -131,7 +131,3 @@ export function getClanAffinityMultiplier(heroFamily: HeroFamilyId | undefined, 
   return CLAN_ENEMY_AFFINITY[heroFamily]?.[enemyType] ?? 1.0;
 }
 
-// Retourner un résumé des clan skills actifs pour affichage UI
-export function formatActiveClanSkills(heroes: Hero[]): string[] {
-  return getActiveClanSkills(heroes).map(s => `✨ ${s.name}: ${s.description}`);
-}

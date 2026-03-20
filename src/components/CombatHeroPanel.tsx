@@ -4,7 +4,6 @@ import { cn } from '@/lib/utils';
 
 interface CombatHeroPanelProps {
   deployedHeroes: Hero[];
-  playerHeroes: Hero[];
 }
 
 const RARITY_BORDER: Record<string, string> = {
