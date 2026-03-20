@@ -14,6 +14,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: '2026-03-20',
     title: 'Mises à jour récentes',
     changes: [
+      { type: 'feature', description: 'quality(M5): Maintenabilité — constantes nommées, rendu refactoré, i18n (#317)' },
       { type: 'feature', description: 'perf(M4): Performance — dedup clan bonus, hero picker, achievements (#316)' },
       { type: 'feature', description: 'fix(M3): Code mort & nettoyage — hooks, variables CSS, docs (#315)' },
       { type: 'feature', description: 'fix(M2): Type Safety — éliminer les casts  dans tout le codebase (#314)' },
