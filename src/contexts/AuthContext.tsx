@@ -1,20 +1,29 @@
-import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { User, Session, AuthError } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { getProfile, createProfileIfNotExists, updateProfileDisplayName, Profile } from '@/lib/profileService';
-import { RETRY_DELAY_MS } from '@/lib/constants';
+import { getProfile, createProfileIfNotExists, Profile } from '@/lib/profileService';
+import { USERNAME_RE, RETRY_DELAY_MS } from '@/lib/constants';
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface AuthContextType {
+  // Auth state
   user: User | null;
   session: Session | null;
+  loading: boolean;
+  // Profile state
   profile: Profile | null;
   username: string | null;
-  loading: boolean;
+  profileLoading: boolean;
+  // Auth methods
   signUp: (email: string, password: string, displayName?: string) => Promise<{ error: AuthError | null }>;
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
   signInWithGoogle: () => Promise<{ error: AuthError | null }>;
   signOut: () => Promise<void>;
+  // Profile methods
   updateUsername: (displayName: string) => Promise<void>;
+  setDisplayName: (value: string) => Promise<{ error: string | null }>;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -25,16 +34,28 @@ export const useAuth = () => {
   return ctx;
 };
 
+/**
+ * Alias rétro-compatible pour les composants qui consomment l'ancien ProfileContext.
+ * Retourne le même shape que l'ancien useProfile().
+ */
+export const useProfile = () => {
+  const { profile, profileLoading: loading, setDisplayName, refreshProfile } = useAuth();
+  return useMemo(
+    () => ({ profile, loading, setDisplayName, refreshProfile }),
+    [profile, loading, setDisplayName, refreshProfile]
+  );
+};
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
 const MAX_RETRIES = 1;
 
 async function fetchProfileWithRetry(userId: string, retryCount = 0): Promise<Profile | null> {
   try {
-    const profileData = await getProfile(userId);
-    return profileData;
+    return await getProfile(userId);
   } catch (err) {
     const error = err as Error & { code?: string };
     console.error('AUTH_PROFILE_FETCH_ERROR', { code: error.code || 'UNKNOWN', message: error.message });
-    
     if (retryCount < MAX_RETRIES) {
       await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
       return fetchProfileWithRetry(userId, retryCount + 1);
@@ -43,17 +64,29 @@ async function fetchProfileWithRetry(userId: string, retryCount = 0): Promise<Pr
   }
 }
 
+// ─── Provider ─────────────────────────────────────────────────────────────────
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [profileLoading, setProfileLoading] = useState(false);
   const initializedRef = useRef(false);
+  const profileLoadingRef = useRef(false);
 
+  // Single profile fetch — avoids the double-fetch that existed when
+  // AuthContext and ProfileContext each fetched independently on login.
   const fetchProfile = useCallback(async (userId: string) => {
-    const profileData = await fetchProfileWithRetry(userId);
-    if (profileData) {
-      setProfile(profileData);
+    if (profileLoadingRef.current) return;
+    profileLoadingRef.current = true;
+    setProfileLoading(true);
+    try {
+      const profileData = await fetchProfileWithRetry(userId);
+      setProfile(profileData ?? null);
+    } finally {
+      profileLoadingRef.current = false;
+      setProfileLoading(false);
     }
   }, []);
 
@@ -96,7 +129,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } else {
           setProfile(null);
         }
-
       })
       .catch((err) => {
         console.error('AUTH_SESSION_GET_ERROR', { code: 'SESSION_GET_FAILED', message: err.message });
@@ -105,6 +137,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return () => subscription.unsubscribe();
   }, [fetchProfile]);
+
+  // ─── Auth methods ──────────────────────────────────────────────────────────
 
   const signUp = async (email: string, password: string, displayName?: string) => {
     const { data, error } = await supabase.auth.signUp({
@@ -145,16 +179,78 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setProfile(null);
   };
 
+  // ─── Profile methods ───────────────────────────────────────────────────────
+
   const updateUsername = async (displayName: string) => {
     if (!user) return;
-    const updated = await updateProfileDisplayName(user.id, displayName);
-    setProfile(updated);
+    const { data, error } = await supabase
+      .from('profiles')
+      .update({ display_name: displayName, updated_at: new Date().toISOString() })
+      .eq('user_id', user.id)
+      .select()
+      .single();
+    if (!error && data) setProfile(data as Profile);
   };
+
+  const setDisplayName = useCallback(async (value: string): Promise<{ error: string | null }> => {
+    if (!user?.id) return { error: 'Utilisateur non connecté.' };
+
+    const normalized = value.trim();
+    if (!USERNAME_RE.test(normalized)) {
+      return { error: 'Pseudo invalide (3-20 caractères, lettres/chiffres/underscore).' };
+    }
+
+    try {
+      const { data: conflictExists, error: conflictError } = await supabase.rpc('is_display_name_taken', {
+        display_name: normalized,
+        current_user_id: user.id,
+      });
+
+      if (conflictError) {
+        console.error('PROFILE_CHECK_CONFLICT_ERROR', { code: conflictError.code || 'UNKNOWN', message: conflictError.message });
+      } else if (conflictExists) {
+        return { error: 'Ce pseudo est déjà utilisé.' };
+      }
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .upsert({ user_id: user.id, display_name: normalized }, { onConflict: 'user_id' })
+        .select('*')
+        .single();
+
+      if (error) {
+        if (error.code === '23505' || error.message.includes('unique') || error.message.includes('duplicate')) {
+          return { error: 'Ce pseudo est déjà utilisé par un autre joueur.' };
+        }
+        console.error('PROFILE_UPDATE_ERROR', { code: error.code || 'UNKNOWN', message: error.message });
+        return { error: 'Erreur technique. Veuillez réessayer plus tard.' };
+      }
+
+      setProfile(data as Profile);
+      return { error: null };
+    } catch (err) {
+      const error = err as Error & { code?: string };
+      console.error('PROFILE_SET_NAME_ERROR', { code: error.code || 'UNKNOWN', message: error.message });
+      return { error: 'Erreur technique. Veuillez réessayer plus tard.' };
+    }
+  }, [user?.id]);
+
+  const refreshProfile = useCallback(async () => {
+    if (!user?.id) return;
+    await fetchProfile(user.id);
+  }, [user?.id, fetchProfile]);
+
+  // ─── Derived ───────────────────────────────────────────────────────────────
 
   const username = profile?.display_name ?? null;
 
   return (
-    <AuthContext.Provider value={{ user, session, profile, username, loading, signUp, signIn, signInWithGoogle, signOut, updateUsername }}>
+    <AuthContext.Provider value={{
+      user, session, loading,
+      profile, username, profileLoading,
+      signUp, signIn, signInWithGoogle, signOut,
+      updateUsername, setDisplayName, refreshProfile,
+    }}>
       {children}
     </AuthContext.Provider>
   );

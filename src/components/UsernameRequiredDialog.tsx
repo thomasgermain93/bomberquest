@@ -3,8 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/contexts/AuthContext';
-import { useProfile } from '@/contexts/ProfileContext';
+import { useAuth, useProfile } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { USERNAME_RE } from '@/lib/constants';
 
