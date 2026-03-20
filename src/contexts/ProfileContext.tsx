@@ -69,7 +69,9 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
         return;
       }
 
-      const fallbackName = (user.user_metadata?.full_name as string | undefined)?.trim() || null;
+      const fallbackName = typeof user.user_metadata?.full_name === 'string'
+        ? user.user_metadata.full_name.trim()
+        : null;
 
       const { data: inserted, error: insertError } = await supabase
         .from('profiles')

@@ -14,7 +14,7 @@ export function useLeaderboard(boardType: BoardType) {
   return useQuery({
     queryKey: ['leaderboard', boardType],
     queryFn: async () => {
-      const { data, error } = await (supabase as any).rpc('get_leaderboard', {
+      const { data, error } = await supabase.rpc('get_leaderboard' as never, {
         board_type: boardType,
         lim: 50,
       });

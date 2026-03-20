@@ -4,9 +4,16 @@ import { Hero, PlayerData } from '@/game/types';
 import { StoryProgress } from '@/game/storyTypes';
 import { DailyQuestData } from '@/game/questSystem';
 import { getDefaultPlayerData } from '@/game/saveSystem';
-import type { Database } from '@/integrations/supabase/types';
+import type { Database, Json } from '@/integrations/supabase/types';
 
 type PlayerHeroRow = Database['public']['Tables']['player_heroes']['Row'];
+
+// Colonnes présentes en DB mais absentes du type généré (ajoutées via migration ultérieure)
+interface PlayerHeroRowExtended extends PlayerHeroRow {
+  progression_stats: Json | null;
+  is_locked: boolean | null;
+  family: string | null;
+}
 
 // Converts a Hero to a DB row (excludes runtime fields)
 function heroToRow(hero: Hero, userId: string) {
@@ -18,8 +25,8 @@ function heroToRow(hero: Hero, userId: string) {
     level: hero.level,
     stars: hero.stars,
     xp: hero.xp,
-    stats: hero.stats as any,
-    skills: hero.skills as any,
+    stats: hero.stats as unknown as Json,
+    skills: hero.skills as unknown as Json,
     current_stamina: hero.currentStamina,
     max_stamina: hero.maxStamina,
     is_active: hero.isActive,
@@ -29,7 +36,7 @@ function heroToRow(hero: Hero, userId: string) {
 }
 
 // Converts a DB row back to a Hero with runtime defaults
-function rowToHero(row: PlayerHeroRow): Hero {
+function rowToHero(row: PlayerHeroRowExtended): Hero {
   return {
     id: row.id,
     name: row.name,
@@ -37,8 +44,8 @@ function rowToHero(row: PlayerHeroRow): Hero {
     level: Number.isFinite(Number(row.level)) ? Math.max(1, Math.min(Number(row.level), 120)) : 1,
     stars: row.stars,
     xp: Number.isFinite(Number(row.xp)) ? Number(row.xp) : 0,
-    stats: row.stats,
-    skills: row.skills,
+    stats: row.stats as unknown as Hero['stats'],
+    skills: row.skills as unknown as Hero['skills'],
     currentStamina: Number(row.current_stamina),
     maxStamina: Number(row.max_stamina),
     isActive: row.is_active,
@@ -51,9 +58,9 @@ function rowToHero(row: PlayerHeroRow): Hero {
     state: 'idle',
     bombCooldown: 0,
     stuckTimer: 0,
-    progressionStats: (row as any).progression_stats ?? { chestsOpened: 0, totalDamageDealt: 0, battlesPlayed: 0, victories: 0, obtainedAt: Date.now() },
-    isLocked: (row as any).is_locked ?? false,
-    family: (row as any).family ?? undefined,
+    progressionStats: row.progression_stats as unknown as Hero['progressionStats'] ?? { chestsOpened: 0, totalDamageDealt: 0, battlesPlayed: 0, victories: 0, obtainedAt: Date.now() },
+    isLocked: row.is_locked ?? false,
+    family: row.family ?? undefined,
   };
 }
 
@@ -98,28 +105,30 @@ export function useCloudSave(userId: string | undefined, canWriteCloud: boolean)
 
     if (heroesResult.data && heroesResult.data.length > 0) {
       // Cas normal : héros dans la table dédiée
-      heroes = heroesResult.data.map(rowToHero);
+      // Le type généré ne connaît pas les colonnes étendues ; le cast est sûr car la DB les inclut.
+      heroes = heroesResult.data.map((r) => rowToHero(r as unknown as PlayerHeroRowExtended));
     } else {
       // Fallback 1 : migration depuis l'ancien format JSONB (save_data.heroes)
-      const oldData = saveData.save_data as any;
-      if (Array.isArray(oldData?.heroes) && oldData.heroes.length > 0) {
-        const rows = oldData.heroes.map((h: Hero) => heroToRow(h, userId));
+      const oldData = saveData.save_data as Record<string, unknown>;
+      if (Array.isArray(oldData?.heroes) && (oldData.heroes as unknown[]).length > 0) {
+        const rows = (oldData.heroes as Hero[]).map((h) => heroToRow(h, userId));
         await supabase.from('player_heroes').upsert(rows, { onConflict: 'id,user_id' });
-        heroes = rows.map(rowToHero);
+        heroes = rows.map((r) => rowToHero(r as unknown as PlayerHeroRowExtended));
       }
 
       // Fallback 2 : backup récent stocké dans save_data.heroes_backup
       if (heroes.length === 0) {
-        const backup = (saveData.save_data as any)?.heroes_backup;
-        if (Array.isArray(backup) && backup.length > 0) {
-          const rows = backup.map((h: Hero) => heroToRow(h, userId));
+        const saveDataRecord = saveData.save_data as Record<string, unknown>;
+        const backup = saveDataRecord?.heroes_backup;
+        if (Array.isArray(backup) && (backup as unknown[]).length > 0) {
+          const rows = (backup as Hero[]).map((h) => heroToRow(h, userId));
           await supabase.from('player_heroes').upsert(rows, { onConflict: 'id,user_id' });
-          heroes = rows.map(rowToHero);
+          heroes = rows.map((r) => rowToHero(r as unknown as PlayerHeroRowExtended));
         }
       }
     }
 
-    const rawStats = saveData.save_data as any;
+    const rawStats = saveData.save_data as Record<string, unknown>;
     // Exclure les champs heroes/* du spread stats (ils restent dans player_heroes)
     const { heroes: _h, heroes_backup: _hb, ...statsOnly } = rawStats ?? {};
 
@@ -138,6 +147,8 @@ export function useCloudSave(userId: string | undefined, canWriteCloud: boolean)
     setIsSyncing(false);
     return {
       playerData,
+      // story_progress et daily_quests sont stockés comme Json opaque en DB ;
+      // le double cast unknown → type applicatif est inévitable ici.
       storyProgress: saveData.story_progress as unknown as StoryProgress,
       dailyQuests: saveData.daily_quests as unknown as DailyQuestData,
     };
@@ -179,9 +190,9 @@ export function useCloudSave(userId: string | undefined, canWriteCloud: boolean)
           .from('player_saves')
           .upsert({
             user_id: userId,
-            save_data: saveDataWithBackup as any,
-            story_progress: storyProgress as any,
-            daily_quests: dailyQuests as any,
+            save_data: saveDataWithBackup as unknown as Json,
+            story_progress: storyProgress as unknown as Json,
+            daily_quests: dailyQuests as unknown as Json,
           }, { onConflict: 'user_id' });
       } finally {
         setIsSyncing(false);
@@ -213,7 +224,7 @@ export function useCloudSave(userId: string | undefined, canWriteCloud: boolean)
 
         const keepIds = new Set(heroes.map(h => h.id));
         const idsToDelete = (existingRows || [])
-          .map((row: any) => row.id as string)
+          .map((row) => row.id)
           .filter(id => !keepIds.has(id));
 
         // Double guard : ne supprimer que si on a des héros à conserver
