@@ -15,8 +15,7 @@ import SummonModal from '@/components/SummonModal';
 import HeroUpgradeModal from '@/components/HeroUpgradeModal';
 import HeroDetailInline from '@/components/HeroDetailInline';
 import HeroPickerModal from '@/components/HeroPickerModal';
-import FusionHeroPickerModal from '@/components/FusionHeroPickerModal';
-import FusionSlot from '@/components/FusionSlot';
+import HeroPickerBottomSheet from '@/components/HeroPickerBottomSheet';
 import StoryMode from '@/components/StoryMode';
 import { GameState, Hero, MAP_CONFIGS, PlayerData, RARITY_CONFIG, RARITY_ORDER, sortByRarity, Rarity, HERO_NAMES, HERO_FAMILIES, HERO_FAMILY_MAP, HeroFamilyId, MAX_LEVEL_BY_RARITY } from '@/game/types';
 import { generateMap, tickGame } from '@/game/engine';
@@ -44,7 +43,7 @@ import MainNav from '@/components/MainNav';
 import TeamPresets, { TeamPreset } from '@/components/TeamPresets';
 import PixelLoader from '@/components/PixelLoader';
 import EmptyState from '@/components/EmptyState';
-import { Users, Sparkles, Swords, Map as MapIcon, Trophy, Coins, Play, Pause, DoorOpen, Check, Scroll, FastForward, BookOpen, Shield, Skull, Lock as LockIcon, Hammer, ArrowDown, Gem, Filter, ChevronDown, Zap, Volume2, VolumeX } from 'lucide-react';
+import { Users, Sparkles, Swords, Map as MapIcon, Trophy, Coins, Play, Pause, DoorOpen, Check, Scroll, FastForward, BookOpen, Shield, Skull, Lock as LockIcon, Hammer, ArrowDown, Gem, Filter, ChevronDown, Zap, Volume2, VolumeX, X } from 'lucide-react';
 import PityTracker from '@/components/PityTracker';
 import VictoryOverlay from '@/components/VictoryOverlay';
 import DefeatOverlay from '@/components/DefeatOverlay';
@@ -90,6 +89,9 @@ const Index = () => {
   const [heroesTab, setHeroesTab] = useState<'collection' | 'codex' | 'equipes'>('collection');
   const [combatTab, setCombatTab] = useState<'treasure' | 'story'>('treasure');
   const [forgeTab, setForgeTab] = useState<'fusion' | 'recycle'>('fusion');
+  const [fusionPickerOpen, setFusionPickerOpen] = useState(false);
+  const [fusionPickerSlot, setFusionPickerSlot] = useState<number>(0);
+  const [fusionPickerHeroes, setFusionPickerHeroes] = useState<Hero[]>([]);
   const [teamPresets, setTeamPresets] = useState<TeamPreset[]>([
     { id: 'team-1', name: 'Équipe 1', heroIds: [] },
     { id: 'team-2', name: 'Équipe 2', heroIds: [] },
@@ -241,11 +243,8 @@ const Index = () => {
     setSelectedRecipeIdx,
     fusionSlots,
     lastFusedHero,
-    heroPickerOpen,
-    setHeroPickerOpen,
-    activeSlotIdx,
+    setLastFusedHero,
     isMerging,
-    isHeroEligibleForMerge,
     getAvailableForMerge,
     handleMerge,
     executeFusionFromSlots,
@@ -2335,141 +2334,201 @@ const Index = () => {
             {/* Fusion */}
             {forgeTab === 'fusion' && (
               <motion.div variants={pixelFade} initial="hidden" animate="visible" className="space-y-4">
-                {/* Recipe selector */}
-                <div className="pixel-border bg-card p-4">
-                  <h3 className="font-pixel text-[9px] text-foreground mb-3 flex items-center gap-2">
-                    <Sparkles size={14} /> RECETTES DE FUSION
-                  </h3>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
-                    {MERGE_RECIPES.map((recipe, idx) => {
-                      const { total, maxed } = getAvailableForMerge(recipe.from);
-                      const canMerge = maxed >= recipe.count;
-                      const isSelected = selectedRecipeIdx === idx;
-                      return (
-                        <button
-                          key={`${recipe.from}-${recipe.to}`}
-                          onClick={() => setSelectedRecipeIdx(idx)}
-                          className={`pixel-border p-2 text-center transition-all ${
-                            isSelected
-                              ? 'ring-2 ring-primary bg-primary/10'
-                              : canMerge
-                                ? 'bg-game-energy-green/10 hover:bg-game-energy-green/20 cursor-pointer'
-                                : 'bg-muted/30 opacity-60'
-                          }`}
-                        >
-                          <div className="flex items-center justify-center gap-1 mb-1">
-                            <span className="font-pixel text-[7px]" style={{ color: `hsl(var(--game-rarity-${recipe.from}))` }}>
-                              {recipe.count}× {RARITY_CONFIG[recipe.from].label}
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-center gap-1">
-                            <ArrowDown size={8} className="text-muted-foreground" />
-                            <span className="font-pixel text-[7px]" style={{ color: `hsl(var(--game-rarity-${recipe.to}))` }}>
-                              1× {RARITY_CONFIG[recipe.to].label}
-                            </span>
-                          </div>
-                          <p className="text-[7px] text-muted-foreground mt-1">
-                            {maxed} prêts / {recipe.count} requis
-                          </p>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
 
-                {/* Fusion Forge UI with Anvil */}
-                <div className="pixel-border bg-card p-6">
-                  <div className="flex flex-col items-center">
-                    <div className="relative mb-6">
-                      <div
-                        className="w-24 h-16 sm:w-32 sm:h-20 rounded-lg flex items-center justify-center"
-                        style={{
-                          background: 'linear-gradient(180deg, #4a4a4a 0%, #2a2a2a 100%)',
-                          boxShadow: '0 8px 0 #1a1a1a, 0 12px 20px rgba(0,0,0,0.5)',
-                        }}
-                      >
-                        <Hammer size={40} className="text-amber-600" />
-                      </div>
-                      <div className="absolute inset-0 rounded-lg animate-pulse bg-amber-500/20 blur-xl" />
-                    </div>
-
-                    <div className="text-center mb-4">
-                      <p className="font-pixel text-[10px] text-foreground">
-                        {MERGE_RECIPES[selectedRecipeIdx].count}× {RARITY_CONFIG[MERGE_RECIPES[selectedRecipeIdx].from].label} niv. {RARITY_CONFIG[MERGE_RECIPES[selectedRecipeIdx].from].maxLevel}
-                      </p>
-                      <p className="text-[8px] text-muted-foreground">→</p>
-                      <p className="font-pixel text-[10px]" style={{ color: `hsl(var(--game-rarity-${MERGE_RECIPES[selectedRecipeIdx].to}))` }}>
-                        1× {RARITY_CONFIG[MERGE_RECIPES[selectedRecipeIdx].to].label}
-                      </p>
-                    </div>
-
-                    <div className="w-full max-w-md mb-6">
-                      {lastFusedHero ? (
-                        <motion.div
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          className="pixel-border bg-card p-4 flex flex-col items-center gap-3 text-center"
-                        >
-                          <div className="font-pixel text-[8px] text-game-gold">✨ FUSION RÉUSSIE !</div>
-                          <HeroAvatar heroId={lastFusedHero.id} heroName={lastFusedHero.name} rarity={lastFusedHero.rarity} size={48} />
-                          <div className="font-pixel text-[9px] text-foreground">{lastFusedHero.name}</div>
-                          <div className={`font-pixel text-[8px] ${CODEX_RARITY_COLOR[lastFusedHero.rarity]}`}>
-                            {lastFusedHero.rarity.toUpperCase()} · Niv.{lastFusedHero.level}
-                          </div>
-                          <button onClick={() => setLastFusedHero(null)} className="pixel-btn pixel-btn-secondary font-pixel text-[8px] px-3 py-1 min-h-0">
-                            Continuer
-                          </button>
-                        </motion.div>
-                      ) : (
-                        <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
-                          {fusionSlots.map((hero, idx) => {
-                            const recipe = MERGE_RECIPES[selectedRecipeIdx];
-                            const eligibility = hero
-                              ? isHeroEligibleForMerge(hero, recipe.from, recipe.count)
-                              : { eligible: true, reason: '' };
-                            return (
-                              <FusionSlot
-                                key={idx}
-                                hero={hero}
-                                index={idx}
-                                onClick={() => handleSlotClick(idx)}
-                                onClear={hero ? () => handleSlotClear(idx) : undefined}
-                                isEligible={eligibility.eligible}
-                                ineligibleReason={eligibility.reason}
-                              />
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex flex-col gap-2 w-full max-w-xs">
+                {/* Sélecteur de recette — compact */}
+                <div className="flex gap-2 flex-wrap">
+                  {MERGE_RECIPES.map((recipe, idx) => {
+                    const { maxed } = getAvailableForMerge(recipe.from);
+                    const canMerge = maxed >= recipe.count;
+                    return (
                       <button
-                        onClick={executeFusionFromSlots}
-                        disabled={fusionSlots.filter(s => s !== null).length !== MERGE_RECIPES[selectedRecipeIdx].count}
-                        className={`pixel-btn pixel-btn-primary font-pixel text-[10px] flex items-center justify-center gap-2 min-h-[48px] w-full ${
-                          fusionSlots.filter(s => s !== null).length !== MERGE_RECIPES[selectedRecipeIdx].count
-                            ? 'opacity-50 cursor-not-allowed'
-                            : ''
+                        key={idx}
+                        onClick={() => setSelectedRecipeIdx(idx)}
+                        className={`pixel-border px-3 py-2 text-center transition-all flex-1 min-w-[80px] ${
+                          selectedRecipeIdx === idx
+                            ? 'ring-2 ring-primary bg-primary/10'
+                            : canMerge
+                              ? 'bg-muted hover:bg-muted/80'
+                              : 'bg-muted/30 opacity-60'
                         }`}
                       >
-                        <Sparkles size={16} /> FUSIONNER
+                        <span className="font-pixel text-[7px]" style={{ color: `hsl(var(--game-rarity-${recipe.from}))` }}>
+                          {RARITY_CONFIG[recipe.from].label}
+                        </span>
+                        <span className="font-pixel text-[7px] text-muted-foreground mx-1">→</span>
+                        <span className="font-pixel text-[7px]" style={{ color: `hsl(var(--game-rarity-${recipe.to}))` }}>
+                          {RARITY_CONFIG[recipe.to].label}
+                        </span>
+                        <p className="text-[7px] text-muted-foreground mt-0.5">{maxed}/{recipe.count}</p>
                       </button>
+                    );
+                  })}
+                </div>
 
+                {/* FORGE */}
+                <div className="pixel-border bg-card p-4 space-y-5">
+
+                  {/* Slot Principal — héros à upgrader */}
+                  <div>
+                    <p className="font-pixel text-[8px] text-muted-foreground mb-2 flex items-center gap-1">
+                      <span className="text-primary">▲</span> HÉROS À UPGRADER
+                    </p>
+                    <div className="flex justify-center">
                       <button
-                        onClick={mergeAll}
-                        disabled={isMerging}
-                        className="pixel-btn pixel-btn-secondary font-pixel text-[8px] flex items-center justify-center gap-2 w-full"
+                        onClick={() => {
+                          const recipe = MERGE_RECIPES[selectedRecipeIdx];
+                          const alreadyIds = new Set(fusionSlots.slice(1).filter(Boolean).map(h => h!.id));
+                          setFusionPickerHeroes(
+                            player.heroes.filter(h =>
+                              h.rarity === recipe.from &&
+                              h.level >= RARITY_CONFIG[recipe.from].maxLevel &&
+                              !alreadyIds.has(h.id)
+                            )
+                          );
+                          handleSlotClick(0);
+                          setFusionPickerSlot(0);
+                          setFusionPickerOpen(true);
+                        }}
+                        className={`w-28 h-28 pixel-border transition-all flex flex-col items-center justify-center gap-2 ${
+                          fusionSlots[0]
+                            ? `bg-card rarity-${fusionSlots[0].rarity} hover:scale-105`
+                            : 'bg-muted/30 border-dashed hover:bg-muted/50'
+                        }`}
                       >
-                        <Zap size={12} /> TOUT FUSIONNER
+                        {fusionSlots[0] ? (
+                          <>
+                            <HeroAvatar heroId={fusionSlots[0].id} heroName={fusionSlots[0].name} rarity={fusionSlots[0].rarity} size={48} />
+                            <p className="font-pixel text-[8px] text-foreground truncate max-w-[96px]">{fusionSlots[0].name.split(' ')[0]}</p>
+                            <p className="font-pixel text-[7px]" style={{ color: `hsl(var(--game-rarity-${fusionSlots[0].rarity}))` }}>
+                              {RARITY_CONFIG[fusionSlots[0].rarity].label} · niv.{fusionSlots[0].level}
+                            </p>
+                          </>
+                        ) : (
+                          <>
+                            <span className="text-3xl text-muted-foreground/40">+</span>
+                            <p className="font-pixel text-[7px] text-muted-foreground">Choisir</p>
+                          </>
+                        )}
                       </button>
                     </div>
+                    {/* Flèche et résultat */}
+                    {fusionSlots[0] && (
+                      <div className="text-center mt-2">
+                        <p className="font-pixel text-[8px] text-muted-foreground">↓ fusionné en</p>
+                        <p className="font-pixel text-[9px]" style={{ color: `hsl(var(--game-rarity-${MERGE_RECIPES[selectedRecipeIdx].to}))` }}>
+                          {RARITY_CONFIG[MERGE_RECIPES[selectedRecipeIdx].to].label} · niv.{RARITY_CONFIG[MERGE_RECIPES[selectedRecipeIdx].from].maxLevel}
+                        </p>
+                      </div>
+                    )}
+                  </div>
 
-                    <p className="text-[8px] text-muted-foreground mt-3">
-                      {fusionSlots.filter(s => s !== null).length}/{MERGE_RECIPES[selectedRecipeIdx].count} slots remplis
+                  {/* Séparateur */}
+                  <div className="border-t border-border/50" />
+
+                  {/* Slots Nourriture */}
+                  <div>
+                    <p className="font-pixel text-[8px] text-muted-foreground mb-3 flex items-center gap-1">
+                      <span className="text-destructive">▼</span> NOURRITURES ({fusionSlots.slice(1).filter(Boolean).length}/{MERGE_RECIPES[selectedRecipeIdx].count - 1})
                     </p>
+                    <div className="flex flex-wrap gap-3 justify-center">
+                      {Array.from({ length: MERGE_RECIPES[selectedRecipeIdx].count - 1 }).map((_, i) => {
+                        const slotIdx = i + 1;
+                        const hero = fusionSlots[slotIdx];
+                        const alreadyIds = new Set([
+                          fusionSlots[0]?.id,
+                          ...fusionSlots.slice(1).filter((_, ii) => ii !== i).filter(Boolean).map(h => h!.id),
+                        ].filter(Boolean) as string[]);
+                        return (
+                          <div key={slotIdx} className="relative">
+                            <button
+                              onClick={() => {
+                                const recipe = MERGE_RECIPES[selectedRecipeIdx];
+                                setFusionPickerHeroes(
+                                  player.heroes.filter(h =>
+                                    h.rarity === recipe.from &&
+                                    h.level >= RARITY_CONFIG[recipe.from].maxLevel &&
+                                    !alreadyIds.has(h.id)
+                                  )
+                                );
+                                handleSlotClick(slotIdx);
+                                setFusionPickerSlot(slotIdx);
+                                setFusionPickerOpen(true);
+                              }}
+                              className={`w-20 h-20 pixel-border transition-all flex flex-col items-center justify-center gap-1 ${
+                                hero
+                                  ? `bg-card rarity-${hero.rarity} hover:scale-105`
+                                  : 'bg-muted/30 border-dashed hover:bg-muted/50'
+                              }`}
+                            >
+                              {hero ? (
+                                <>
+                                  <HeroAvatar heroId={hero.id} heroName={hero.name} rarity={hero.rarity} size={36} />
+                                  <p className="font-pixel text-[7px] text-foreground truncate max-w-[72px]">{hero.name.split(' ')[0]}</p>
+                                </>
+                              ) : (
+                                <span className="text-2xl text-muted-foreground/40">+</span>
+                              )}
+                            </button>
+                            {hero && (
+                              <button
+                                onClick={() => handleSlotClear(slotIdx)}
+                                className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-destructive flex items-center justify-center"
+                              >
+                                <X size={10} className="text-white" />
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Résultat de fusion */}
+                  {lastFusedHero && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="pixel-border bg-card p-4 flex flex-col items-center gap-2 text-center"
+                    >
+                      <p className="font-pixel text-[8px] text-game-gold">✨ FUSION RÉUSSIE !</p>
+                      <HeroAvatar heroId={lastFusedHero.id} heroName={lastFusedHero.name} rarity={lastFusedHero.rarity} size={48} />
+                      <p className="font-pixel text-[9px] text-foreground">{lastFusedHero.name}</p>
+                      <button onClick={() => setLastFusedHero(null)} className="pixel-btn pixel-btn-secondary font-pixel text-[8px] px-3 py-1 min-h-0">
+                        Continuer
+                      </button>
+                    </motion.div>
+                  )}
+
+                  {/* Bouton fusionner */}
+                  <div className="flex flex-col gap-2">
+                    <button
+                      onClick={executeFusionFromSlots}
+                      disabled={fusionSlots.filter(Boolean).length !== MERGE_RECIPES[selectedRecipeIdx].count}
+                      className={`pixel-btn pixel-btn-gold w-full font-pixel text-xs flex items-center justify-center gap-2 min-h-[44px] ${
+                        fusionSlots.filter(Boolean).length !== MERGE_RECIPES[selectedRecipeIdx].count ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}
+                    >
+                      <Sparkles size={16} /> FUSIONNER
+                    </button>
+                    <button onClick={mergeAll} disabled={isMerging} className="pixel-btn pixel-btn-secondary font-pixel text-[8px] flex items-center justify-center gap-2 w-full">
+                      <Zap size={12} /> TOUT FUSIONNER
+                    </button>
                   </div>
                 </div>
+
+                {/* Bottom sheet picker */}
+                <HeroPickerBottomSheet
+                  open={fusionPickerOpen}
+                  heroes={fusionPickerHeroes}
+                  selectedIds={new Set(fusionSlots.filter(Boolean).map(h => h!.id))}
+                  onSelect={(hero) => {
+                    handleHeroSelect(hero);
+                    setFusionPickerOpen(false);
+                  }}
+                  onClose={() => setFusionPickerOpen(false)}
+                  title={fusionPickerSlot === 0 ? 'CHOISIR LE HÉROS À UPGRADER' : 'CHOISIR UNE NOURRITURE'}
+                />
+
               </motion.div>
             )}
 
@@ -2506,15 +2565,6 @@ const Index = () => {
         pityCounters={player.pityCounters}
       />
 
-      <FusionHeroPickerModal
-        isOpen={heroPickerOpen}
-        onClose={() => setHeroPickerOpen(false)}
-        onSelect={handleHeroSelect}
-        heroes={player.heroes}
-        requiredRarity={MERGE_RECIPES[selectedRecipeIdx].from}
-        requiredCount={MERGE_RECIPES[selectedRecipeIdx].count}
-        alreadySelectedIds={fusionSlots.filter(s => s !== null).map(s => s!.id)}
-      />
 
       <TutorialOverlay
         step={tutorialCurrentStep}
