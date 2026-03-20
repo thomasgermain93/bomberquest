@@ -375,8 +375,10 @@ const Index = () => {
 
 
   // Save periodically + passive stamina regen
+  // On stocke le callback dans une ref pour ne pas recréer le setInterval à chaque changement d'état (#273)
+  const periodicCallbackRef = useRef<() => void>(() => {});
   useEffect(() => {
-    const interval = setInterval(() => {
+    periodicCallbackRef.current = () => {
       if (canWriteCloud) {
         saveStatsToCloud(player, storyProgress, dailyQuests);
         syncHeroesSnapshotToCloud(player.heroes);
@@ -400,9 +402,13 @@ const Index = () => {
           };
         });
       }
-    }, 5000);
-    return () => clearInterval(interval);
+    };
   }, [user, canWriteCloud, player, dailyQuests, storyProgress, gameState?.isRunning, saveStatsToCloud, syncHeroesSnapshotToCloud]);
+
+  useEffect(() => {
+    const interval = setInterval(() => periodicCallbackRef.current(), 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     if (user) return;
