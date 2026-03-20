@@ -102,6 +102,7 @@ export function useFusionLogic({
     const toRemove = new Set(available.slice(0, count).map(h => h.id));
     const removedIds = Array.from(toRemove);
     const newHero = generateHero(to);
+    newHero.level = RARITY_CONFIG[from].maxLevel;
     const mergedHeroes = [...player.heroes.filter(h => !toRemove.has(h.id)), newHero];
 
     setPlayer(prev => ({
@@ -130,6 +131,7 @@ export function useFusionLogic({
     const toRemove = new Set(filledSlots.map(h => h.id));
     const removedIds = Array.from(toRemove);
     const newHero = generateHero(recipe.to);
+    newHero.level = RARITY_CONFIG[recipe.from].maxLevel;
     const mergedHeroes = [...player.heroes.filter(h => !toRemove.has(h.id)), newHero];
 
     setPlayer(prev => ({
@@ -188,6 +190,7 @@ export function useFusionLogic({
         if (available.length >= recipe.count) {
           const toRemove = new Set(available.slice(0, recipe.count).map(h => h.id));
           const newHero = generateHero(recipe.to);
+          newHero.level = RARITY_CONFIG[recipe.from].maxLevel;
           currentHeroes = [...currentHeroes.filter(h => !toRemove.has(h.id)), newHero];
           mergeCount++;
           madeProgress = true;
