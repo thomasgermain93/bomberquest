@@ -14,6 +14,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: '2026-03-20',
     title: 'Mises à jour récentes',
     changes: [
+      { type: 'feature', description: 'fix: compétences verrouillées dans HeroDetailInline selon le niveau (#339)' },
       { type: 'feature', description: 'feat: fusion UI — style Summoners War, slot principal + nourritures + bottom sheet (#338)' },
       { type: 'feature', description: 'feat: interface équipe refactorisée — slots cliquables, picker filtré, synergies clan (#336)' },
       { type: 'feature', description: 'fix: bouton mute déplacé dans la SlimHeader — HUD combat équilibré (#335)' },
