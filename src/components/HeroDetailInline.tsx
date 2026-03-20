@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import PixelIcon from '@/components/PixelIcon';
 import HeroAvatar from '@/components/HeroAvatar';
 import { Hero, RARITY_CONFIG, MAX_LEVEL_BY_RARITY } from '@/game/types';
-import { getStatsAtLevel, getAscensionCost, MAX_STARS, countDuplicates, getXpProgress, getMaxLevel } from '@/game/upgradeSystem';
+import { getStatsAtLevel, getAscensionCost, MAX_STARS, countDuplicates, getXpProgress, getMaxLevel, getUnlockedSkills } from '@/game/upgradeSystem';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Swords, Zap, Target, Bomb, Battery, Clover, Shield, Star, ArrowUp, Coins, TrendingUp, Lock, Sparkles, Users, User, Calendar, Trophy, Gem, ArrowLeft } from 'lucide-react';
@@ -233,14 +233,22 @@ const HeroDetailInline: React.FC<HeroDetailInlineProps> = ({ hero, coins, allHer
                 <p className="font-pixel text-[9px] text-muted-foreground flex items-center gap-1">
                   <Zap size={10} /> COMPÉTENCES
                 </p>
-                {hero.skills.map((skill, i) => (
-                  <div key={i} className="bg-muted rounded px-2 py-1.5 text-[10px]">
-                    <p className="text-foreground font-medium flex items-center gap-1">
-                      <Zap size={9} className="text-accent" /> {skill.name}
-                    </p>
-                    <p className="text-muted-foreground mt-0.5">{skill.description}</p>
-                  </div>
-                ))}
+                {hero.skills.map((skill, i) => {
+                  const unlockLevel = (i + 1) * 20;
+                  const isUnlocked = hero.level >= unlockLevel;
+                  return (
+                    <div key={i} className={`bg-muted rounded px-2 py-1.5 text-[10px] ${!isUnlocked ? 'opacity-50' : ''}`}>
+                      <p className={`font-medium flex items-center gap-1 ${isUnlocked ? 'text-foreground' : 'text-muted-foreground'}`}>
+                        {isUnlocked ? <Zap size={9} className="text-accent" /> : <Lock size={9} />} {skill.name}
+                      </p>
+                      {isUnlocked ? (
+                        <p className="text-muted-foreground mt-0.5">{skill.description}</p>
+                      ) : (
+                        <p className="text-muted-foreground mt-0.5">Débloqué niveau {unlockLevel}</p>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
 
