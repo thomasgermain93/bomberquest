@@ -46,7 +46,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
   },
   {
     id: 'summon_50',
-    title: 'InvocateurEXPERT',
+    title: 'Invocateur EXPERT',
     description: 'Effectuez 50 invocations',
     category: 'invocation',
     target: 50,
@@ -174,7 +174,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
   },
   {
     id: 'hero_25',
-    title: 'CollectionneurEXPERT',
+    title: 'Collectionneur EXPERT',
     description: 'Possédez 25 héros différents',
     category: 'collection',
     target: 25,
@@ -206,7 +206,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
   },
   {
     id: 'level_25',
-    title: 'ExplorateurLvL',
+    title: 'Explorateur Lv.MAX',
     description: 'Atteignez le niveau 25',
     category: 'progression',
     target: 25,

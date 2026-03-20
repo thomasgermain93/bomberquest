@@ -223,6 +223,70 @@ function getClanStyle(family: HeroFamilyId) {
   return CLAN_PORTRAIT_STYLES[family] || CLAN_PORTRAIT_STYLES['ember-clan'];
 }
 
+// --- Helmet shape renderers ---
+
+function drawHelmetBase(ctx: CanvasRenderingContext2D, shape: string, cx: number, cy: number) {
+  switch (shape) {
+    case 'angular':
+      ctx.beginPath();
+      ctx.moveTo(cx - 10, cy - 2);
+      ctx.lineTo(cx + 10, cy - 2);
+      ctx.lineTo(cx + 8, cy + 10);
+      ctx.lineTo(cx - 8, cy + 10);
+      ctx.closePath();
+      ctx.fill();
+      break;
+    case 'tech':
+      ctx.fillRect(cx - 10, cy - 4, 20, 14);
+      ctx.fillRect(cx - 12, cy - 2, 2, 8);
+      ctx.fillRect(cx + 10, cy - 2, 2, 8);
+      break;
+    case 'mask':
+      ctx.beginPath();
+      ctx.arc(cx, cy + 2, 11, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+    case 'spiked':
+      ctx.fillRect(cx - 10, cy - 3, 20, 12);
+      ctx.fillRect(cx - 12, cy - 6, 3, 5);
+      ctx.fillRect(cx + 9, cy - 6, 3, 5);
+      break;
+    default: // rounded
+      ctx.beginPath();
+      ctx.arc(cx, cy + 2, 10, 0, Math.PI * 2);
+      ctx.fill();
+  }
+}
+
+function drawHelmetInner(ctx: CanvasRenderingContext2D, shape: string, cx: number, cy: number) {
+  switch (shape) {
+    case 'angular':
+      ctx.beginPath();
+      ctx.moveTo(cx - 8, cy);
+      ctx.lineTo(cx + 8, cy);
+      ctx.lineTo(cx + 6, cy + 8);
+      ctx.lineTo(cx - 6, cy + 8);
+      ctx.closePath();
+      ctx.fill();
+      break;
+    case 'tech':
+      ctx.fillRect(cx - 8, cy - 2, 16, 10);
+      break;
+    case 'mask':
+      ctx.beginPath();
+      ctx.arc(cx, cy + 3, 8, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+    case 'spiked':
+      ctx.fillRect(cx - 8, cy - 1, 16, 10);
+      break;
+    default: // rounded
+      ctx.beginPath();
+      ctx.arc(cx, cy + 2, 8, 0, Math.PI * 2);
+      ctx.fill();
+  }
+}
+
 export function drawHeroPortrait(ctx: CanvasRenderingContext2D, rarity: string, time: number = 0, heroId?: string, heroName?: string) {
   const { config, family, skin } = getHeroSpriteConfig(rarity, heroId, heroName);
   const clanStyle = getClanStyle(family);
@@ -253,65 +317,11 @@ export function drawHeroPortrait(ctx: CanvasRenderingContext2D, rarity: string, 
 
   // Helmet base - different shapes per clan
   ctx.fillStyle = config.outlineColor;
-  switch (clanStyle.helmetShape) {
-    case 'angular':
-      ctx.beginPath();
-      ctx.moveTo(cx - 10, cy - 2);
-      ctx.lineTo(cx + 10, cy - 2);
-      ctx.lineTo(cx + 8, cy + 10);
-      ctx.lineTo(cx - 8, cy + 10);
-      ctx.closePath();
-      ctx.fill();
-      break;
-    case 'tech':
-      ctx.fillRect(cx - 10, cy - 4, 20, 14);
-      ctx.fillRect(cx - 12, cy - 2, 2, 8);
-      ctx.fillRect(cx + 10, cy - 2, 2, 8);
-      break;
-    case 'mask':
-      ctx.beginPath();
-      ctx.arc(cx, cy + 2, 11, 0, Math.PI * 2);
-      ctx.fill();
-      break;
-    case 'spiked':
-      ctx.fillRect(cx - 10, cy - 3, 20, 12);
-      ctx.fillRect(cx - 12, cy - 6, 3, 5);
-      ctx.fillRect(cx + 9, cy - 6, 3, 5);
-      break;
-    default: // rounded
-      ctx.beginPath();
-      ctx.arc(cx, cy + 2, 10, 0, Math.PI * 2);
-      ctx.fill();
-  }
+  drawHelmetBase(ctx, clanStyle.helmetShape, cx, cy);
 
   // Helmet inner
   ctx.fillStyle = config.helmetColor;
-  switch (clanStyle.helmetShape) {
-    case 'angular':
-      ctx.beginPath();
-      ctx.moveTo(cx - 8, cy);
-      ctx.lineTo(cx + 8, cy);
-      ctx.lineTo(cx + 6, cy + 8);
-      ctx.lineTo(cx - 6, cy + 8);
-      ctx.closePath();
-      ctx.fill();
-      break;
-    case 'tech':
-      ctx.fillRect(cx - 8, cy - 2, 16, 10);
-      break;
-    case 'mask':
-      ctx.beginPath();
-      ctx.arc(cx, cy + 3, 8, 0, Math.PI * 2);
-      ctx.fill();
-      break;
-    case 'spiked':
-      ctx.fillRect(cx - 8, cy - 1, 16, 10);
-      break;
-    default:
-      ctx.beginPath();
-      ctx.arc(cx, cy + 2, 8, 0, Math.PI * 2);
-      ctx.fill();
-  }
+  drawHelmetInner(ctx, clanStyle.helmetShape, cx, cy);
 
   drawSkinPattern(ctx, skin, cx - 8, cy - 2, 16, 10, config.helmetColor);
 

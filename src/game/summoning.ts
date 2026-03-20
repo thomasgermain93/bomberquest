@@ -2,6 +2,9 @@ import { Hero, Rarity, RARITY_CONFIG, HERO_NAMES, HERO_ICON_KEYS, Skill, HERO_VI
 
 let heroIdCounter = Date.now();
 
+const STAT_VARIANCE_MIN = 0.9;   // facteur minimum de variance des stats (−10%)
+const STAT_VARIANCE_RANGE = 0.2; // amplitude de la variance (±10%)
+
 const ALL_SKILLS: Record<string, Skill> = {
   doubleBlast: { name: 'Double Blast', description: '20% chance bombe double', trigger: 'bomb', effect: 'double_explosion' },
   treasureSense: { name: 'Treasure Sense', description: 'Détecte les coffres +2 tuiles', trigger: 'passive', effect: 'detect_range_up' },
@@ -87,7 +90,7 @@ export function generateHero(rarity: Rarity): Hero {
   const family = (HERO_VISUALS[name.toLowerCase()]?.family || undefined) as HeroFamilyId | undefined;
 
   // Random variance ±10%
-  const vary = (base: number) => Math.max(1, Math.round(base * (0.9 + Math.random() * 0.2)));
+  const vary = (base: number) => Math.max(1, Math.round(base * (STAT_VARIANCE_MIN + Math.random() * STAT_VARIANCE_RANGE)));
 
   const stats = {
     pwr: vary(config.baseStats.pwr),

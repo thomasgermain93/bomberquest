@@ -6,22 +6,17 @@ import { Boss } from './storyTypes';
 let nextId = 1;
 const genId = () => `id_${nextId++}`;
 
+const LOW_STAMINA_THRESHOLD = 0.5;  // % de stamina max en-dessous duquel la vitesse est réduite
+const BOMB_COOLDOWN = 0.5;          // secondes entre deux bombes
+
 // --- Helpers locaux (non exportés) ---
 
-/**
- * Retourne la somme des bonus d'un type d'effet de clan skill donné.
- * Evite de répéter getActiveClanSkills().filter().reduce() à chaque appel.
- */
 function getClanBonus(effectType: ClanSkillEffect['type'], heroes: Hero[]): number {
   return getActiveClanSkills(heroes)
     .filter(s => s.effect.type === effectType)
     .reduce((acc, s) => acc + s.effect.value, 0);
 }
 
-/**
- * Construit la liste des cibles Story (ennemis + éventuellement boss) normalisée
- * avec la propriété isBoss. Utilisée par les deux appels à findNearestTarget dans tickGame.
- */
 function buildStoryTargets(
   state: Pick<GameState, 'enemies' | 'boss' | 'isStoryMode'>
 ): { position: { x: number; y: number }; hp: number; isBoss?: boolean }[] | undefined {
@@ -637,7 +632,7 @@ export function tickGame(state: GameState, deltaMs: number): GameState {
       } else {
         // Bonus move_speed (wild-pack clan skill)
         const speedBonus = getClanBonus('move_speed', heroes);
-        const speed = hero.stats.spd * (hero.currentStamina < hero.maxStamina * 0.5 ? 0.75 : 1.0) * (1 + speedBonus);
+        const speed = hero.stats.spd * (hero.currentStamina < hero.maxStamina * LOW_STAMINA_THRESHOLD ? 0.75 : 1.0) * (1 + speedBonus);
         if (Math.abs(dx) > 0.05) {
           hero.position.x += Math.sign(dx) * Math.min(Math.abs(dx), speed * dt);
         } else if (Math.abs(dy) > 0.05) {
@@ -668,7 +663,7 @@ export function tickGame(state: GameState, deltaMs: number): GameState {
             family: hero.family,
           });
           hero.currentStamina = Math.max(0, hero.currentStamina - 1);
-          hero.bombCooldown = 0.5;
+          hero.bombCooldown = BOMB_COOLDOWN;
           bombsPlaced++;
           const heroIdx = heroes.findIndex(h => h.id === hero.id);
           if (heroIdx >= 0) {

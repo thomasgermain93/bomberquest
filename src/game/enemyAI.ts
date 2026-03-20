@@ -5,6 +5,11 @@ import { getExplosionTiles, findPath } from './engine';
 let enemyIdCounter = 1000;
 const genEnemyId = () => `enemy_${enemyIdCounter++}`;
 
+const ENEMY_MOVE_TIMER_MIN = 1;   // secondes minimum entre deux déplacements
+const ENEMY_MOVE_TIMER_RANGE = 2; // variation aléatoire du timer de déplacement
+const SNAP_TO_GRID_THRESHOLD = 0.02; // distance en tiles sous laquelle on snape à la grille
+const STUN_DURATION = 0.5;        // secondes de stun par hit
+
 export function spawnEnemy(type: EnemyType, pos: { x: number; y: number }): Enemy {
   const cfg = ENEMY_CONFIG[type];
   return {
@@ -75,6 +80,26 @@ function clampPosition(pos: { x: number; y: number }, map: GameMap): { x: number
   };
 }
 
+function findNearestFloorTile(
+  position: { x: number; y: number },
+  map: GameMap
+): { x: number; y: number } | null {
+  const floorTiles: { x: number; y: number }[] = [];
+  for (let y = 1; y < map.height - 1; y++) {
+    for (let x = 1; x < map.width - 1; x++) {
+      if (map.tiles[y][x] === 'floor') {
+        floorTiles.push({ x, y });
+      }
+    }
+  }
+  if (floorTiles.length === 0) return null;
+  return floorTiles.reduce((a, b) => {
+    const da = Math.abs(a.x - position.x) + Math.abs(a.y - position.y);
+    const db = Math.abs(b.x - position.x) + Math.abs(b.y - position.y);
+    return da < db ? a : b;
+  });
+}
+
 export function tickEnemies(
   enemies: Enemy[],
   map: GameMap,
@@ -91,22 +116,8 @@ export function tickEnemies(
     const ex = Math.round(e.position.x);
     const ey = Math.round(e.position.y);
     if (!canWalk(map, ex, ey)) {
-      const floorTiles: { x: number; y: number }[] = [];
-      for (let y = 1; y < map.height - 1; y++) {
-        for (let x = 1; x < map.width - 1; x++) {
-          if (map.tiles[y][x] === 'floor') {
-            floorTiles.push({ x, y });
-          }
-        }
-      }
-      if (floorTiles.length > 0) {
-        const nearest = floorTiles.reduce((a, b) => {
-          const da = Math.abs(a.x - e.position.x) + Math.abs(a.y - e.position.y);
-          const db = Math.abs(b.x - e.position.x) + Math.abs(b.y - e.position.y);
-          return da < db ? a : b;
-        });
-        e.position = nearest;
-      }
+      const nearest = findNearestFloorTile(e.position, map);
+      if (nearest) e.position = nearest;
     }
 
     if (e.stunTimer > 0) {
@@ -125,7 +136,7 @@ export function tickEnemies(
         const chosen = validDirs[Math.floor(Math.random() * validDirs.length)];
         e.direction = chosen;
       }
-      e.moveTimer = 1 + Math.random() * 2;
+      e.moveTimer = ENEMY_MOVE_TIMER_MIN + Math.random() * ENEMY_MOVE_TIMER_RANGE;
     }
 
     // Move
@@ -136,8 +147,8 @@ export function tickEnemies(
       if (canMoveToPosition(map, e.position.x, e.position.y, nx, ny)) {
         e.position.x = nx;
         e.position.y = ny;
-        if (Math.abs(e.position.x - Math.round(e.position.x)) < 0.02 &&
-            Math.abs(e.position.y - Math.round(e.position.y)) < 0.02) {
+        if (Math.abs(e.position.x - Math.round(e.position.x)) < SNAP_TO_GRID_THRESHOLD &&
+            Math.abs(e.position.y - Math.round(e.position.y)) < SNAP_TO_GRID_THRESHOLD) {
           e.position.x = Math.round(e.position.x);
           e.position.y = Math.round(e.position.y);
         }
@@ -177,23 +188,8 @@ export function tickBoss(
   const bx = Math.round(b.position.x);
   const by = Math.round(b.position.y);
   if (!canWalk(map, bx, by)) {
-    // Find nearest floor tile
-    const floorTiles: { x: number; y: number }[] = [];
-    for (let y = 1; y < map.height - 1; y++) {
-      for (let x = 1; x < map.width - 1; x++) {
-        if (map.tiles[y][x] === 'floor') {
-          floorTiles.push({ x, y });
-        }
-      }
-    }
-    if (floorTiles.length > 0) {
-      const nearest = floorTiles.reduce((a, c) => {
-        const da = Math.abs(a.x - b.position.x) + Math.abs(a.y - b.position.y);
-        const dc = Math.abs(c.x - b.position.x) + Math.abs(c.y - b.position.y);
-        return da < dc ? a : c;
-      });
-      b.position = nearest;
-    }
+    const nearest = findNearestFloorTile(b.position, map);
+    if (nearest) b.position = nearest;
   }
 
   // Phase transitions
@@ -320,7 +316,7 @@ export function damageEnemiesFromExplosion(
     if (explosionTiles.some(t => t.x === ex && t.y === ey)) {
       const damage = Math.min(e.hp, power);
       totalDamage += damage;
-      const ne = { ...e, hp: e.hp - power, stunTimer: 0.5 };
+      const ne = { ...e, hp: e.hp - power, stunTimer: STUN_DURATION };
       if (ne.hp <= 0) kills++;
       return ne;
     }
