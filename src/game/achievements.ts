@@ -1,8 +1,8 @@
 import { Rarity } from './types';
 
-export type AchievementCategory = 'invocation' | 'combat' | 'progression' | 'collection';
+type AchievementCategory = 'invocation' | 'combat' | 'progression' | 'collection';
 
-export interface AchievementReward {
+interface AchievementReward {
   type: 'coins' | 'shards';
   amount: number;
   rarity?: string;
@@ -311,9 +311,9 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
   },
 ];
 
-export const getAchievementDefinitions = () => ACHIEVEMENTS;
+const getAchievementDefinitions = () => ACHIEVEMENTS;
 
-export const getAchievementById = (id: string): AchievementDefinition | undefined => 
+const getAchievementById = (id: string): AchievementDefinition | undefined =>
   ACHIEVEMENTS.find(a => a.id === id);
 
 export const getDefaultAchievementState = (): AchievementState => {
@@ -350,12 +350,12 @@ export const claimAchievementReward = (
   return { newState, claimed: true, reward: definition.reward };
 };
 
-export const canClaimReward = (state: AchievementState, achievementId: string): boolean => {
+const canClaimReward = (state: AchievementState, achievementId: string): boolean => {
   const current = state[achievementId];
   return !!(current && current.unlocked && !current.claimedAt);
 };
 
-export const checkAchievementProgress = (
+const checkAchievementProgress = (
   state: AchievementState,
   achievementId: string,
   newValue: number
@@ -377,7 +377,7 @@ export const checkAchievementProgress = (
   return { progress: updatedProgress, newlyUnlocked };
 };
 
-export const updateAchievement = (
+const updateAchievement = (
   state: AchievementState,
   achievementId: string,
   newValue: number
@@ -407,7 +407,7 @@ export const getLockedAchievements = (state: AchievementState): AchievementDefin
   });
 };
 
-export const getAchievementsByCategory = (state: AchievementState, category: AchievementCategory): AchievementDefinition[] => {
+const getAchievementsByCategory = (state: AchievementState, category: AchievementCategory): AchievementDefinition[] => {
   return ACHIEVEMENTS.filter(a => a.category === category);
 };
 

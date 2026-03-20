@@ -9,7 +9,6 @@ import { Swords, Zap, Target, Bomb, Battery, Clover, Shield, Star, ArrowUp, Coin
 interface HeroUpgradeModalProps {
   hero: Hero | null;
   coins: number;
-  heroCount?: { rarity: string; count: number }[];
   allHeroes?: Hero[];
   onClose: () => void;
   onUpgrade: (heroId: string) => void;

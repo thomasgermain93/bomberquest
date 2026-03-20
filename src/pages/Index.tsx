@@ -2509,7 +2509,6 @@ const Index = () => {
                   {gameState && (
                     <CombatHeroPanel
                       deployedHeroes={gameState.heroes}
-                      playerHeroes={player.heroes}
                     />
                   )}
                 </div>

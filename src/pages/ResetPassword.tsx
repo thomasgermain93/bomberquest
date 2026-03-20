@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Lock, ArrowLeft, Loader2, CheckCircle } from 'lucide-react';
 import PixelIcon from '@/components/PixelIcon';
@@ -13,7 +13,6 @@ const ResetPassword: React.FC = () => {
   const [success, setSuccess] = useState(false);
   const [hasRecoveryToken, setHasRecoveryToken] = useState(false);
   const navigate = useNavigate();
-  const location = useLocation();
 
   useEffect(() => {
     // Check for recovery token in URL hash

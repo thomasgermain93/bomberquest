@@ -1,14 +1,5 @@
-import { Hero, Rarity } from '@/game/types';
-
-// Valeurs de recyclage en shards universels par rareté (cohérent avec saveSystem.ts)
-const RECYCLE_VALUES: Record<Rarity, number> = {
-  common: 1,
-  rare: 2,
-  'super-rare': 4,
-  epic: 10,
-  legend: 25,
-  'super-legend': 100,
-};
+import { Hero } from '@/game/types';
+import { RECYCLE_VALUES } from '@/game/recycleSystem';
 
 interface HeroCollectionStatsProps {
   heroes: Hero[];

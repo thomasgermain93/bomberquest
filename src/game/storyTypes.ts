@@ -11,7 +11,7 @@ export const BOSS_LEVEL_BY_TYPE: Record<BossType, number> = {
   'demon-lord': 5,
 };
 
-export const BOSS_RARITY_REWARD: Record<number, Rarity> = {
+const BOSS_RARITY_REWARD: Record<number, Rarity> = {
   1: 'rare',
   2: 'super-rare',
   3: 'epic',
@@ -32,7 +32,7 @@ export interface Enemy {
   stunTimer: number;
 }
 
-export interface BossPattern {
+interface BossPattern {
   type: 'charge' | 'summon' | 'invincible' | 'bomb-rain';
   duration: number;
   cooldown: number;

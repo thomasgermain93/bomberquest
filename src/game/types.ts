@@ -131,14 +131,6 @@ export interface GameState {
   storyFailed?: boolean;
 }
 
-export interface AchievementProgress {
-  progress: number;
-  unlocked: boolean;
-  unlockedAt?: number;
-}
-
-export type AchievementState = Record<string, AchievementProgress>;
-
 export interface PlayerData {
   bomberCoins: number;
   heroes: Hero[];
@@ -156,7 +148,7 @@ export interface PlayerData {
   shards: Record<Rarity, number>;
   universalShards: number;
   huntSpeed?: number;
-  achievements: AchievementState;
+  achievements: Record<string, { progress: number; unlocked: boolean; unlockedAt?: number; claimedAt?: number }>;
   tutorialStep?: number; // undefined ou absent = tutoriel terminé, 0+ = étape en cours
 }
 
