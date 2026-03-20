@@ -15,6 +15,7 @@ import SummonModal from '@/components/SummonModal';
 import HeroUpgradeModal from '@/components/HeroUpgradeModal';
 import HeroDetailInline from '@/components/HeroDetailInline';
 import HeroPickerModal from '@/components/HeroPickerModal';
+import FusionHeroPickerModal from '@/components/FusionHeroPickerModal';
 import FusionSlot from '@/components/FusionSlot';
 import StoryMode from '@/components/StoryMode';
 import { GameState, Hero, MAP_CONFIGS, PlayerData, RARITY_CONFIG, RARITY_ORDER, sortByRarity, Rarity, HERO_NAMES, HERO_FAMILIES, HERO_FAMILY_MAP, HeroFamilyId, MAX_LEVEL_BY_RARITY } from '@/game/types';
@@ -120,6 +121,10 @@ const Index = () => {
   const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [heroFilters, setHeroFilters] = useState<HeroFilters>(DEFAULT_HERO_FILTERS);
   const [codexClanFilter, setCodexClanFilter] = useState<'all' | HeroFamilyId>('all');
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerSlotIdx, setPickerSlotIdx] = useState<number | null>(null);
+  const [presetSaveOpen, setPresetSaveOpen] = useState(false);
+  const [presetSaveName, setPresetSaveName] = useState('');
 
   // Tutorial — check for restart flag from Profile page
   useEffect(() => {
@@ -1029,6 +1034,17 @@ const Index = () => {
     setSelectedHeroes(new Set(sorted.slice(0, 6).map(h => h.id)));
   };
 
+  const handlePickerSelect = (hero: Hero) => {
+    if (pickerSlotIdx === null) return;
+    const currentIds = Array.from(selectedHeroes);
+    if (currentIds[pickerSlotIdx]) {
+      setSelectedHeroes(prev => { const s = new Set(prev); s.delete(currentIds[pickerSlotIdx]); return s; });
+    }
+    setSelectedHeroes(prev => { const s = new Set(prev); s.add(hero.id); return s; });
+    setPickerOpen(false);
+    setPickerSlotIdx(null);
+  };
+
   const handleUpgrade = (heroId: string) => {
     const hero = player.heroes.find(h => h.id === heroId);
     if (!hero || hero.level >= 10) return;
@@ -1846,89 +1862,116 @@ const Index = () => {
                       {Array.from({ length: 6 }).map((_, slotIdx) => {
                         const heroId = Array.from(selectedHeroes)[slotIdx];
                         const hero = heroId ? player.heroes.find(h => h.id === heroId) : null;
-                        return (
+                        return hero ? (
                           <div
                             key={slotIdx}
-                            className={`pixel-border p-2 flex flex-col items-center justify-center min-h-[72px] transition-all ${
-                              hero ? `bg-card rarity-${hero.rarity}` : 'bg-muted/30 border-dashed'
-                            }`}
+                            className={`pixel-border p-2 flex flex-col items-center justify-center min-h-[72px] transition-all cursor-pointer bg-card rarity-${hero.rarity}`}
+                            onClick={() => { setPickerSlotIdx(slotIdx); setPickerOpen(true); }}
                           >
-                            {hero ? (
-                              <>
-                                <HeroAvatar heroId={hero.id} heroName={hero.name} rarity={hero.rarity} size={32} />
-                                <p className="font-pixel text-[7px] text-foreground mt-1 truncate max-w-[60px]">{hero.name.split(' ')[0]}</p>
-                                <p className="text-[7px] mt-0.5" style={{ color: `hsl(var(--game-rarity-${hero.rarity}))` }}>
-                                  {RARITY_CONFIG[hero.rarity].label}
-                                </p>
-                                <button
-                                  onClick={() => toggleHeroSelection(hero.id)}
-                                  className="text-[7px] text-destructive hover:text-destructive/80 mt-0.5 min-w-[32px] min-h-[32px] flex items-center justify-center"
-                                >
-                                  ✕
-                                </button>
-                              </>
-                            ) : (
-                              <p className="font-pixel text-[7px] text-muted-foreground">Slot {slotIdx + 1}</p>
-                            )}
+                            <HeroAvatar heroId={hero.id} heroName={hero.name} rarity={hero.rarity} size={32} />
+                            <p className="font-pixel text-[7px] text-foreground mt-1 truncate max-w-[60px]">{hero.name.split(' ')[0]}</p>
+                            <p className="text-[7px] mt-0.5" style={{ color: `hsl(var(--game-rarity-${hero.rarity}))` }}>
+                              {RARITY_CONFIG[hero.rarity].label}
+                            </p>
+                            <button
+                              onClick={e => { e.stopPropagation(); toggleHeroSelection(hero.id); }}
+                              className="text-[7px] text-destructive hover:text-destructive/80 mt-0.5 min-w-[32px] min-h-[32px] flex items-center justify-center"
+                            >
+                              ✕
+                            </button>
                           </div>
+                        ) : (
+                          <button
+                            key={slotIdx}
+                            onClick={() => { setPickerSlotIdx(slotIdx); setPickerOpen(true); }}
+                            className="pixel-border p-2 flex flex-col items-center justify-center min-h-[72px] transition-all cursor-pointer border-dashed bg-muted/30 hover:bg-muted/50"
+                          >
+                            <span className="font-pixel text-[18px] text-muted-foreground leading-none">+</span>
+                            <p className="font-pixel text-[7px] text-muted-foreground mt-1">Slot {slotIdx + 1}</p>
+                          </button>
                         );
                       })}
                     </div>
 
-                    {/* Charger un preset */}
-                    <div className="pixel-border bg-muted/20 rounded p-3">
-                      <p className="font-pixel text-[8px] text-muted-foreground mb-2 flex items-center gap-1.5">
-                        <Play size={10} /> Charger une équipe sauvegardée
-                      </p>
-                      {teamPresets.some(p => p.heroIds.length > 0) ? (
-                        <div className="flex gap-2 flex-wrap">
-                          {teamPresets.filter(p => p.heroIds.length > 0).map(preset => (
-                            <button
-                              key={preset.id}
-                              onClick={() => {
-                                setSelectedHeroes(new Set(preset.heroIds));
-                                toast(`${preset.name} chargée !`);
-                              }}
-                              className="pixel-btn pixel-btn-secondary font-pixel text-[7px] px-2 py-1 flex items-center gap-1"
-                            >
-                              <Play size={10} /> {preset.name} ({preset.heroIds.length})
-                            </button>
-                          ))}
+                    {activeClanSkills.length > 0 && (
+                      <div className="mt-2 space-y-1 mb-3">
+                        <p className="font-pixel text-[7px] text-primary">✨ SYNERGIES</p>
+                        {activeClanSkills.map((s, i) => (
+                          <p key={i} className="text-[8px] text-foreground flex items-center gap-1">
+                            <span className="text-primary">▸</span> {s.name} — {s.description}
+                          </p>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="flex flex-wrap items-center gap-2 mb-3">
+                      {teamPresets.filter(p => p.heroIds.length > 0).map(preset => (
+                        <button
+                          key={preset.id}
+                          onClick={() => { setSelectedHeroes(new Set(preset.heroIds)); toast(`${preset.name} chargée !`); }}
+                          className="font-pixel text-[7px] px-2 py-1 rounded bg-muted/50 border border-border hover:bg-muted transition-colors flex items-center gap-1"
+                        >
+                          <Play size={9} /> {preset.name}
+                        </button>
+                      ))}
+                      {selectedHeroes.size > 0 && !presetSaveOpen && (
+                        <button
+                          onClick={() => setPresetSaveOpen(true)}
+                          className="font-pixel text-[7px] px-2 py-1 rounded bg-muted/50 border border-border hover:bg-muted transition-colors"
+                        >
+                          💾 Sauvegarder
+                        </button>
+                      )}
+                      {presetSaveOpen && (
+                        <div className="flex items-center gap-1">
+                          <input
+                            autoFocus
+                            value={presetSaveName}
+                            onChange={e => setPresetSaveName(e.target.value)}
+                            placeholder="Nom de l'équipe"
+                            maxLength={24}
+                            className="font-pixel text-[7px] px-2 py-1 rounded bg-muted border border-border text-foreground outline-none w-32"
+                          />
+                          <button
+                            onClick={() => {
+                              if (!presetSaveName.trim()) return;
+                              const name = presetSaveName.trim();
+                              setTeamPresets(prev => {
+                                const emptySlot = prev.find(p => p.heroIds.length === 0);
+                                if (emptySlot) {
+                                  return prev.map(p => p.id === emptySlot.id ? { ...p, name, heroIds: Array.from(selectedHeroes) } : p);
+                                }
+                                if (prev.length < 6) {
+                                  return [...prev, { id: `team-${Date.now()}`, name, heroIds: Array.from(selectedHeroes) }];
+                                }
+                                return prev.map((p, i) => i === prev.length - 1 ? { ...p, name, heroIds: Array.from(selectedHeroes) } : p);
+                              });
+                              toast(`"${name}" sauvegardée !`);
+                              setPresetSaveOpen(false);
+                              setPresetSaveName('');
+                            }}
+                            className="font-pixel text-[7px] px-2 py-1 rounded bg-primary/20 text-primary hover:bg-primary/30 transition-colors"
+                          >
+                            OK
+                          </button>
+                          <button
+                            onClick={() => { setPresetSaveOpen(false); setPresetSaveName(''); }}
+                            className="font-pixel text-[7px] px-2 py-1 rounded bg-muted text-muted-foreground hover:bg-muted/80 transition-colors"
+                          >
+                            ✕
+                          </button>
                         </div>
-                      ) : (
-                        <p className="font-pixel text-[8px] text-muted-foreground/60">Aucun preset — sauvegarde une équipe dans l'onglet Héros &gt; Équipes</p>
                       )}
                     </div>
 
-                    <details className="pixel-border bg-muted/20 rounded">
-                      <summary className="font-pixel text-[8px] text-muted-foreground cursor-pointer px-3 py-2 flex items-center gap-1.5 hover:text-foreground transition-colors">
-                        <Users size={10} /> Choisir manuellement ({player.heroes.length} héros disponibles)
-                      </summary>
-                      <div className="p-2 grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-60 overflow-y-auto">
-                        {player.heroes.sort(sortByRarity).map(hero => (
-                          <HeroCard
-                            key={hero.id}
-                            hero={hero}
-                            compact
-                            selected={selectedHeroes.has(hero.id)}
-                            onClick={() => toggleHeroSelection(hero.id)}
-                          />
-                        ))}
-                      </div>
-                    </details>
+                    <HeroPickerModal
+                      open={pickerOpen}
+                      heroes={player.heroes}
+                      selectedIds={selectedHeroes}
+                      onSelect={handlePickerSelect}
+                      onClose={() => { setPickerOpen(false); setPickerSlotIdx(null); }}
+                    />
                   </div>
-
-                  {/* Synergies actives */}
-                  {activeClanSkills.length > 0 && (
-                    <div className="pixel-border bg-primary/5 p-3 space-y-1 mb-3">
-                      <p className="font-pixel text-[8px] text-primary mb-2">✨ SYNERGIES ACTIVES</p>
-                      {activeClanSkills.map((skill, i) => (
-                        <p key={i} className="text-[8px] text-foreground flex items-center gap-1.5">
-                          <span className="text-primary">▸</span> {skill.name} — {skill.description}
-                        </p>
-                      ))}
-                    </div>
-                  )}
 
                   <button onClick={startTreasureHunt} className="pixel-btn pixel-btn-gold w-full font-pixel text-xs flex items-center justify-center gap-2">
                     <Swords size={16} /> LANCER LA CHASSE !
@@ -2472,7 +2515,7 @@ const Index = () => {
         pityCounters={player.pityCounters}
       />
 
-      <HeroPickerModal
+      <FusionHeroPickerModal
         isOpen={heroPickerOpen}
         onClose={() => setHeroPickerOpen(false)}
         onSelect={handleHeroSelect}
