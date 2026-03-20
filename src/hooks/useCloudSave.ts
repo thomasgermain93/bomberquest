@@ -136,6 +136,12 @@ export function useCloudSave(userId: string | undefined, canWriteCloud: boolean)
       ...getDefaultPlayerData(),  // valeurs par défaut pour tout champ manquant
       ...(statsOnly as PlayerData),
       heroes,
+      // tutorialStep: undefined = tutoriel terminé. Comme JSON.stringify omet les valeurs undefined,
+      // un joueur ayant terminé le tutoriel n'aura pas cette clé dans statsOnly.
+      // Sans cette ligne, getDefaultPlayerData() imposerait 0 et relancerait le tutoriel.
+      tutorialStep: 'tutorialStep' in (statsOnly ?? {})
+        ? (statsOnly as PlayerData).tutorialStep
+        : undefined,
     };
 
     console.log('CLOUD_LOAD_ROWS', {
