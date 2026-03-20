@@ -232,6 +232,7 @@ export const HERO_NAMES = [
   'Fuse', 'Volt', 'Storm', 'Rex', 'Nova', 'Pixel', 'Chip', 'Byte',
   'Luna', 'Sol', 'Vega', 'Orion', 'Atlas', 'Echo', 'Zap', 'Rush',
   'Blast', 'Crash', 'Dash', 'Flash', 'Jet', 'Max', 'Ace', 'Duke',
+  'Brick', 'Shade', 'Glitch', 'Rune',
 ];
 
 export const HERO_ICON_KEYS = [
