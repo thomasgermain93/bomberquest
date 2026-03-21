@@ -1,5 +1,5 @@
-export type EnemyType = 'slime' | 'goblin' | 'skeleton' | 'orc' | 'demon';
-export type BossType = 'king-slime' | 'goblin-chief' | 'lich' | 'orc-warlord' | 'demon-lord';
+export type EnemyType = 'slime' | 'goblin' | 'skeleton' | 'orc' | 'demon' | 'zombie' | 'mage';
+export type BossType = 'king-slime' | 'goblin-chief' | 'lich' | 'orc-warlord' | 'demon-lord' | 'swamp-queen' | 'archmage';
 
 import { Rarity } from './types';
 
@@ -9,6 +9,8 @@ export const BOSS_LEVEL_BY_TYPE: Record<BossType, number> = {
   'lich': 3,
   'orc-warlord': 4,
   'demon-lord': 5,
+  'swamp-queen': 6,
+  'archmage': 7,
 };
 
 const BOSS_RARITY_REWARD: Record<number, Rarity> = {
@@ -107,6 +109,8 @@ export const ENEMY_CONFIG: Record<EnemyType, {
   skeleton: { hp: 8, speed: 1.0, damage: 12, color: '#CCCCAA', bodyColor: '#AAAA88' },
   orc: { hp: 12, speed: 0.7, damage: 18, color: '#558833', bodyColor: '#446622' },
   demon: { hp: 18, speed: 1.3, damage: 25, color: '#CC3333', bodyColor: '#AA2222' },
+  zombie: { hp: 14, speed: 0.6, damage: 16, color: '#66AA44', bodyColor: '#448833' },
+  mage: { hp: 16, speed: 1.1, damage: 22, color: '#8844CC', bodyColor: '#6622AA' },
 };
 
 export const BOSS_CONFIG: Record<BossType, {
@@ -160,6 +164,26 @@ export const BOSS_CONFIG: Record<BossType, {
       { type: 'invincible', duration: 3, cooldown: 6 },
       { type: 'summon', duration: 1, cooldown: 5 },
       { type: 'bomb-rain', duration: 3, cooldown: 8 },
+    ],
+  },
+  'swamp-queen': {
+    name: 'Reine des Marais',
+    hp: 320, speed: 0.8, damage: 40, color: '#44AA22',
+    patterns: [
+      { type: 'summon', duration: 2, cooldown: 5 },
+      { type: 'invincible', duration: 3, cooldown: 9 },
+      { type: 'bomb-rain', duration: 2.5, cooldown: 7 },
+      { type: 'charge', duration: 1.5, cooldown: 4 },
+    ],
+  },
+  'archmage': {
+    name: 'Archimage Corrompu',
+    hp: 420, speed: 1.2, damage: 50, color: '#AA44FF',
+    patterns: [
+      { type: 'bomb-rain', duration: 3, cooldown: 5 },
+      { type: 'invincible', duration: 4, cooldown: 8 },
+      { type: 'summon', duration: 2, cooldown: 6 },
+      { type: 'charge', duration: 1, cooldown: 4 },
     ],
   },
 };
