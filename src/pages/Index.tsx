@@ -1208,7 +1208,7 @@ const Index = () => {
 
   const isInBattle = screen === 'treasure-hunt' || screen === 'story-battle';
 
-  const PAGE_TITLES = ['Invoquer', 'Héros', 'Combat', 'Social', 'Forge'];
+  const PAGE_TITLES = ['Invoquer', 'Héros', 'Combat', 'Social', 'Forge', 'Marché'];
 
   // Touch swipe handlers
   const touchStartX = useRef(0);
@@ -1223,7 +1223,7 @@ const Index = () => {
     const deltaX = e.changedTouches[0].clientX - touchStartX.current;
     const deltaY = e.changedTouches[0].clientY - touchStartY.current;
     if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 60) {
-      if (deltaX < 0) setPage(p => Math.min(4, p + 1));
+      if (deltaX < 0) setPage(p => Math.min(5, p + 1));
       if (deltaX > 0) setPage(p => Math.max(0, p - 1));
     }
   }, []);
@@ -2184,18 +2184,6 @@ const Index = () => {
                 )}
                 </AnimatePresence>
 
-                {/* Defeat Overlay */}
-                {gameState && (
-                  <DefeatOverlay
-                    show={gameState.isStoryMode && gameState.storyFailed}
-                    heroesKO={gameState.heroes.filter(h => h.currentStamina === 0)}
-                    onRetry={() => {
-                      if (currentStoryStage) startStoryStage(currentStoryStage);
-                    }}
-                    onQuit={endStoryBattle}
-                  />
-                )}
-
                 {/* Grid */}
                 <div className="flex justify-center flex-col items-center">
                   <GameGrid gameState={gameState} />
@@ -2220,18 +2208,6 @@ const Index = () => {
               </motion.div>
             )}
 
-            {/* Victory Overlay */}
-            {gameState && (
-              <VictoryOverlay
-                show={gameState.mapCompleted && !autoFarm}
-                coinsEarned={gameState.coinsEarned + (currentStoryStage?.reward || 0)}
-                shardsEarned={lastShardRewards.reduce((sum, r) => sum + r.quantity, 0)}
-                chestsOpened={gameState.chestsOpened}
-                heroesActive={selectedHeroes.size}
-                onContinue={gameState.isStoryMode ? endStoryBattle : endTreasureHunt}
-                onAutoFarm={!gameState?.isStoryMode ? () => { setAutoFarm(true); collectAndContinue(true); } : undefined}
-              />
-            )}
           </div>
         </div>
 
@@ -2570,6 +2546,29 @@ const Index = () => {
         </div>
 
       </motion.div>
+
+      {/* Victory & Defeat overlays — placés hors du motion.div pour éviter le clipping par transform */}
+      {gameState && (
+        <VictoryOverlay
+          show={gameState.mapCompleted && !autoFarm}
+          coinsEarned={gameState.coinsEarned + (currentStoryStage?.reward || 0)}
+          shardsEarned={lastShardRewards.reduce((sum, r) => sum + r.quantity, 0)}
+          chestsOpened={gameState.chestsOpened}
+          heroesActive={selectedHeroes.size}
+          onContinue={gameState.isStoryMode ? endStoryBattle : endTreasureHunt}
+          onAutoFarm={!gameState?.isStoryMode ? () => { setAutoFarm(true); collectAndContinue(true); } : undefined}
+        />
+      )}
+      {gameState && (
+        <DefeatOverlay
+          show={gameState.isStoryMode && gameState.storyFailed}
+          heroesKO={gameState.heroes.filter(h => h.currentStamina === 0)}
+          onRetry={() => {
+            if (currentStoryStage) startStoryStage(currentStoryStage);
+          }}
+          onQuit={endStoryBattle}
+        />
+      )}
 
       {!isInBattle && <MainNav page={page} onNavigate={setPage} />}
 
