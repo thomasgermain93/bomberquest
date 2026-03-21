@@ -230,7 +230,7 @@ const GameGrid: React.FC<GameGridProps> = ({ gameState }) => {
         hero.rarity,
         hero.state,
         time,
-        hero.name,
+        hero.templateId ?? hero.id,
         hero.currentStamina,
         hero.maxStamina,
         hero.name,
