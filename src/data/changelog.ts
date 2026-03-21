@@ -14,6 +14,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: '2026-03-21',
     title: 'Mises à jour récentes',
     changes: [
+      { type: 'feature', description: 'Art Pipeline: skins/sprites pour nouveaux héros (#163)' },
       { type: 'feature', description: 'docs: mettre à jour le Wiki et le Bestiaire — familles de héros, clans et affinités (#337)' },
       { type: 'feature', description: 'Game Modes Discovery: Ascension & World Boss (design + prototype) (#165)' },
       { type: 'feature', description: 'Story Mode: nouveaux niveaux + amélioration visuelle des ennemis (#164)' },
