@@ -20,7 +20,7 @@ export const HERO_POOL: HeroTemplate[] = [
   { templateId: 'spark', name: 'Spark', icon: 'zap',     family: 'storm-riders' },
   { templateId: 'volt',  name: 'Volt',  icon: 'zap',     family: 'storm-riders' },
   { templateId: 'storm', name: 'Storm', icon: 'sparkle', family: 'storm-riders' },
-  { templateId: 'zappy', name: 'Zappy', icon: 'zap',     family: 'storm-riders' },
+  { templateId: 'zap',   name: 'Zap',   icon: 'zap',     family: 'storm-riders' },
   { templateId: 'vega',  name: 'Vega',  icon: 'star',    family: 'storm-riders' },
   { templateId: 'dash',  name: 'Dash',  icon: 'rocket',  family: 'storm-riders' },
   // forge-guard (défense)

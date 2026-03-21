@@ -19,12 +19,12 @@ export const CLAN_COLORS: Record<string, string> = {
 };
 
 export const BOMBER_FAMILIES: BestiaryFamily[] = [
-  { id: 'ember-clan', name: 'Clan Braise', description: 'Héros orientés feu et explosion.', color: CLAN_COLORS['ember-clan'] },
-  { id: 'storm-riders', name: "Cavaliers de l'Orage", description: 'Héros rapides avec affinité électrique.', color: CLAN_COLORS['storm-riders'] },
-  { id: 'forge-guard', name: 'Garde de Forge', description: 'Héros robustes axés tank et défense.', color: CLAN_COLORS['forge-guard'] },
-  { id: 'shadow-core', name: "Noyau d'Ombre", description: "Héros d'infiltration et de contrôle.", color: CLAN_COLORS['shadow-core'] },
-  { id: 'arcane-circuit', name: 'Circuit Arcanique', description: 'Héros techno-magiques et utilitaires.', color: CLAN_COLORS['arcane-circuit'] },
-  { id: 'wild-pack', name: 'Meute Sauvage', description: 'Héros agiles orientés rush et chasse.', color: CLAN_COLORS['wild-pack'] },
+  { id: 'ember-clan', name: 'Clan Braise', description: 'Héros orientés feu et explosion. Synergie : Feu Perpétuel (+1 portée bombes).', color: CLAN_COLORS['ember-clan'] },
+  { id: 'storm-riders', name: "Cavaliers de l'Orage", description: 'Héros rapides avec affinité électrique. Synergie : Tempo Électrique (bombes −0,3 s).', color: CLAN_COLORS['storm-riders'] },
+  { id: 'forge-guard', name: 'Garde de Forge', description: 'Héros robustes axés tank et défense. Synergie : Peau de Fer (dégâts reçus −20 %).', color: CLAN_COLORS['forge-guard'] },
+  { id: 'shadow-core', name: "Noyau d'Ombre", description: "Héros d'infiltration et de contrôle. Synergie : Voile Doré (+30 % pièces coffres).", color: CLAN_COLORS['shadow-core'] },
+  { id: 'arcane-circuit', name: 'Circuit Arcanique', description: 'Héros techno-magiques et utilitaires. Synergie : Résonance Arcanique (20 % chaîne).', color: CLAN_COLORS['arcane-circuit'] },
+  { id: 'wild-pack', name: 'Meute Sauvage', description: 'Héros agiles orientés rush et chasse. Synergie : Instinct Sauvage (vitesse +20 %).', color: CLAN_COLORS['wild-pack'] },
 ];
 
 export interface BomberAssetRefs {
@@ -41,49 +41,59 @@ export interface BestiaryBomber {
   rarity?: Rarity;
   assetStatus: AssetStatus;
   assets: BomberAssetRefs;
+  lore?: string;
+  availableRarities?: Rarity[];
 }
 
 const HERO_ICON_BY_TEMPLATE = Object.fromEntries(
   HERO_POOL.map(t => [t.name.toLowerCase(), t.icon]),
 );
 
+const ALL_RARITIES: Rarity[] = ['common', 'rare', 'super-rare', 'epic', 'legend', 'super-legend'];
+
 export const BESTIARY_BOMBERS: BestiaryBomber[] = [
-  { id: 'blaze', name: 'Blaze', familyId: 'ember-clan', rarity: 'rare', assetStatus: 'ready', assets: {} },
-  { id: 'ember', name: 'Ember', familyId: 'ember-clan', rarity: 'common', assetStatus: 'wip', assets: {} },
-  { id: 'pyro', name: 'Pyro', familyId: 'ember-clan', rarity: 'epic', assetStatus: 'missing', assets: {} },
-  { id: 'fuse', name: 'Fuse', familyId: 'ember-clan', rarity: 'super-rare', assetStatus: 'missing', assets: {} },
-  { id: 'spark', name: 'Spark', familyId: 'storm-riders', rarity: 'common', assetStatus: 'ready', assets: {} },
-  { id: 'volt', name: 'Volt', familyId: 'storm-riders', rarity: 'rare', assetStatus: 'wip', assets: {} },
-  { id: 'storm', name: 'Storm', familyId: 'storm-riders', rarity: 'epic', assetStatus: 'missing', assets: {} },
-  { id: 'zap', name: 'Zap', familyId: 'storm-riders', rarity: 'super-legend', assetStatus: 'missing', assets: {} },
-  { id: 'flint', name: 'Flint', familyId: 'forge-guard', rarity: 'common', assetStatus: 'wip', assets: { spriteSheet: 'src/assets/sprites/heroes/flint.png', portrait: 'src/assets/portraits/flint.png' } },
-  { id: 'rex', name: 'Rex', familyId: 'forge-guard', rarity: 'rare', assetStatus: 'missing', assets: {} },
-  { id: 'atlas', name: 'Atlas', familyId: 'forge-guard', rarity: 'legend', assetStatus: 'missing', assets: {} },
-  { id: 'duke', name: 'Duke', familyId: 'forge-guard', rarity: 'super-rare', assetStatus: 'missing', assets: {} },
-  { id: 'brick', name: 'Brick', familyId: 'forge-guard', rarity: 'super-legend', assetStatus: 'missing', assets: {} },
-  { id: 'ash', name: 'Ash', familyId: 'shadow-core', rarity: 'rare', assetStatus: 'wip', assets: {} },
-  { id: 'nova', name: 'Nova', familyId: 'shadow-core', rarity: 'legend', assetStatus: 'ready', assets: {} },
-  { id: 'echo', name: 'Echo', familyId: 'shadow-core', rarity: 'super-rare', assetStatus: 'missing', assets: {} },
-  { id: 'crash', name: 'Crash', familyId: 'shadow-core', rarity: 'epic', assetStatus: 'missing', assets: {} },
-  { id: 'pixel', name: 'Pixel', familyId: 'arcane-circuit', rarity: 'rare', assetStatus: 'wip', assets: { spriteSheet: 'src/assets/sprites/heroes/pixel.png' } },
-  { id: 'chip', name: 'Chip', familyId: 'arcane-circuit', rarity: 'common', assetStatus: 'missing', assets: {} },
-  { id: 'byte', name: 'Byte', familyId: 'arcane-circuit', rarity: 'super-rare', assetStatus: 'missing', assets: {} },
-  { id: 'orion', name: 'Orion', familyId: 'arcane-circuit', rarity: 'legend', assetStatus: 'missing', assets: {} },
-  { id: 'boom', name: 'Boom', familyId: 'wild-pack', rarity: 'common', assetStatus: 'ready', assets: {} },
-  { id: 'nitro', name: 'Nitro', familyId: 'wild-pack', rarity: 'super-rare', assetStatus: 'missing', assets: {} },
-  { id: 'rush', name: 'Rush', familyId: 'wild-pack', rarity: 'rare', assetStatus: 'missing', assets: {} },
-  { id: 'flash', name: 'Flash', familyId: 'wild-pack', rarity: 'epic', assetStatus: 'missing', assets: {} },
-  { id: 'blast', name: 'Blast', familyId: 'ember-clan', rarity: 'legend', assetStatus: 'missing', assets: {} },
-  { id: 'luna', name: 'Luna', familyId: 'shadow-core', rarity: 'epic', assetStatus: 'missing', assets: {} },
-  { id: 'shade', name: 'Shade', familyId: 'shadow-core', rarity: 'common', assetStatus: 'missing', assets: {} },
-  { id: 'sol', name: 'Sol', familyId: 'ember-clan', rarity: 'super-legend', assetStatus: 'missing', assets: {} },
-  { id: 'vega', name: 'Vega', familyId: 'storm-riders', rarity: 'legend', assetStatus: 'missing', assets: {} },
-  { id: 'jet', name: 'Jet', familyId: 'wild-pack', rarity: 'rare', assetStatus: 'missing', assets: {} },
-  { id: 'max', name: 'Max', familyId: 'forge-guard', rarity: 'common', assetStatus: 'missing', assets: {} },
-  { id: 'ace', name: 'Ace', familyId: 'wild-pack', rarity: 'super-rare', assetStatus: 'missing', assets: {} },
-  { id: 'dash', name: 'Dash', familyId: 'storm-riders', rarity: 'common', assetStatus: 'missing', assets: {} },
-  { id: 'glitch', name: 'Glitch', familyId: 'arcane-circuit', rarity: 'epic', assetStatus: 'missing', assets: {} },
-  { id: 'rune', name: 'Rune', familyId: 'arcane-circuit', rarity: 'super-legend', assetStatus: 'missing', assets: {} },
+  // ─── Clan Braise ──────────────────────────────────────────────────────────
+  { id: 'blaze', name: 'Blaze', familyId: 'ember-clan', rarity: 'rare', assetStatus: 'ready', assets: {}, lore: 'Guerrier de flammes, son ardeur embrase le champ de bataille.', availableRarities: ALL_RARITIES },
+  { id: 'ember', name: 'Ember', familyId: 'ember-clan', rarity: 'common', assetStatus: 'wip', assets: {}, lore: 'Première étincelle du clan, sa flamme grandit à chaque victoire.', availableRarities: ALL_RARITIES },
+  { id: 'pyro', name: 'Pyro', familyId: 'ember-clan', rarity: 'epic', assetStatus: 'missing', assets: {}, lore: 'Maître du feu contrôlé, il transforme chaque bombe en brasier.', availableRarities: ALL_RARITIES },
+  { id: 'fuse', name: 'Fuse', familyId: 'ember-clan', rarity: 'super-rare', assetStatus: 'missing', assets: {}, lore: "Artificier impétueux, sa mèche ne s'éteint jamais.", availableRarities: ALL_RARITIES },
+  { id: 'blast', name: 'Blast', familyId: 'ember-clan', rarity: 'legend', assetStatus: 'missing', assets: {}, lore: "L'onde de choc qu'il déclenche laisse tout derrière lui en cendres.", availableRarities: ALL_RARITIES },
+  { id: 'sol', name: 'Sol', familyId: 'ember-clan', rarity: 'super-legend', assetStatus: 'missing', assets: {}, lore: "Incarnation du soleil ardent, son pouvoir brûle au-delà du visible.", availableRarities: ALL_RARITIES },
+  // ─── Cavaliers de l'Orage ─────────────────────────────────────────────────
+  { id: 'spark', name: 'Spark', familyId: 'storm-riders', rarity: 'common', assetStatus: 'ready', assets: {}, lore: 'Éclaireur fulgurant, il frappe avant que l\'ennemi réagisse.', availableRarities: ALL_RARITIES },
+  { id: 'volt', name: 'Volt', familyId: 'storm-riders', rarity: 'rare', assetStatus: 'wip', assets: {}, lore: 'Ses bombes chargées d\'électricité paralysent autant qu\'elles détruisent.', availableRarities: ALL_RARITIES },
+  { id: 'storm', name: 'Storm', familyId: 'storm-riders', rarity: 'epic', assetStatus: 'missing', assets: {}, lore: 'Là où il passe, la foudre suit. Là où il frappe, rien ne résiste.', availableRarities: ALL_RARITIES },
+  { id: 'zap', name: 'Zap', familyId: 'storm-riders', rarity: 'super-legend', assetStatus: 'missing', assets: {}, lore: 'Vitesse absolue — il est déjà loin quand l\'explosion retentit.', availableRarities: ALL_RARITIES },
+  { id: 'vega', name: 'Vega', familyId: 'storm-riders', rarity: 'legend', assetStatus: 'missing', assets: {}, lore: 'Navigateur céleste, il lit les courants d\'énergie comme une carte.', availableRarities: ALL_RARITIES },
+  { id: 'dash', name: 'Dash', familyId: 'storm-riders', rarity: 'common', assetStatus: 'missing', assets: {}, lore: 'Toujours en mouvement, sa présence sur la carte déroute les ennemis.', availableRarities: ALL_RARITIES },
+  // ─── Garde de Forge ───────────────────────────────────────────────────────
+  { id: 'flint', name: 'Flint', familyId: 'forge-guard', rarity: 'common', assetStatus: 'wip', assets: { spriteSheet: 'src/assets/sprites/heroes/flint.png', portrait: 'src/assets/portraits/flint.png' }, lore: 'Forgeron endurci, sa peau d\'acier repousse les coups les plus durs.', availableRarities: ALL_RARITIES },
+  { id: 'rex', name: 'Rex', familyId: 'forge-guard', rarity: 'rare', assetStatus: 'missing', assets: {}, lore: 'Guerrier de fer, il absorbe les chocs que les autres fuient.', availableRarities: ALL_RARITIES },
+  { id: 'atlas', name: 'Atlas', familyId: 'forge-guard', rarity: 'legend', assetStatus: 'missing', assets: {}, lore: 'Il porte le poids du combat sur ses épaules sans jamais plier.', availableRarities: ALL_RARITIES },
+  { id: 'duke', name: 'Duke', familyId: 'forge-guard', rarity: 'super-rare', assetStatus: 'missing', assets: {}, lore: 'Noble des tranchées, il commande le champ de bataille par sa seule présence.', availableRarities: ALL_RARITIES },
+  { id: 'max', name: 'Max', familyId: 'forge-guard', rarity: 'common', assetStatus: 'missing', assets: {}, lore: 'Recrue robuste de la Forge, déjà plus résistant que la plupart.', availableRarities: ALL_RARITIES },
+  { id: 'brick', name: 'Brick', familyId: 'forge-guard', rarity: 'super-legend', assetStatus: 'missing', assets: {}, lore: 'Mur vivant — ses ennemis s\'épuisent avant de réussir à l\'ébranler.', availableRarities: ALL_RARITIES },
+  // ─── Noyau d'Ombre ────────────────────────────────────────────────────────
+  { id: 'ash', name: 'Ash', familyId: 'shadow-core', rarity: 'rare', assetStatus: 'wip', assets: {}, lore: 'Spectre des ombres, il se fond dans les ténèbres sans laisser de traces.', availableRarities: ALL_RARITIES },
+  { id: 'nova', name: 'Nova', familyId: 'shadow-core', rarity: 'legend', assetStatus: 'ready', assets: {}, lore: 'Éclat obscur — son explosion de lumière noire aveugle et détruit.', availableRarities: ALL_RARITIES },
+  { id: 'echo', name: 'Echo', familyId: 'shadow-core', rarity: 'super-rare', assetStatus: 'missing', assets: {}, lore: 'Il répond à chaque attaque par un contre que l\'ennemi n\'a pas vu venir.', availableRarities: ALL_RARITIES },
+  { id: 'crash', name: 'Crash', familyId: 'shadow-core', rarity: 'epic', assetStatus: 'missing', assets: {}, lore: 'L\'ombre la plus chaotique — ses bombes explosent là où on l\'attend le moins.', availableRarities: ALL_RARITIES },
+  { id: 'luna', name: 'Luna', familyId: 'shadow-core', rarity: 'epic', assetStatus: 'missing', assets: {}, lore: 'Enfant de la nuit, son pouvoir croît à chaque passage dans l\'obscurité.', availableRarities: ALL_RARITIES },
+  { id: 'shade', name: 'Shade', familyId: 'shadow-core', rarity: 'common', assetStatus: 'missing', assets: {}, lore: 'Silhouette furtive, il disparaît avant que l\'on ait pu le repérer.', availableRarities: ALL_RARITIES },
+  // ─── Circuit Arcanique ────────────────────────────────────────────────────
+  { id: 'pixel', name: 'Pixel', familyId: 'arcane-circuit', rarity: 'rare', assetStatus: 'wip', assets: { spriteSheet: 'src/assets/sprites/heroes/pixel.png' }, lore: 'Techno-mage du Circuit, il recode la réalité à sa guise.', availableRarities: ALL_RARITIES },
+  { id: 'chip', name: 'Chip', familyId: 'arcane-circuit', rarity: 'common', assetStatus: 'missing', assets: {}, lore: 'Petit processeur, grande énergie — il optimise chaque milliseconde.', availableRarities: ALL_RARITIES },
+  { id: 'byte', name: 'Byte', familyId: 'arcane-circuit', rarity: 'super-rare', assetStatus: 'missing', assets: {}, lore: 'Maître des données, il analyse l\'ennemi avant même de poser sa première bombe.', availableRarities: ALL_RARITIES },
+  { id: 'orion', name: 'Orion', familyId: 'arcane-circuit', rarity: 'legend', assetStatus: 'missing', assets: {}, lore: 'Architecte du Circuit, ses bombes suivent des trajectoires calculées à la perfection.', availableRarities: ALL_RARITIES },
+  { id: 'glitch', name: 'Glitch', familyId: 'arcane-circuit', rarity: 'epic', assetStatus: 'missing', assets: {}, lore: 'Erreur devenue force — son instabilité est son arme la plus redoutable.', availableRarities: ALL_RARITIES },
+  { id: 'rune', name: 'Rune', familyId: 'arcane-circuit', rarity: 'super-legend', assetStatus: 'missing', assets: {}, lore: "Graveur d'arcanes numériques, ses runes transcendent le code et la magie.", availableRarities: ALL_RARITIES },
+  // ─── Meute Sauvage ────────────────────────────────────────────────────────
+  { id: 'boom', name: 'Boom', familyId: 'wild-pack', rarity: 'common', assetStatus: 'ready', assets: {}, lore: 'Toujours premier dans la mêlée, sa seule stratégie : foncer.', availableRarities: ALL_RARITIES },
+  { id: 'nitro', name: 'Nitro', familyId: 'wild-pack', rarity: 'super-rare', assetStatus: 'missing', assets: {}, lore: 'Carburant pur dans les veines — il accélère quand les autres ralentissent.', availableRarities: ALL_RARITIES },
+  { id: 'rush', name: 'Rush', familyId: 'wild-pack', rarity: 'rare', assetStatus: 'missing', assets: {}, lore: 'La Meute compte sur lui pour ouvrir le passage en premier.', availableRarities: ALL_RARITIES },
+  { id: 'flash', name: 'Flash', familyId: 'wild-pack', rarity: 'epic', assetStatus: 'missing', assets: {}, lore: 'Un éclair de fourrure et d\'explosions — il traverse les lignes ennemies.', availableRarities: ALL_RARITIES },
+  { id: 'jet', name: 'Jet', familyId: 'wild-pack', rarity: 'rare', assetStatus: 'missing', assets: {}, lore: 'Libre comme le vent, il choisit ses cibles avec instinct et sans hésitation.', availableRarities: ALL_RARITIES },
+  { id: 'ace', name: 'Ace', familyId: 'wild-pack', rarity: 'super-rare', assetStatus: 'missing', assets: {}, lore: 'L\'as de la Meute — il ne rate jamais son coup quand ça compte vraiment.', availableRarities: ALL_RARITIES },
 ].map((bomber) => ({
   ...bomber,
   assets: {

@@ -96,6 +96,9 @@ const BomberCard: React.FC<{ bomber: BestiaryBomber }> = ({ bomber }) => {
           </div>
           <div className="min-w-0">
             <p className="font-pixel text-[8px] text-foreground truncate">{bomber.name}</p>
+            {bomber.lore && (
+              <p className="text-[9px] text-muted-foreground/80 mt-0.5 italic leading-tight">{bomber.lore}</p>
+            )}
             <p className="text-[10px] text-muted-foreground font-mono">#{bomber.id}</p>
           </div>
         </div>

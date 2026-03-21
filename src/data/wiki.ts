@@ -149,23 +149,53 @@ export const WIKI_ARTICLES: WikiArticle[] = [
     icon: 'users',
     tags: ['clan', 'famille', 'braise', 'orage', 'forge', 'ombre', 'arcanique', 'sauvage', 'synergie', 'skin'],
     difficulty: 'intermédiaire',
-    relatedSlugs: ['heros', 'mode-histoire'],
+    relatedSlugs: ['heros', 'mode-histoire', 'synergies-clan'],
     content: [
       {
         heading: 'Présentation',
-        body: 'Chaque héros appartient à une famille qui définit son archetype et son style de jeu. Les familles influencent l\'apparence visuelle (couleurs du skin) et les compétences typiques du héros.',
+        body: 'Chaque héros appartient à une famille qui définit son archetype et son style de jeu. Les familles influencent l\'apparence visuelle (couleurs du skin), les compétences passives de clan et les affinités contre certains types d\'ennemis.',
       },
       {
         heading: 'Les 6 Familles',
         table: {
-          headers: ['Famille', 'Description', 'Héros clés'],
+          headers: ['Famille', 'Description', 'Héros (6)'],
           rows: [
             ['Clan Braise', 'Héros orientés feu et explosion', 'Blaze, Ember, Pyro, Fuse, Blast, Sol'],
             ["Cavaliers de l'Orage", 'Héros rapides avec affinité électrique', 'Spark, Volt, Storm, Zap, Vega, Dash'],
-            ['Garde de Forge', 'Héros robustes axés tank et défense', 'Flint, Rex, Atlas, Duke, Max'],
-            ["Noyau d'Ombre", "Héros d'infiltration et de contrôle", 'Ash, Nova, Echo, Crash, Luna'],
-            ['Circuit Arcanique', 'Héros techno-magiques et utilitaires', 'Pixel, Chip, Byte, Orion'],
+            ['Garde de Forge', 'Héros robustes axés tank et défense', 'Flint, Rex, Atlas, Duke, Max, Brick'],
+            ["Noyau d'Ombre", "Héros d'infiltration et de contrôle", 'Ash, Nova, Echo, Crash, Luna, Shade'],
+            ['Circuit Arcanique', 'Héros techno-magiques et utilitaires', 'Pixel, Chip, Byte, Orion, Glitch, Rune'],
             ['Meute Sauvage', 'Héros agiles orientés rush et chasse', 'Boom, Nitro, Rush, Flash, Jet, Ace'],
+          ],
+        },
+      },
+      {
+        heading: 'Compétences de Clan',
+        body: 'Placer 2 héros ou plus du même clan dans votre équipe active déclenche automatiquement la compétence passive du clan. Cette compétence s\'applique à toute l\'équipe.',
+        table: {
+          headers: ['Clan', 'Compétence', 'Effet (2+ héros)'],
+          rows: [
+            ['Clan Braise', 'Feu Perpétuel', '+1 portée pour toutes les bombes'],
+            ["Cavaliers de l'Orage", 'Tempo Électrique', 'Bombes explosent 0,3 s plus tôt'],
+            ['Garde de Forge', 'Peau de Fer', 'Dégâts reçus réduits de 20 %'],
+            ["Noyau d'Ombre", 'Voile Doré', '+30 % pièces des coffres'],
+            ['Circuit Arcanique', 'Résonance Arcanique', '20 % de chance de réaction en chaîne'],
+            ['Meute Sauvage', 'Instinct Sauvage', 'Vitesse de déplacement +20 %'],
+          ],
+        },
+      },
+      {
+        heading: 'Affinités vs Ennemis',
+        body: 'Chaque clan dispose de multiplicateurs de dégâts face à certains types d\'ennemis en mode Histoire. Un multiplicateur supérieur à 1,0 indique un avantage.',
+        table: {
+          headers: ['Clan', 'Avantage (×1,25)', 'Bonus (×1,10)', 'Désavantage (×0,85)'],
+          rows: [
+            ['Clan Braise', 'Démons', '—', 'Slimes'],
+            ["Cavaliers de l'Orage", 'Squelettes', 'Orcs', '—'],
+            ['Garde de Forge', 'Orcs', 'Gobelins', '—'],
+            ["Noyau d'Ombre", 'Gobelins', 'Squelettes', '—'],
+            ['Circuit Arcanique', 'Slimes', 'Démons', '—'],
+            ['Meute Sauvage', 'Gobelins', 'Slimes', '—'],
           ],
         },
       },
@@ -453,10 +483,48 @@ export const WIKI_ARTICLES: WikiArticle[] = [
     subtitle: 'Sacrifiez des doublons pour faire monter les étoiles et les compétences de vos héros',
     category: 'Héros',
     icon: 'crown',
-    tags: ['fusion', 'ascension', 'étoiles', 'doublons', 'compétences', 'skill', 'upgrade'],
+    tags: ['fusion', 'ascension', 'étoiles', 'doublons', 'compétences', 'skill', 'upgrade', 'rareté', 'nourrir'],
     difficulty: 'intermédiaire',
     relatedSlugs: ['heros', 'recyclage', 'invocation-gacha'],
     content: [
+      {
+        heading: 'Fusion de Rareté (Nourrir)',
+        body: 'La fusion de rareté permet de faire monter la rareté d\'un héros en le "nourrissant" avec d\'autres héros de la même rareté. Le héros principal conserve son identité complète (nom, clan, icône, étoiles), seule sa rareté — et donc ses stats de base, son niveau maximum et ses compétences — est augmentée. Les héros utilisés comme nourriture sont définitivement sacrifiés.',
+      },
+      {
+        heading: 'Recettes de fusion de rareté',
+        table: {
+          headers: ['Rareté départ', 'Rareté cible', 'Héros requis (niveau max)'],
+          rows: [
+            ['Common', 'Rare', '2 héros Common au niveau max'],
+            ['Rare', 'Super Rare', '3 héros Rare au niveau max'],
+            ['Super Rare', 'Epic', '4 héros Super Rare au niveau max'],
+            ['Epic', 'Legend', '5 héros Epic au niveau max'],
+            ['Legend', 'Super Legend', '6 héros Legend au niveau max'],
+          ],
+        },
+      },
+      {
+        heading: 'Ce qui est conservé lors d\'une fusion',
+        list: [
+          'Identité du héros : nom, clan, icône — le héros reste le même personnage.',
+          'Étoiles d\'ascension — elles sont préservées.',
+          'Le héros garde son slot principal et n\'est pas supprimé.',
+        ],
+      },
+      {
+        heading: 'Ce qui change après la fusion',
+        list: [
+          'La rareté monte d\'un palier (ex : Common → Rare).',
+          'Le niveau maximum augmente selon la nouvelle rareté.',
+          'Les stats de base sont recalculées pour la nouvelle rareté.',
+          'Le nombre de compétences disponibles augmente (Common = 0, jusqu\'à 5 pour Super Legend).',
+        ],
+      },
+      {
+        heading: 'Condition requise',
+        body: 'Les héros utilisés comme nourriture doivent avoir atteint le niveau maximum de leur rareté actuelle. Vérifiez le niveau maximum dans le tableau des raretés (article Héros) avant de fusionner.',
+      },
       {
         heading: 'Ascension (Étoiles)',
         body: 'L\'ascension consomme des doublons d\'un même héros pour augmenter ses étoiles de 1 à 5. Chaque étoile confère un bonus significatif à toutes les statistiques. Un héros 5 étoiles atteint son plein potentiel.',
