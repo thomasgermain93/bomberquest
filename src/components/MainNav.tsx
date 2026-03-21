@@ -1,9 +1,9 @@
 import { motion } from 'framer-motion';
-import { Sparkles, Users, Swords, Trophy, Flame } from 'lucide-react';
+import { Sparkles, Users, Swords, Trophy, Flame, Store } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface MainNavProps {
-  page: number; // 0-4
+  page: number; // 0-5
   onNavigate: (page: number) => void;
 }
 
@@ -13,6 +13,7 @@ const PAGES = [
   { icon: Swords, label: 'Combat' },
   { icon: Trophy, label: 'Progression' },
   { icon: Flame, label: 'Forge' },
+  { icon: Store, label: 'Marché' },
 ];
 
 export function MainNav({ page, onNavigate }: MainNavProps) {
