@@ -14,6 +14,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: '2026-03-21',
     title: 'Mises à jour récentes',
     changes: [
+      { type: 'feature', description: 'Game Modes Discovery: Ascension & World Boss (design + prototype) (#165)' },
       { type: 'feature', description: 'Story Mode: nouveaux niveaux + amélioration visuelle des ennemis (#164)' },
       { type: 'feature', description: 'feat: refonte système de génération et fusion des héros — identité unique + upgrade de rareté (#333)' },
       { type: 'feature', description: '[I-12] Supprimer HERO_ICON_MAP dupliqué dans PixelIcon.tsx (#250)' },
