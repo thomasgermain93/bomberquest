@@ -36,6 +36,7 @@ export interface HeroProgressionStats {
 
 export interface Hero {
   id: string;
+  templateId?: string; // Référence au template du pool (heroPool.ts)
   name: string;
   rarity: Rarity;
   level: number;

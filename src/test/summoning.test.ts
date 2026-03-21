@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { rollRarity, generateHero, summonHero } from '../game/summoning';
 import { RARITY_CONFIG } from '../game/types';
 import type { Rarity } from '../game/types';
+import { HERO_POOL } from '../game/heroPool';
 
 // Fixture de base pour les compteurs de pity
 const zeroPity = { rare: 0, superRare: 0, epic: 0, legend: 0 };
@@ -131,6 +132,37 @@ describe('generateHero', () => {
     const h1 = generateHero('common');
     const h2 = generateHero('common');
     expect(h1.id).not.toBe(h2.id);
+  });
+});
+
+// ─── generateHero — pool cohérent ─────────────────────────────────────────────
+
+describe('generateHero — pool cohérent', () => {
+  it('icône et family correspondent au template', () => {
+    for (let i = 0; i < 20; i++) {
+      const hero = generateHero('common');
+      const baseName = hero.name.split(' #')[0];
+      const template = HERO_POOL.find(t => t.name === baseName);
+      expect(template).toBeDefined();
+      expect(hero.icon).toBe(template!.icon);
+      expect(hero.family).toBe(template!.family);
+    }
+  });
+
+  it('templateId est défini et correspond au pool', () => {
+    const hero = generateHero('rare');
+    expect(typeof hero.templateId).toBe('string');
+    const template = HERO_POOL.find(t => t.templateId === hero.templateId);
+    expect(template).toBeDefined();
+  });
+
+  it('le nom de base est toujours dans le pool', () => {
+    const poolNames = new Set(HERO_POOL.map(t => t.name));
+    for (let i = 0; i < 10; i++) {
+      const hero = generateHero('super-rare');
+      const baseName = hero.name.split(' #')[0];
+      expect(poolNames.has(baseName)).toBe(true);
+    }
   });
 });
 

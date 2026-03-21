@@ -2447,7 +2447,8 @@ const Index = () => {
                                   player.heroes.filter(h =>
                                     h.rarity === recipe.from &&
                                     h.level >= RARITY_CONFIG[recipe.from].maxLevel &&
-                                    !alreadyIds.has(h.id)
+                                    !alreadyIds.has(h.id) &&
+                                    !h.isLocked
                                   )
                                 );
                                 handleSlotClick(slotIdx);

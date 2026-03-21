@@ -10,7 +10,9 @@ const GUEST_TTL_MS = 24 * 60 * 60 * 1000; // 24h
 export function getDefaultPlayerData(): PlayerData {
   const starterHero = generateHero('common');
   starterHero.name = 'Blaze #1';
-  starterHero.icon = 'bomb';
+  starterHero.icon = 'flame';
+  starterHero.templateId = 'blaze';
+  starterHero.family = 'ember-clan';
 
   return {
     bomberCoins: 2000,
