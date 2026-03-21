@@ -221,9 +221,9 @@ export type HeroFamilyId = typeof HERO_FAMILIES[number]['id'];
 export const HERO_FAMILY_MAP: Record<string, HeroFamilyId> = {
   blaze: 'ember-clan', ember: 'ember-clan', pyro: 'ember-clan', fuse: 'ember-clan', blast: 'ember-clan', sol: 'ember-clan',
   spark: 'storm-riders', volt: 'storm-riders', storm: 'storm-riders', zap: 'storm-riders', vega: 'storm-riders', dash: 'storm-riders',
-  flint: 'forge-guard', rex: 'forge-guard', atlas: 'forge-guard', duke: 'forge-guard', max: 'forge-guard',
-  ash: 'shadow-core', nova: 'shadow-core', echo: 'shadow-core', crash: 'shadow-core', luna: 'shadow-core',
-  pixel: 'arcane-circuit', chip: 'arcane-circuit', byte: 'arcane-circuit', orion: 'arcane-circuit',
+  flint: 'forge-guard', rex: 'forge-guard', atlas: 'forge-guard', duke: 'forge-guard', max: 'forge-guard', brick: 'forge-guard',
+  ash: 'shadow-core', nova: 'shadow-core', echo: 'shadow-core', crash: 'shadow-core', luna: 'shadow-core', shade: 'shadow-core',
+  pixel: 'arcane-circuit', chip: 'arcane-circuit', byte: 'arcane-circuit', orion: 'arcane-circuit', glitch: 'arcane-circuit', rune: 'arcane-circuit',
   boom: 'wild-pack', nitro: 'wild-pack', rush: 'wild-pack', flash: 'wild-pack', jet: 'wild-pack', ace: 'wild-pack',
 };
 
