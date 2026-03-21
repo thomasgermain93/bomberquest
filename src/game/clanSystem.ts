@@ -71,9 +71,9 @@ const CLAN_SKILLS: ClanSkill[] = [
   },
 ];
 
-// Obtenir la famille d'un héros via son icon
+// Obtenir la famille d'un héros — priorité au champ family du héros, fallback sur l'icône
 export function getHeroFamily(hero: Hero): HeroFamilyId | undefined {
-  return HERO_VISUALS[hero.icon]?.family as HeroFamilyId | undefined;
+  return (hero.family ?? HERO_VISUALS[hero.icon]?.family) as HeroFamilyId | undefined;
 }
 
 // Calculer les compétences de clan actives pour une équipe de héros

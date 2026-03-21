@@ -1,4 +1,5 @@
 import { Hero, HeroStats, Rarity, Skill, RARITY_CONFIG, MAX_LEVEL_BY_RARITY } from './types';
+import { generateHero } from './summoning';
 
 /** XP required per level (level 1 requires 0 XP, level 2 requires XP_FOR_LEVEL[1], etc.) */
 const XP_FOR_LEVEL: Record<number, number> = {
@@ -465,6 +466,30 @@ export function canUpgradeSkill(
   }
 
   return { canUpgrade: true, reason: '', duplicatesNeeded: needed };
+}
+
+/**
+ * Fusionne un héros vers une rareté supérieure en conservant son identité
+ * (id, name, family, icon). Les skills sont ceux de la rareté cible.
+ */
+export function upgradeHeroRarity(hero: Hero, to: Rarity): Hero {
+  const config = RARITY_CONFIG[to];
+  const fromConfig = RARITY_CONFIG[hero.rarity];
+  const newLevel = fromConfig.maxLevel;
+  const newStats = getStatsAtLevel(to, newLevel, hero.stars);
+  // On génère un héros temporaire de la rareté cible pour récupérer ses skills
+  const tempHero = generateHero(to);
+  return {
+    ...hero,                       // conserve id, name, family, icon, progressionStats…
+    rarity: to,
+    level: newLevel,
+    xp: 0,
+    stars: 0,
+    stats: newStats,
+    skills: tempHero.skills,
+    maxStamina: newStats.sta,
+    currentStamina: newStats.sta,
+  };
 }
 
 // Applique l'upgrade : supprime les doublons consommés, améliore le skill
