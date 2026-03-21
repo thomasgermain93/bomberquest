@@ -63,13 +63,13 @@ const AssetPreview: React.FC<{ label: string; src?: string; status: AssetStatus;
           </div>
         )}
       </div>
-      {src && (
+      {src && !hasLoadError && (
         <p className="mt-1 text-[9px] text-muted-foreground/80 truncate" title={src}>
           {src}
         </p>
       )}
-      {!src && generatedSprite && (
-        <p className="mt-1 text-[9px] text-muted-foreground/70">Preview générée depuis le skin en jeu</p>
+      {(!src || hasLoadError) && generatedSprite && (
+        <p className="mt-1 text-[9px] text-green-500/70 font-pixel" style={{ fontSize: '8px' }}>Sprite procédural</p>
       )}
     </div>
   );
