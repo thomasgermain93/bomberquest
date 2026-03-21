@@ -58,7 +58,7 @@ const SKILL_POOL_BY_RARITY: Record<Rarity, string[]> = {
   ],
 };
 
-const CANONICAL_HERO_POOL_BY_RARITY: Record<Rarity, { id: string; name: string; iconKey: string }[]> = {
+export const CANONICAL_HERO_POOL_BY_RARITY: Record<Rarity, { id: string; name: string; iconKey: string }[]> = {
   common: [],
   rare: [],
   'super-rare': [],
