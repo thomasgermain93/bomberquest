@@ -1,5 +1,5 @@
 import { Hero, HeroStats, Rarity, Skill, RARITY_CONFIG, MAX_LEVEL_BY_RARITY } from './types';
-import { generateHero } from './summoning';
+import { generateSkillsForRarity } from './summoning';
 
 /** XP required per level (level 1 requires 0 XP, level 2 requires XP_FOR_LEVEL[1], etc.) */
 const XP_FOR_LEVEL: Record<number, number> = {
@@ -477,16 +477,14 @@ export function upgradeHeroRarity(hero: Hero, to: Rarity): Hero {
   const fromConfig = RARITY_CONFIG[hero.rarity];
   const newLevel = fromConfig.maxLevel;
   const newStats = getStatsAtLevel(to, newLevel, hero.stars);
-  // On génère un héros temporaire de la rareté cible pour récupérer ses skills
-  const tempHero = generateHero(to);
   return {
-    ...hero,                       // conserve id, name, family, icon, progressionStats…
+    ...hero,                       // conserve id, templateId, name, family, icon, progressionStats…
     rarity: to,
     level: newLevel,
     xp: 0,
     stars: 0,
     stats: newStats,
-    skills: tempHero.skills,
+    skills: generateSkillsForRarity(to),
     maxStamina: newStats.sta,
     currentStamina: newStats.sta,
   };

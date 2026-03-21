@@ -1,5 +1,5 @@
-import { BESTIARY_BOMBERS } from '@/data/bestiary';
-import { Hero, Rarity, RARITY_CONFIG, HERO_NAMES, HERO_ICON_KEYS, Skill, HERO_VISUALS, HeroFamilyId } from './types';
+import { Hero, Rarity, RARITY_CONFIG, Skill } from './types';
+import { HERO_POOL } from './heroPool';
 
 let heroIdCounter = Date.now();
 
@@ -58,24 +58,6 @@ const SKILL_POOL_BY_RARITY: Record<Rarity, string[]> = {
   ],
 };
 
-export const CANONICAL_HERO_POOL_BY_RARITY: Record<Rarity, { id: string; name: string; iconKey: string }[]> = {
-  common: [],
-  rare: [],
-  'super-rare': [],
-  epic: [],
-  legend: [],
-  'super-legend': [],
-};
-
-for (const bomber of BESTIARY_BOMBERS) {
-  if (!bomber.rarity) continue;
-  CANONICAL_HERO_POOL_BY_RARITY[bomber.rarity].push({
-    id: bomber.id,
-    name: bomber.name,
-    iconKey: bomber.assets.iconKey ?? HERO_ICON_KEYS[HERO_NAMES.indexOf(bomber.name) % HERO_ICON_KEYS.length] ?? HERO_ICON_KEYS[0],
-  });
-}
-
 export function rollRarity(pityCounters: { rare: number; superRare: number; epic: number; legend: number }): Rarity {
   // Check pity
   if (pityCounters.legend >= 200) return 'legend';
@@ -102,16 +84,18 @@ function fisherYates<T>(arr: T[]): T[] {
   return arr;
 }
 
+export function generateSkillsForRarity(rarity: Rarity): Skill[] {
+  const config = RARITY_CONFIG[rarity];
+  const skillPool = SKILL_POOL_BY_RARITY[rarity];
+  const shuffled = fisherYates([...skillPool]);
+  return shuffled.slice(0, config.skills).map(k => ALL_SKILLS[k]);
+}
+
 export function generateHero(rarity: Rarity): Hero {
   const config = RARITY_CONFIG[rarity];
-  const canonicalPool = CANONICAL_HERO_POOL_BY_RARITY[rarity];
-  const pickedCanonicalHero = canonicalPool.length > 0
-    ? canonicalPool[Math.floor(Math.random() * canonicalPool.length)]
-    : null;
 
-  const name = pickedCanonicalHero?.name ?? HERO_NAMES[Math.floor(Math.random() * HERO_NAMES.length)];
-  const icon = pickedCanonicalHero?.iconKey ?? HERO_ICON_KEYS[Math.floor(Math.random() * HERO_ICON_KEYS.length)];
-  const family = (HERO_VISUALS[name.toLowerCase()]?.family || undefined) as HeroFamilyId | undefined;
+  // Tirage d'un template depuis le pool fixe (cohérence nom/icône/clan)
+  const template = HERO_POOL[Math.floor(Math.random() * HERO_POOL.length)];
 
   // Random variance ±10%
   const vary = (base: number) => Math.max(1, Math.round(base * (STAT_VARIANCE_MIN + Math.random() * STAT_VARIANCE_RANGE)));
@@ -125,17 +109,14 @@ export function generateHero(rarity: Rarity): Hero {
     lck: vary(config.baseStats.lck),
   };
 
-  // Pick skills
-  const skillPool = SKILL_POOL_BY_RARITY[rarity];
-  const numSkills = config.skills;
-  const shuffled = fisherYates([...skillPool]);
-  const skills = shuffled.slice(0, numSkills).map(k => ALL_SKILLS[k]);
+  const skills = generateSkillsForRarity(rarity);
 
   const id = `hero_${heroIdCounter++}`;
 
   return {
     id,
-    name: `${name} #${id.split('_')[1]}`,
+    templateId: template.templateId,
+    name: `${template.name} #${id.split('_')[1]}`,
     rarity,
     level: 1,
     xp: 0,
@@ -152,8 +133,8 @@ export function generateHero(rarity: Rarity): Hero {
     state: 'idle',
     bombCooldown: 0,
     stuckTimer: 0,
-    icon,
-    family,
+    icon: template.icon,
+    family: template.family,
     progressionStats: {
       chestsOpened: 0,
       totalDamageDealt: 0,

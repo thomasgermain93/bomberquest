@@ -1,4 +1,5 @@
-import { HERO_ICON_KEYS, HERO_NAMES, HERO_FAMILIES, Rarity, HERO_VISUALS, HeroFamilyId, getHeroVisualTraits } from '@/game/types';
+import { HERO_FAMILIES, Rarity, HERO_VISUALS, HeroFamilyId, getHeroVisualTraits } from '@/game/types';
+import { HERO_POOL } from '@/game/heroPool';
 
 export type AssetStatus = 'missing' | 'wip' | 'ready';
 
@@ -42,8 +43,8 @@ export interface BestiaryBomber {
   assets: BomberAssetRefs;
 }
 
-const HERO_ICON_BY_NAME = Object.fromEntries(
-  HERO_NAMES.map((heroName, index) => [heroName.toLowerCase(), HERO_ICON_KEYS[index % HERO_ICON_KEYS.length]]),
+const HERO_ICON_BY_TEMPLATE = Object.fromEntries(
+  HERO_POOL.map(t => [t.name.toLowerCase(), t.icon]),
 );
 
 export const BESTIARY_BOMBERS: BestiaryBomber[] = [
@@ -87,7 +88,7 @@ export const BESTIARY_BOMBERS: BestiaryBomber[] = [
   ...bomber,
   assets: {
     ...bomber.assets,
-    iconKey: bomber.assets.iconKey ?? HERO_ICON_BY_NAME[bomber.name.toLowerCase()],
+    iconKey: bomber.assets.iconKey ?? HERO_ICON_BY_TEMPLATE[bomber.name.toLowerCase()] ?? 'bomb',
     visualTraits: getHeroVisualTraits(bomber.id),
   },
 }));

@@ -5,9 +5,9 @@
  * entre HERO_NAMES, HERO_FAMILY_MAP, HERO_VISUALS et BESTIARY_BOMBERS.
  */
 import { describe, it, expect } from 'vitest';
-import { HERO_NAMES, HERO_FAMILY_MAP, HERO_VISUALS, HERO_FAMILIES } from '../game/types';
+import { HERO_NAMES, HERO_FAMILY_MAP, HERO_VISUALS, HERO_FAMILIES, HERO_ICON_KEYS } from '../game/types';
 import { BESTIARY_BOMBERS } from '../data/bestiary';
-import { CANONICAL_HERO_POOL_BY_RARITY } from '../game/summoning';
+import { HERO_POOL } from '../game/heroPool';
 
 const TOTAL_HEROES = 36;
 const HEROES_PER_CLAN = 6;
@@ -142,37 +142,39 @@ describe('BESTIARY_BOMBERS', () => {
   });
 });
 
-// ─── 5. CANONICAL_HERO_POOL_BY_RARITY ─────────────────────────────────────────
+// ─── 5. HERO_POOL ──────────────────────────────────────────────────────────────
 
-describe('CANONICAL_HERO_POOL_BY_RARITY', () => {
-  it(`couvre les ${TOTAL_HEROES} héros (chaque héros dans au moins 1 rareté)`, () => {
-    const coveredIds = new Set<string>();
-    for (const pool of Object.values(CANONICAL_HERO_POOL_BY_RARITY)) {
-      for (const hero of pool) {
-        coveredIds.add(hero.id);
-      }
-    }
-    expect(coveredIds.size).toBe(TOTAL_HEROES);
+describe('HERO_POOL', () => {
+  it(`contient exactement ${TOTAL_HEROES} templates`, () => {
+    expect(HERO_POOL).toHaveLength(TOTAL_HEROES);
   });
 
-  it("ne contient pas de doublons dans une même rareté", () => {
-    for (const pool of Object.values(CANONICAL_HERO_POOL_BY_RARITY)) {
-      const ids = pool.map(h => h.id);
-      const unique = new Set(ids);
-      expect(unique.size).toBe(ids.length);
+  it("ne contient pas de doublons de templateId", () => {
+    const ids = HERO_POOL.map(t => t.templateId);
+    const unique = new Set(ids);
+    expect(unique.size).toBe(ids.length);
+  });
+
+  it('chaque template a un templateId, un name, une icône et une family valides', () => {
+    const validIcons = new Set(HERO_ICON_KEYS);
+    for (const template of HERO_POOL) {
+      expect(typeof template.templateId).toBe('string');
+      expect(template.templateId.length).toBeGreaterThan(0);
+      expect(typeof template.name).toBe('string');
+      expect(template.name.length).toBeGreaterThan(0);
+      expect(validIcons.has(template.icon)).toBe(true);
+      expect(typeof template.family).toBe('string');
+      expect(template.family.length).toBeGreaterThan(0);
     }
   });
 
-  it('chaque héros du pool a un id, un name et un iconKey valides', () => {
-    for (const pool of Object.values(CANONICAL_HERO_POOL_BY_RARITY)) {
-      for (const hero of pool) {
-        expect(typeof hero.id).toBe('string');
-        expect(hero.id.length).toBeGreaterThan(0);
-        expect(typeof hero.name).toBe('string');
-        expect(hero.name.length).toBeGreaterThan(0);
-        expect(typeof hero.iconKey).toBe('string');
-        expect(hero.iconKey.length).toBeGreaterThan(0);
-      }
+  it('chaque clan a exactement 6 templates', () => {
+    const countPerFamily: Record<string, number> = {};
+    for (const t of HERO_POOL) {
+      countPerFamily[t.family] = (countPerFamily[t.family] ?? 0) + 1;
+    }
+    for (const count of Object.values(countPerFamily)) {
+      expect(count).toBe(6);
     }
   });
 });
