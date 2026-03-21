@@ -14,6 +14,44 @@ export type Database = {
   }
   public: {
     Tables: {
+      marketplace_listings: {
+        Row: {
+          id: string
+          seller_id: string
+          hero_id: string
+          hero_snapshot: Json
+          price: number
+          status: string
+          buyer_id: string | null
+          created_at: string
+          sold_at: string | null
+          cancelled_at: string | null
+        }
+        Insert: {
+          id?: string
+          seller_id: string
+          hero_id: string
+          hero_snapshot: Json
+          price: number
+          status?: string
+          buyer_id?: string | null
+          created_at?: string
+          sold_at?: string | null
+          cancelled_at?: string | null
+        }
+        Update: {
+          id?: string
+          seller_id?: string
+          hero_id?: string
+          hero_snapshot?: Json
+          price?: number
+          status?: string
+          buyer_id?: string | null
+          sold_at?: string | null
+          cancelled_at?: string | null
+        }
+        Relationships: []
+      }
       player_heroes: {
         Row: {
           id: string

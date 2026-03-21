@@ -32,6 +32,7 @@ import { getExplosionTiles } from '@/game/engine';
 import { generateShardRewards, applyShardRewards, ShardReward, generateUniversalShardReward } from '@/game/shardRewardSystem';
 import { recycleHeroes } from '@/game/recycleSystem';
 import RecyclePanel from '@/components/RecyclePanel';
+import MarketplacePage from '@/components/marketplace/MarketplacePage';
 import DailyQuests from '@/components/DailyQuests';
 import Achievements from '@/components/Achievements';
 import PlayerStats from '@/components/PlayerStats';
@@ -53,7 +54,7 @@ import DailyResetTimer from '@/components/DailyResetTimer';
 import { SFX, isMuted, setMuted } from '@/game/sfx';
 import { toast } from 'sonner';
 
-type Screen = 'hub' | 'treasure-hunt' | 'heroes' | 'codex' | 'fusion' | 'summon' | 'story' | 'story-battle' | 'achievements' | 'combat' | 'recycle';
+type Screen = 'hub' | 'treasure-hunt' | 'heroes' | 'codex' | 'fusion' | 'summon' | 'story' | 'story-battle' | 'achievements' | 'combat' | 'recycle' | 'marketplace';
 
 
 
@@ -204,6 +205,7 @@ const Index = () => {
   const {
     canWriteCloud,
     isCloudLoading,
+    loadFromCloud,
     saveHeroesToCloud,
     removeHeroesFromCloud,
     saveStatsToCloud,
@@ -1255,18 +1257,18 @@ const Index = () => {
         onToggleMute={toggleMute}
       />
 
-      {/* Container swipeable 5 pages */}
+      {/* Container swipeable 6 pages */}
       <motion.div
         className="flex flex-1 min-h-0 pt-12"
-        style={{ width: '500%' }}
-        animate={{ x: `${-page * 20}%` }}
+        style={{ width: '600%' }}
+        animate={{ x: `${-page * (100 / 6)}%` }}
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
 
         {/* PAGE 0 — Invoquer */}
-        <div className="w-1/5 h-full overflow-y-auto pb-nav md:pl-16">
+        <div className="w-1/6 h-full overflow-y-auto pb-nav md:pl-16">
           <div className="p-4 max-w-2xl mx-auto space-y-4">
             {/* Tabs BC / Shards */}
             <div className="flex gap-2">
@@ -1436,7 +1438,7 @@ const Index = () => {
         </div>
 
         {/* PAGE 1 — Héros */}
-        <div className="w-1/5 h-full overflow-y-auto pb-nav md:pl-16">
+        <div className="w-1/6 h-full overflow-y-auto pb-nav md:pl-16">
           <div className="p-4 max-w-6xl mx-auto">
             {upgradeHeroId && upgradeHeroData ? (
               /* VUE DÉTAIL HÉROS — pleine page */
@@ -1739,7 +1741,7 @@ const Index = () => {
         </div>
 
         {/* PAGE 2 — Combat */}
-        <div className={`w-1/5 h-full overflow-y-auto pb-nav ${isInBattle ? '' : 'md:pl-16'}`}>
+        <div className={`w-1/6 h-full overflow-y-auto pb-nav ${isInBattle ? '' : 'md:pl-16'}`}>
           <div className="p-4 max-w-6xl mx-auto">
             {/* Tabs Chasse au Trésor / Mode Histoire */}
             {!isInBattle && (
@@ -2234,7 +2236,7 @@ const Index = () => {
         </div>
 
         {/* PAGE 3 — Social */}
-        <div className="w-1/5 h-full overflow-y-auto pb-nav md:pl-16">
+        <div className="w-1/6 h-full overflow-y-auto pb-nav md:pl-16">
           <div className="p-4 max-w-2xl mx-auto space-y-6">
             {/* Player Stats */}
             <PlayerStats
@@ -2317,7 +2319,7 @@ const Index = () => {
         </div>
 
         {/* PAGE 4 — Forge */}
-        <div className="w-1/5 h-full overflow-y-auto pb-nav md:pl-16">
+        <div className="w-1/6 h-full overflow-y-auto pb-nav md:pl-16">
           <div className="p-4 max-w-2xl mx-auto">
             {/* Sub-tabs Fusion | Recyclage */}
             <div className="flex gap-1 mb-4 sticky top-0 bg-background/95 backdrop-blur py-2 z-10">
@@ -2547,6 +2549,24 @@ const Index = () => {
               </motion.div>
             )}
           </div>
+        </div>
+
+        {/* PAGE 5 — Marché */}
+        <div className="w-1/6 h-full overflow-y-auto pb-nav md:pl-16">
+          <MarketplacePage
+            player={player}
+            user={user}
+            onTransactionComplete={async () => {
+              if (user && loadFromCloud) {
+                const data = await loadFromCloud();
+                if (data) {
+                  setPlayer(data.playerData);
+                  setStoryProgress(data.storyProgress);
+                  setDailyQuests(data.dailyQuests);
+                }
+              }
+            }}
+          />
         </div>
 
       </motion.div>
