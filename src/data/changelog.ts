@@ -11,9 +11,10 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     version: 'Unreleased',
-    date: '2026-03-20',
+    date: '2026-03-21',
     title: 'Mises à jour récentes',
     changes: [
+      { type: 'feature', description: '[I-12] Supprimer HERO_ICON_MAP dupliqué dans PixelIcon.tsx (#250)' },
       { type: 'feature', description: 'Complete the 36-hero canon roster (#340)' },
       { type: 'feature', description: 'fix: compétences verrouillées dans HeroDetailInline selon le niveau (#339)' },
       { type: 'feature', description: 'feat: fusion UI — style Summoners War, slot principal + nourritures + bottom sheet (#338)' },
