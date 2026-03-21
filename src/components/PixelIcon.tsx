@@ -73,6 +73,9 @@ const ICON_MAP: Record<string, React.ComponentType<any>> = {
   'bug': Bug,
   'bird': Bird,
   'dog': Dog,
+  'flame': Flame,
+  'crown': Crown,
+  'skull': Skull,
   
   // Items
   'gem': Gem,
@@ -101,32 +104,6 @@ export const REGION_ICON_MAP: Record<string, string> = {
   'inferno': 'inferno',
 };
 
-// Hero icon keys (replace HERO_EMOJIS)
-export const HERO_ICON_KEYS = [
-  'bomb', 'zap', 'sparkle', 'star', 'target', 'rocket', 'gamepad', 'bot',
-  'shield', 'sword', 'axe', 'flame', 'crown', 'skull', 'gem', 'bird',
-];
-
-// Map icon key → Lucide icon name for heroes
-export const HERO_ICON_MAP: Record<string, React.ComponentType<any>> = {
-  'bomb': Bomb,
-  'zap': Zap,
-  'sparkle': Sparkles,
-  'star': Star,
-  'target': Target,
-  'rocket': Rocket,
-  'gamepad': Gamepad2,
-  'bot': Bot,
-  'shield': Shield,
-  'sword': Sword,
-  'axe': Axe,
-  'flame': Flame,
-  'crown': Crown,
-  'skull': Skull,
-  'gem': Gem,
-  'bird': Bird,
-};
-
 // Rarity colors for hero icons
 const RARITY_ICON_COLORS: Record<string, string> = {
   'common': 'hsl(var(--game-rarity-common))',
@@ -146,7 +123,7 @@ interface PixelIconProps {
 }
 
 const PixelIcon: React.FC<PixelIconProps> = ({ icon, size = 16, className = '', color, rarity }) => {
-  const IconComponent = ICON_MAP[icon] || HERO_ICON_MAP[icon];
+  const IconComponent = ICON_MAP[icon];
   if (!IconComponent) {
     return <Bomb size={size} className={className} />;
   }
