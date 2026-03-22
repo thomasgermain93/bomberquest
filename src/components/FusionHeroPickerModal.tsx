@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -38,7 +38,7 @@ const FusionHeroPickerModal: React.FC<FusionHeroPickerModalProps> = ({
   const requiredRarityConfig = RARITY_CONFIG[requiredRarity as keyof typeof RARITY_CONFIG];
   const maxLevel = requiredRarityConfig?.maxLevel ?? 20;
 
-  const getEligibility = (hero: Hero): HeroEligibility => {
+  const getEligibility = useCallback((hero: Hero): HeroEligibility => {
     if (alreadySelectedIds.includes(hero.id)) {
       return { hero, isEligible: false, reason: 'Déjà assigné' };
     }
@@ -49,7 +49,7 @@ const FusionHeroPickerModal: React.FC<FusionHeroPickerModalProps> = ({
       return { hero, isEligible: false, reason: `Niveau ${maxLevel} requis (${hero.level}/${maxLevel})` };
     }
     return { hero, isEligible: true, reason: '' };
-  };
+  }, [alreadySelectedIds, requiredRarity, maxLevel]);
 
   const { eligibleHeroes, ineligibleHeroes, sortedHeroes } = useMemo(() => {
     const eligible: Hero[] = [], ineligible: Hero[] = [];
@@ -57,7 +57,7 @@ const FusionHeroPickerModal: React.FC<FusionHeroPickerModalProps> = ({
       (getEligibility(h).isEligible ? eligible : ineligible).push(h);
     }
     return { eligibleHeroes: eligible, ineligibleHeroes: ineligible, sortedHeroes: [...eligible, ...ineligible] };
-  }, [heroes, requiredRarity, alreadySelectedIds]);
+  }, [heroes, getEligibility]);
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>

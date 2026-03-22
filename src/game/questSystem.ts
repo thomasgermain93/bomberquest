@@ -178,7 +178,9 @@ export function loadDailyQuests(): DailyQuestData {
       const data: DailyQuestData = JSON.parse(saved);
       if (data.date === getTodayString()) return data;
     }
-  } catch {}
+  } catch (err) {
+    if (import.meta.env.DEV) console.error('[questSystem] Failed to load quests from storage:', err);
+  }
   return generateDailyQuests();
 }
 
