@@ -6,6 +6,7 @@ import { Hero, Rarity, Skill } from '../game/types';
 function makeHero(id: string, name: string, rarity: Rarity, skills: Skill[] = []): Hero {
   return {
     id,
+    templateId: name, // même templateId pour les doublons d'un même héros
     name: `${name} #${id}`,
     rarity,
     level: 1,
