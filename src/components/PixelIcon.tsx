@@ -74,8 +74,8 @@ const ICON_MAP: Record<string, React.ComponentType<any>> = {
   'bird': Bird,
   'dog': Dog,
   'flame': Flame,
-  'crown': Crown,
-  'skull': Skull,
+  // 'crown' and 'skull' are already defined above (forest stages / ruins stages)
+  // Keeping only the first definitions to avoid duplicate key errors
   
   // Items
   'gem': Gem,

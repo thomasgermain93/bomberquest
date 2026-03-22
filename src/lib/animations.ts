@@ -28,7 +28,7 @@ export const pixelSlide = (direction: 'left' | 'right' | 'up' | 'down' = 'right'
     hidden: { [axis]: sign * distance, opacity: 0 },
     visible: { [axis]: 0, opacity: 1, transition: SPRING_SNAPPY },
     exit: { [axis]: sign * distance, opacity: 0, transition: TWEEN_NORMAL },
-  };
+  } as Variants;
 };
 
 /** Overlay/modal backdrop */

@@ -122,11 +122,11 @@ export const BESTIARY_BOMBERS: BestiaryBomber[] = [
 ].map((bomber) => ({
   ...bomber,
   assets: {
-    ...bomber.assets,
-    iconKey: bomber.assets.iconKey ?? HERO_ICON_BY_TEMPLATE[bomber.name.toLowerCase()] ?? 'bomb',
+    ...(bomber.assets as BomberAssetRefs),
+    iconKey: (bomber.assets as BomberAssetRefs).iconKey ?? HERO_ICON_BY_TEMPLATE[bomber.name.toLowerCase()] ?? 'bomb',
     visualTraits: getHeroVisualTraits(bomber.id),
   },
-}));
+})) as BestiaryBomber[];
 
 export const BESTIARY_BY_FAMILY = BOMBER_FAMILIES.map((family) => ({
   family,

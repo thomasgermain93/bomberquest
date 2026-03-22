@@ -41,10 +41,13 @@ const TreasureHuntCanvas: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    const canvasMaybeNull = canvasRef.current;
+    if (!canvasMaybeNull) return;
+    const ctxMaybeNull = canvasMaybeNull.getContext('2d');
+    if (!ctxMaybeNull) return;
+    // Non-null after guards above; rename so inner closures retain narrowed type
+    const canvas: HTMLCanvasElement = canvasMaybeNull;
+    const ctx: CanvasRenderingContext2D = ctxMaybeNull;
 
     const T = BG_TILE;
     let map: number[][];

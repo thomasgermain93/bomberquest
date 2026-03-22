@@ -17,7 +17,7 @@ export function useLeaderboard(boardType: BoardType) {
       const { data, error } = await supabase.rpc('get_leaderboard' as never, {
         board_type: boardType,
         lim: 50,
-      });
+      } as never);
       if (error) throw error;
       return (data || []) as LeaderboardEntry[];
     },
