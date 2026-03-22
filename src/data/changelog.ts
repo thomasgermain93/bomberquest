@@ -14,6 +14,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: '2026-03-22',
     title: 'Mises à jour récentes',
     changes: [
+      { type: 'feature', description: '[ARCH] Activer TypeScript strict mode progressivement (#376)' },
       { type: 'feature', description: '[ARCH] Décomposer engine.ts (796 lignes) en modules spécialisés (#375)' },
       { type: 'feature', description: '[TEST] Ajouter tests d\'intégration pour useCloudSave / cloud sync Supabase (#371)' },
       { type: 'feature', description: '[GAMEPLAY] TODO #168 : implémenter chain_chance pour le clan Arcane-Circuit (#365)' },
