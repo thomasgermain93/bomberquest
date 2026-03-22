@@ -22,10 +22,10 @@ function buildStoryTargets(
   state: Pick<GameState, 'enemies' | 'boss' | 'isStoryMode'>
 ): { position: { x: number; y: number }; hp: number; isBoss?: boolean }[] | undefined {
   if (!state.isStoryMode) return state.enemies;
-  if (state.boss && (state.boss as any).hp > 0) {
+  if (state.boss && state.boss.hp > 0) {
     return [
       ...(state.enemies || []).map(e => ({ ...e, isBoss: false as const })),
-      { ...(state.boss as any), isBoss: true as const },
+      { ...state.boss, isBoss: true as const },
     ];
   }
   return state.enemies;

@@ -1,4 +1,4 @@
-import { PlayerData, Rarity } from './types';
+import { PlayerData, Rarity, Hero } from './types';
 import { generateHero } from './summoning';
 import { StoryProgress } from './storyTypes';
 import { getDefaultAchievementState } from './achievements';
@@ -68,7 +68,7 @@ export function loadPlayerData(): PlayerData {
       }
       parsed.xp = Number.isFinite(Number(parsed?.xp)) ? Number(parsed.xp) : 0;
       if (Array.isArray(parsed.heroes)) {
-        parsed.heroes = parsed.heroes.map((hero: any) => ({
+        parsed.heroes = parsed.heroes.map((hero: Partial<Hero>) => ({
           ...hero,
           xp: Number.isFinite(Number(hero?.xp)) ? Number(hero.xp) : 0,
           level: Number.isFinite(Number(hero?.level)) ? Math.max(1, Math.min(Number(hero.level), 120)) : 1,
