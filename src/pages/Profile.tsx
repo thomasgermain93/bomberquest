@@ -70,6 +70,7 @@ export default function Profile() {
     setDeleting(true);
     
     try {
+      // @ts-expect-error — delete_user_account absent des types générés Supabase (strictNullChecks)
       const { error: deleteError } = await supabase.rpc('delete_user_account');
 
       if (deleteError) {

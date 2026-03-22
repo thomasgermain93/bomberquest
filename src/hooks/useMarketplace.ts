@@ -48,7 +48,7 @@ export function useListings(filters?: MarketplaceFilters) {
 
       if (error) throw error;
 
-      let listings = (data || []) as MarketplaceListing[];
+      let listings = (data || []) as unknown as MarketplaceListing[];
 
       // Filtre rareté côté client (hero_snapshot est JSONB)
       if (filters?.rarity) {
@@ -82,7 +82,7 @@ export function useMyListings(userId: string | undefined) {
         .in('status', ['active', 'sold'])
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return (data || []) as MarketplaceListing[];
+      return (data || []) as unknown as MarketplaceListing[];
     },
     enabled: !!userId,
     staleTime: 30 * 1000,
@@ -105,7 +105,7 @@ export function useCreateListing() {
         p_seller_id: sellerId,
         p_hero_id: heroId,
         p_price: price,
-      });
+      } as never);
       if (error) throw error;
       const result = data as { success: boolean; error?: string; listing_id?: string };
       if (!result.success) throw new Error(result.error || 'Erreur lors de la mise en vente.');
@@ -130,7 +130,7 @@ export function useBuyHero() {
       const { data, error } = await supabase.rpc('buy_hero' as never, {
         p_listing_id: listingId,
         p_buyer_id: buyerId,
-      });
+      } as never);
       if (error) throw error;
       const result = data as { success: boolean; error?: string; new_hero_id?: string; price_paid?: number };
       if (!result.success) throw new Error(result.error || "Erreur lors de l'achat.");
@@ -155,7 +155,7 @@ export function useCancelListing() {
       const { data, error } = await supabase.rpc('cancel_listing' as never, {
         p_listing_id: listingId,
         p_seller_id: sellerId,
-      });
+      } as never);
       if (error) throw error;
       const result = data as { success: boolean; error?: string };
       if (!result.success) throw new Error(result.error || "Erreur lors de l'annulation.");

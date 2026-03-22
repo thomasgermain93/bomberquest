@@ -59,7 +59,7 @@ export function resolveHeroVisualIdentity(heroId?: string, heroName?: string): H
   const fallbackFamily = HERO_FAMILIES[seed % HERO_FAMILIES.length]?.id ?? 'ember-clan';
   const family = (baseFamily ?? fallbackFamily) as HeroFamilyId;
 
-  const traits = heroKey ? getHeroVisualTraits(heroKey) : { helmetStyle: 'standard', cape: false, wings: false, aura: false, accentColor: CLAN_VISUAL_PROFILES[family].primary };
+  const traits: HeroVisualTraits = heroKey ? getHeroVisualTraits(heroKey) : { helmetStyle: 'standard', cape: false, wings: false, aura: false, accentColor: CLAN_VISUAL_PROFILES[family].primary };
   const skin = SKIN_VARIANTS[seed % SKIN_VARIANTS.length] ?? 'classic';
 
   return { family, traits, skin };
