@@ -1,15 +1,22 @@
-import { GameState, GameMap, Hero, Bomb, Explosion, Chest, TileType, CHEST_CONFIG, ChestTier } from './types';
+import { GameState, Hero, Bomb } from './types';
 import { addXp, getMaxLevel } from './upgradeSystem';
 import { getActiveClanSkills, ClanSkillEffect } from './clanSystem';
 import { Boss } from './storyTypes';
+import { findPath, isAdjacentToTarget, findNearestTarget } from './pathfinding';
+import { getExplosionTiles, buildDangerSet, isInDangerZone, findSafeSpot } from './explosionSystem';
+
+// Re-exports pour compatibilite avec les fichiers qui importent depuis engine.ts
+export { generateMap } from './mapGenerator';
+export { findPath, isAdjacentToTarget, findNearestTarget } from './pathfinding';
+export { getExplosionTiles, buildDangerSet, isInDangerZone, findSafeSpot } from './explosionSystem';
 
 let nextId = 1;
-const genId = () => `id_${nextId++}`;
+export const genId = () => `id_${nextId++}`;
 
-const LOW_STAMINA_THRESHOLD = 0.5;  // % de stamina max en-dessous duquel la vitesse est réduite
+const LOW_STAMINA_THRESHOLD = 0.5;  // % de stamina max en-dessous duquel la vitesse est reduite
 const BOMB_COOLDOWN = 0.5;          // secondes entre deux bombes
 
-// --- Helpers locaux (non exportés) ---
+// --- Helpers locaux (non exportes) ---
 
 function getClanBonus(effectType: ClanSkillEffect['type'], heroes: Hero[], precomputedSkills?: ReturnType<typeof getActiveClanSkills>): number {
   const skills = precomputedSkills ?? getActiveClanSkills(heroes);
@@ -22,10 +29,10 @@ function buildStoryTargets(
   state: Pick<GameState, 'enemies' | 'boss' | 'isStoryMode'>
 ): { position: { x: number; y: number }; hp: number; isBoss?: boolean }[] | undefined {
   if (!state.isStoryMode) return state.enemies;
-  if (state.boss && (state.boss as any).hp > 0) {
+  if (state.boss && state.boss.hp > 0) {
     return [
       ...(state.enemies || []).map(e => ({ ...e, isBoss: false as const })),
-      { ...(state.boss as any), isBoss: true as const },
+      { ...state.boss, isBoss: true as const },
     ];
   }
   return state.enemies;
@@ -38,418 +45,6 @@ const XP_REWARDS = {
   enemyKilled: 15,
 };
 
-
-export function generateMap(width: number, height: number, blockDensity: number, numChests: number, mapIndex?: number): GameMap {
-  const tiles: TileType[][] = [];
-
-  for (let y = 0; y < height; y++) {
-    tiles[y] = [];
-    for (let x = 0; x < width; x++) {
-      if (x === 0 || y === 0 || x === width - 1 || y === height - 1) {
-        tiles[y][x] = 'wall';
-      } else if (x % 2 === 0 && y % 2 === 0) {
-        tiles[y][x] = 'wall';
-      } else {
-        tiles[y][x] = 'floor';
-      }
-    }
-  }
-
-  const clearZones = [
-    { x: 1, y: 1 }, { x: 2, y: 1 }, { x: 1, y: 2 },
-    { x: width - 2, y: 1 }, { x: width - 3, y: 1 }, { x: width - 2, y: 2 },
-    { x: 1, y: height - 2 }, { x: 2, y: height - 2 }, { x: 1, y: height - 3 },
-    { x: width - 2, y: height - 2 }, { x: width - 3, y: height - 2 }, { x: width - 2, y: height - 3 },
-  ];
-
-  const clearSet = new Set(clearZones.map(p => `${p.x},${p.y}`));
-
-  for (let y = 1; y < height - 1; y++) {
-    for (let x = 1; x < width - 1; x++) {
-      if (tiles[y][x] === 'floor' && !clearSet.has(`${x},${y}`) && Math.random() < blockDensity) {
-        tiles[y][x] = 'block';
-      }
-    }
-  }
-
-  // Place chests on some block tiles (hidden inside blocks)
-  const chests: Chest[] = [];
-  const floorTiles: { x: number; y: number }[] = [];
-  for (let y = 1; y < height - 1; y++) {
-    for (let x = 1; x < width - 1; x++) {
-      if (tiles[y][x] === 'floor' && !clearSet.has(`${x},${y}`)) {
-        floorTiles.push({ x, y });
-      }
-    }
-  }
-
-  for (let i = floorTiles.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [floorTiles[i], floorTiles[j]] = [floorTiles[j], floorTiles[i]];
-  }
-
-  const chestCount = Math.min(numChests, floorTiles.length);
-  let tiers: ChestTier[];
-  if (mapIndex === undefined || mapIndex <= 1) {
-    tiers = ['wood', 'wood', 'wood', 'silver', 'silver', 'gold'];
-  } else if (mapIndex <= 3) {
-    tiers = ['wood', 'silver', 'silver', 'gold', 'gold'];
-  } else if (mapIndex === 4) {
-    tiers = ['silver', 'gold', 'gold', 'crystal'];
-  } else {
-    tiers = ['gold', 'crystal', 'crystal', 'legendary'];
-  }
-
-  for (let i = 0; i < chestCount; i++) {
-    const pos = floorTiles[i];
-    const tier = tiers[Math.floor(Math.random() * tiers.length)];
-    const cfg = CHEST_CONFIG[tier];
-    chests.push({
-      id: genId(),
-      tier,
-      position: pos,
-      hp: cfg.hp,
-      maxHp: cfg.hp,
-      reward: cfg.rewardMin + Math.floor(Math.random() * (cfg.rewardMax - cfg.rewardMin)),
-    });
-  }
-
-  return { width, height, tiles, chests };
-}
-
-type AStarNode = { x: number; y: number; g: number; f: number; parent: AStarNode | null };
-
-function heapPush(heap: AStarNode[], node: AStarNode): void {
-  heap.push(node);
-  let i = heap.length - 1;
-  while (i > 0) {
-    const p = (i - 1) >> 1;
-    if (heap[p].f <= heap[i].f) break;
-    [heap[p], heap[i]] = [heap[i], heap[p]];
-    i = p;
-  }
-}
-
-function heapPop(heap: AStarNode[]): AStarNode {
-  const top = heap[0];
-  const last = heap.pop()!;
-  if (heap.length > 0) {
-    heap[0] = last;
-    let i = 0;
-    while (true) {
-      let s = i;
-      const l = 2 * i + 1, r = 2 * i + 2;
-      if (l < heap.length && heap[l].f < heap[s].f) s = l;
-      if (r < heap.length && heap[r].f < heap[s].f) s = r;
-      if (s === i) break;
-      [heap[i], heap[s]] = [heap[s], heap[i]];
-      i = s;
-    }
-  }
-  return top;
-}
-
-export function findPath(
-  map: GameMap,
-  from: { x: number; y: number },
-  to: { x: number; y: number },
-  bombs: Bomb[]
-): { x: number; y: number }[] | null {
-  const { width, height, tiles } = map;
-  const bombSet = new Set(bombs.map(b => `${b.position.x},${b.position.y}`));
-
-  const isWalkable = (x: number, y: number) => {
-    if (x < 0 || y < 0 || x >= width || y >= height) return false;
-    if (tiles[y][x] === 'wall' || tiles[y][x] === 'block') return false;
-    if (bombSet.has(`${x},${y}`)) return false;
-    return true;
-  };
-
-  if (!isWalkable(to.x, to.y) && !(to.x === from.x && to.y === from.y)) return null;
-
-  const heap: AStarNode[] = [];
-  const closedSet = new Set<string>();
-  const gScore = new Map<string, number>();
-  const h = (a: { x: number; y: number }) => Math.abs(a.x - to.x) + Math.abs(a.y - to.y);
-
-  const startKey = `${from.x},${from.y}`;
-  gScore.set(startKey, 0);
-  heapPush(heap, { x: from.x, y: from.y, g: 0, f: h(from), parent: null });
-
-  while (heap.length > 0) {
-    const current = heapPop(heap);
-    const key = `${current.x},${current.y}`;
-
-    if (closedSet.has(key)) continue;
-    closedSet.add(key);
-
-    if (current.x === to.x && current.y === to.y) {
-      const path: { x: number; y: number }[] = [];
-      let node: AStarNode | null = current;
-      while (node) {
-        path.unshift({ x: node.x, y: node.y });
-        node = node.parent;
-      }
-      return path;
-    }
-
-    for (const [dx, dy] of [[0, -1], [0, 1], [-1, 0], [1, 0]]) {
-      const nx = current.x + dx;
-      const ny = current.y + dy;
-      const nKey = `${nx},${ny}`;
-
-      if (!isWalkable(nx, ny) || closedSet.has(nKey)) continue;
-
-      const g = current.g + 1;
-      if (g < (gScore.get(nKey) ?? Infinity)) {
-        gScore.set(nKey, g);
-        heapPush(heap, { x: nx, y: ny, g, f: g + h({ x: nx, y: ny }), parent: current });
-      }
-    }
-  }
-
-  return null;
-}
-
-export function getExplosionTiles(
-  map: GameMap,
-  position: { x: number; y: number },
-  range: number
-): { x: number; y: number }[] {
-  const tiles: { x: number; y: number }[] = [{ ...position }];
-  const dirs = [[0, -1], [0, 1], [-1, 0], [1, 0]];
-
-  for (const [dx, dy] of dirs) {
-    for (let i = 1; i <= range; i++) {
-      const nx = position.x + dx * i;
-      const ny = position.y + dy * i;
-      if (nx < 0 || ny < 0 || nx >= map.width || ny >= map.height) break;
-      if (map.tiles[ny][nx] === 'wall') break;
-      tiles.push({ x: nx, y: ny });
-      if (map.tiles[ny][nx] === 'block') break;
-    }
-  }
-
-  return tiles;
-}
-
-function isAdjacentToTarget(hero: Hero, map: GameMap, enemies?: { position: { x: number; y: number }; hp: number }[]): boolean {
-  const hx = Math.round(hero.position.x);
-  const hy = Math.round(hero.position.y);
-  for (const [dx, dy] of [[0, -1], [0, 1], [-1, 0], [1, 0]]) {
-    const nx = hx + dx;
-    const ny = hy + dy;
-    if (nx < 0 || ny < 0 || nx >= map.width || ny >= map.height) continue;
-    if (map.tiles[ny][nx] === 'block') return true;
-    if (map.chests.some(c => c.hp > 0 && c.position.x === nx && c.position.y === ny)) return true;
-    if (enemies?.some(e => e.hp > 0 && Math.round(e.position.x) === nx && Math.round(e.position.y) === ny)) return true;
-  }
-  return false;
-}
-
-function findNearestTarget(
-  map: GameMap,
-  hero: Hero,
-  bombs: Bomb[],
-  chests: Chest[],
-  enemies?: { position: { x: number; y: number }; hp: number; isBoss?: boolean }[],
-  isStoryMode?: boolean
-): { x: number; y: number } | null {
-  const hx = Math.round(hero.position.x);
-  const hy = Math.round(hero.position.y);
-  
-  const candidates: { x: number; y: number; priority: number; dist: number }[] = [];
-
-  // In story mode, enemies are the PRIMARY objective
-  if (enemies && enemies.length > 0) {
-    const aliveEnemies = enemies.filter(e => e.hp > 0);
-    
-    if (aliveEnemies.length > 0) {
-      // Sort enemies by distance to hero - chase the closest one
-      const sortedEnemies = aliveEnemies
-        .map(e => ({
-          enemy: e,
-          dist: Math.abs(Math.round(e.position.x) - hx) + Math.abs(Math.round(e.position.y) - hy)
-        }))
-        .sort((a, b) => a.dist - b.dist);
-
-      // For each enemy (prioritize closest), find all adjacent bombing spots
-      for (let ei = 0; ei < sortedEnemies.length; ei++) {
-        const { enemy, dist: enemyDist } = sortedEnemies[ei];
-        const ex = Math.round(enemy.position.x);
-        const ey = Math.round(enemy.position.y);
-        
-        // Priorité maximale au boss pour éviter les blocages de niveau.
-        // Puis ennemi le plus proche, puis les autres.
-        const priority = enemy.isBoss ? -3 : (ei === 0 ? -2 : -1);
-        
-        for (const [ox, oy] of [[0, -1], [0, 1], [-1, 0], [1, 0]]) {
-          const tx = ex + ox;
-          const ty = ey + oy;
-          if (tx >= 0 && ty >= 0 && tx < map.width && ty < map.height && map.tiles[ty][tx] === 'floor') {
-            const dist = Math.abs(tx - hx) + Math.abs(ty - hy);
-            candidates.push({ x: tx, y: ty, priority, dist });
-          }
-        }
-        
-        // Also consider tiles in bomb range (not just adjacent) for ranged heroes
-        if (hero.stats.rng > 1) {
-          for (const [dx, dy] of [[0, -1], [0, 1], [-1, 0], [1, 0]]) {
-            for (let r = 2; r <= hero.stats.rng; r++) {
-              const tx = ex + dx * r;
-              const ty = ey + dy * r;
-              if (tx < 0 || ty < 0 || tx >= map.width || ty >= map.height) break;
-              if (map.tiles[ty][tx] === 'wall') break;
-              if (map.tiles[ty][tx] === 'block') break;
-              if (map.tiles[ty][tx] === 'floor') {
-                const dist = Math.abs(tx - hx) + Math.abs(ty - hy);
-                candidates.push({ x: tx, y: ty, priority: priority + 1, dist });
-              }
-            }
-          }
-        }
-      }
-      
-      // In story mode with alive enemies, skip blocks/chests — focus on killing
-      if (isStoryMode) {
-        candidates.sort((a, b) => a.priority - b.priority || a.dist - b.dist);
-        for (const candidate of candidates.slice(0, 20)) {
-          const path = findPath(map, { x: hx, y: hy }, { x: candidate.x, y: candidate.y }, bombs);
-          if (path && path.length > 1) {
-            return { x: candidate.x, y: candidate.y };
-          }
-        }
-        // If can't reach any enemy-adjacent tile, fall through to blocks/chests
-      }
-    }
-  }
-
-  // Priority 0: adjacent to alive chests
-  for (const chest of chests) {
-    if (chest.hp <= 0) continue;
-    for (const [ox, oy] of [[0, -1], [0, 1], [-1, 0], [1, 0]]) {
-      const tx = chest.position.x + ox;
-      const ty = chest.position.y + oy;
-      if (tx >= 0 && ty >= 0 && tx < map.width && ty < map.height && map.tiles[ty][tx] === 'floor') {
-        const dist = Math.abs(tx - hx) + Math.abs(ty - hy);
-        candidates.push({ x: tx, y: ty, priority: 0, dist });
-      }
-    }
-  }
-
-  // Priority 1: adjacent to blocks
-  for (let y = 1; y < map.height - 1; y++) {
-    for (let x = 1; x < map.width - 1; x++) {
-      if (map.tiles[y][x] === 'block') {
-        for (const [ox, oy] of [[0, -1], [0, 1], [-1, 0], [1, 0]]) {
-          const ax = x + ox;
-          const ay = y + oy;
-          if (ax >= 0 && ay >= 0 && ax < map.width && ay < map.height && map.tiles[ay][ax] === 'floor') {
-            const dist = Math.abs(ax - hx) + Math.abs(ay - hy);
-            candidates.push({ x: ax, y: ay, priority: 1, dist });
-          }
-        }
-      }
-    }
-  }
-
-  // Sort by priority first, then distance
-  candidates.sort((a, b) => a.priority - b.priority || a.dist - b.dist);
-
-  // Try pathfinding to the best candidates
-  for (const candidate of candidates.slice(0, 20)) {
-    const path = findPath(map, { x: hx, y: hy }, { x: candidate.x, y: candidate.y }, bombs);
-    if (path && path.length > 1) {
-      return { x: candidate.x, y: candidate.y };
-    }
-  }
-
-  // Fallback: random walkable tile
-  const floorTiles: { x: number; y: number }[] = [];
-  for (let y = 1; y < map.height - 1; y++) {
-    for (let x = 1; x < map.width - 1; x++) {
-      if (map.tiles[y][x] === 'floor' && (x !== hx || y !== hy)) {
-        floorTiles.push({ x, y });
-      }
-    }
-  }
-  if (floorTiles.length > 0) {
-    // Try a few random ones
-    for (let i = 0; i < 5; i++) {
-      const t = floorTiles[Math.floor(Math.random() * floorTiles.length)];
-      const path = findPath(map, { x: hx, y: hy }, t, bombs);
-      if (path && path.length > 1) return t;
-    }
-  }
-
-  return null;
-}
-
-export function buildDangerSet(bombs: Bomb[], map: GameMap): Set<string> {
-  const danger = new Set<string>();
-  for (const bomb of bombs) {
-    for (const t of getExplosionTiles(map, bomb.position, bomb.range)) {
-      danger.add(`${t.x},${t.y}`);
-    }
-  }
-  return danger;
-}
-
-function isInDangerZone(
-  pos: { x: number; y: number },
-  bombs: Bomb[],
-  map: GameMap,
-  precomputedDanger?: Set<string>
-): boolean {
-  if (precomputedDanger) {
-    return precomputedDanger.has(`${pos.x},${pos.y}`);
-  }
-  for (const bomb of bombs) {
-    const explosionTiles = getExplosionTiles(map, bomb.position, bomb.range);
-    if (explosionTiles.some(t => t.x === pos.x && t.y === pos.y)) {
-      return true;
-    }
-  }
-  return false;
-}
-
-function findSafeSpot(
-  map: GameMap,
-  hero: Hero,
-  bombs: Bomb[],
-  dangerSet?: Set<string>
-): { x: number; y: number } | null {
-  const startX = Math.round(hero.position.x);
-  const startY = Math.round(hero.position.y);
-  const visited = new Set<string>();
-  const queue: { x: number; y: number }[] = [{ x: startX, y: startY }];
-  visited.add(`${startX},${startY}`);
-  const bombSet = new Set(bombs.map(b => `${b.position.x},${b.position.y}`));
-  const danger = dangerSet ?? buildDangerSet(bombs, map);
-
-  while (queue.length > 0) {
-    const current = queue.shift()!;
-
-    if (!danger.has(`${current.x},${current.y}`) && (current.x !== startX || current.y !== startY)) {
-      return current;
-    }
-
-    for (const [dx, dy] of [[0, -1], [0, 1], [-1, 0], [1, 0]]) {
-      const nx = current.x + dx;
-      const ny = current.y + dy;
-      const key = `${nx},${ny}`;
-      if (!visited.has(key) && nx >= 0 && ny >= 0 && nx < map.width && ny < map.height) {
-        if (map.tiles[ny][nx] === 'floor' && !bombSet.has(`${nx},${ny}`)) {
-          visited.add(key);
-          queue.push({ x: nx, y: ny });
-        }
-      }
-    }
-  }
-
-  return null;
-}
-
 export function tickGame(state: GameState, deltaMs: number): GameState {
   if (!state.isRunning || state.isPaused || state.mapCompleted) return state;
 
@@ -457,7 +52,7 @@ export function tickGame(state: GameState, deltaMs: number): GameState {
   let newState = { ...state };
   let map = { ...newState.map, tiles: newState.map.tiles.map(row => [...row]), chests: [...newState.map.chests] };
   let heroes = newState.heroes.map(h => ({ ...h, position: { ...h.position } }));
-  // Pré-calculer les clan skills une seule fois par tick (#271)
+  // Pre-calculer les clan skills une seule fois par tick (#271)
   const activeClanSkills = getActiveClanSkills(heroes);
   let bombs = [...newState.bombs];
   let explosions = [...newState.explosions];
@@ -560,7 +155,7 @@ export function tickGame(state: GameState, deltaMs: number): GameState {
     .map(e => ({ ...e, timer: e.timer - dt }))
     .filter(e => e.timer > 0);
 
-  // Pré-calculer les tuiles de danger (bombes) une seule fois par tick (#272)
+  // Pre-calculer les tuiles de danger (bombes) une seule fois par tick (#272)
   const dangerSet = buildDangerSet(bombs, map);
 
   // Update heroes
@@ -731,7 +326,7 @@ export function tickGame(state: GameState, deltaMs: number): GameState {
     // Idle - find new target
     if (hero.state === 'idle') {
       hero.stuckTimer += dt;
-      
+
       // Re-snap position to grid to prevent floating point drift
       hero.position.x = Math.round(hero.position.x);
       hero.position.y = Math.round(hero.position.y);
@@ -789,7 +384,7 @@ export function tickGame(state: GameState, deltaMs: number): GameState {
   const mapCompleted = !state.isStoryMode && !hasChests && map.chests.length > 0;
 
   if (mapCompleted && !state.mapCompleted) {
-    eventLog.push(`🎉 Carte complétée! +${coinsEarned} BC au total!`);
+    eventLog.push(`Carte completee! +${coinsEarned} BC au total!`);
   }
 
   return {
