@@ -1,5 +1,7 @@
-import { GameMap } from './types';
+import { GameMap, Bomb, HeroFamilyId } from './types';
 import { Enemy, Boss, ENEMY_CONFIG, BOSS_CONFIG, BossType, EnemyType } from './storyTypes';
+import { getExplosionTiles, findPath } from './engine';
+import { getClanAffinityMultiplier } from './clanSystem';
 
 let enemyIdCounter = 1000;
 const genEnemyId = () => `enemy_${enemyIdCounter++}`;
@@ -305,7 +307,8 @@ export function damageEnemiesFromExplosion(
   enemies: Enemy[],
   explosionTiles: { x: number; y: number }[],
   power: number,
-  heroId?: string
+  heroId?: string,
+  heroFamily?: HeroFamilyId
 ): { enemies: Enemy[]; kills: number; totalDamage: number } {
   let kills = 0;
   let totalDamage = 0;
@@ -313,9 +316,11 @@ export function damageEnemiesFromExplosion(
     const ex = Math.round(e.position.x);
     const ey = Math.round(e.position.y);
     if (explosionTiles.some(t => t.x === ex && t.y === ey)) {
-      const damage = Math.min(e.hp, power);
+      const affinityMult = getClanAffinityMultiplier(heroFamily, e.type);
+      const effectivePower = Math.round(power * affinityMult);
+      const damage = Math.min(e.hp, effectivePower);
       totalDamage += damage;
-      const ne = { ...e, hp: e.hp - power, stunTimer: STUN_DURATION };
+      const ne = { ...e, hp: e.hp - effectivePower, stunTimer: STUN_DURATION };
       if (ne.hp <= 0) kills++;
       return ne;
     }
