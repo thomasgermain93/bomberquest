@@ -14,6 +14,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: '2026-03-22',
     title: 'Mises à jour récentes',
     changes: [
+      { type: 'feature', description: '[GAMEPLAY] TODO #168 : implémenter chain_chance pour le clan Arcane-Circuit (#365)' },
       { type: 'feature', description: '[TEST] Ajouter tests unitaires pour useMarketplace.ts et MarketplacePage (#370)' },
       { type: 'feature', description: '[BUG] ui-qa-radar : data-testid manquants — tab-fusion et tab-heroes non trouvés (#358)' },
       { type: 'feature', description: 'fix: lint cleanup — unused vars, console.log DEV-only, worktrees (#379)' },
