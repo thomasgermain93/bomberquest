@@ -9,48 +9,38 @@ import { useSummonLogic } from '@/hooks/useSummonLogic';
 import { useFusionLogic, MERGE_RECIPES } from '@/hooks/useFusionLogic';
 import GameGrid from '@/components/GameGrid';
 import CombatHeroPanel from '@/components/CombatHeroPanel';
-import HeroCard from '@/components/HeroCard';
-import HeroCollectionStats from '@/components/HeroCollectionStats';
 import SummonModal from '@/components/SummonModal';
-import HeroUpgradeModal from '@/components/HeroUpgradeModal';
-import HeroDetailInline from '@/components/HeroDetailInline';
 import HeroPickerModal from '@/components/HeroPickerModal';
-import HeroPickerBottomSheet from '@/components/HeroPickerBottomSheet';
 import StoryMode from '@/components/StoryMode';
-import { GameState, Hero, MAP_CONFIGS, PlayerData, RARITY_CONFIG, RARITY_ORDER, sortByRarity, Rarity, HERO_NAMES, HERO_FAMILIES, HERO_FAMILY_MAP, HeroFamilyId, MAX_LEVEL_BY_RARITY } from '@/game/types';
+import { GameState, Hero, MAP_CONFIGS, PlayerData, RARITY_CONFIG, RARITY_ORDER, Rarity, HERO_NAMES, HeroFamilyId } from '@/game/types';
 import { generateMap, tickGame } from '@/game/engine';
 // summonHero and generateHero are now used inside useSummonLogic / useFusionLogic
 import { loadPlayerData, savePlayerData, getDefaultPlayerData, saveStoryProgress, loadStoryProgress } from '@/game/saveSystem';
 import { getUpgradeCost, upgradeHero, ascendHero, getAscensionCost, countDuplicates, upgradeSkillWithDuplicate } from '@/game/upgradeSystem';
-import { trackCombatVictory, trackLevelUp, trackChestsOpened, trackBossDefeated, claimAchievementReward, AchievementDefinition, ACHIEVEMENTS } from '@/game/achievements';
+import { trackCombatVictory, trackLevelUp, trackChestsOpened, trackBossDefeated, AchievementDefinition } from '@/game/achievements';
 import { DailyQuestData, loadDailyQuests, saveDailyQuests, generateDailyQuests, updateQuestProgress, ALL_CLAIMED_BONUS, ALL_CLAIMED_XP_BONUS } from '@/game/questSystem';
 import { StoryProgress, StoryStage, BOSS_LEVEL_BY_TYPE, BossType } from '@/game/storyTypes';
 import { getHeroFamily, getActiveClanSkills } from '@/game/clanSystem';
 import { spawnEnemy, spawnBoss, tickEnemies, tickBoss, damageEnemiesFromExplosion, damageBossFromExplosion, checkEnemyHeroCollision, checkBossHeroCollision } from '@/game/enemyAI';
 import { STORY_REGIONS } from '@/game/storyData';
-import { getExplosionTiles } from '@/game/engine';
-import { generateShardRewards, applyShardRewards, ShardReward, generateUniversalShardReward } from '@/game/shardRewardSystem';
+import { ShardReward, generateUniversalShardReward } from '@/game/shardRewardSystem';
 import { recycleHeroes } from '@/game/recycleSystem';
-import RecyclePanel from '@/components/RecyclePanel';
 import MarketplacePage from '@/components/marketplace/MarketplacePage';
-import DailyQuests from '@/components/DailyQuests';
-import Achievements from '@/components/Achievements';
-import PlayerStats from '@/components/PlayerStats';
-import XpBar from '@/components/XpBar';
+import SummonPage from '@/pages/game/SummonPage';
+import HeroesPage from '@/pages/game/HeroesPage';
+import ProgressionPage from '@/pages/game/ProgressionPage';
+import ForgePage from '@/pages/game/ForgePage';
 import PixelIcon from '@/components/PixelIcon';
 import HeroAvatar from '@/components/HeroAvatar';
 import SlimHeader from '@/components/SlimHeader';
 import MainNav from '@/components/MainNav';
 import TeamPresets, { TeamPreset } from '@/components/TeamPresets';
 import PixelLoader from '@/components/PixelLoader';
-import EmptyState from '@/components/EmptyState';
-import { Users, Sparkles, Swords, Map as MapIcon, Trophy, Coins, Play, Pause, DoorOpen, Check, Scroll, FastForward, BookOpen, Shield, Skull, Lock as LockIcon, Hammer, ArrowDown, Gem, Filter, ChevronDown, Zap, Volume2, VolumeX, X } from 'lucide-react';
-import PityTracker from '@/components/PityTracker';
+import { Users, Sparkles, Swords, Map as MapIcon, Trophy, Coins, Play, Pause, DoorOpen, Check, Scroll, FastForward, Shield, Skull, Lock as LockIcon, Filter, X } from 'lucide-react';
 import VictoryOverlay from '@/components/VictoryOverlay';
 import DefeatOverlay from '@/components/DefeatOverlay';
 import TutorialOverlay from '@/components/TutorialOverlay';
 import { useTutorial } from '@/hooks/useTutorial';
-import DailyResetTimer from '@/components/DailyResetTimer';
 import { SFX, isMuted, setMuted } from '@/game/sfx';
 import { toast } from 'sonner';
 
@@ -1129,47 +1119,6 @@ const Index = () => {
     return getActiveClanSkills(activeHeroes);
   }, [player.heroes, selectedHeroes]);
 
-  // Codex rarity grouping constants
-  const CODEX_RARITY_ORDER: Rarity[] = ['super-legend', 'legend', 'epic', 'super-rare', 'rare', 'common'];
-  const CODEX_RARITY_LABEL: Record<Rarity, string> = {
-    'super-legend': 'Super Légende',
-    'legend': 'Légende',
-    'epic': 'Épique',
-    'super-rare': 'Super Rare',
-    'rare': 'Rare',
-    'common': 'Commun',
-  };
-  const CODEX_RARITY_COLOR: Record<Rarity, string> = {
-    'super-legend': 'text-purple-400',
-    'legend': 'text-yellow-400',
-    'epic': 'text-orange-400',
-    'super-rare': 'text-blue-400',
-    'rare': 'text-green-400',
-    'common': 'text-muted-foreground',
-  };
-
-  const heroRarityOrder: Rarity[] = ['common', 'rare', 'super-rare', 'epic', 'legend', 'super-legend'];
-  const codexByName = HERO_NAMES.map((heroName) => {
-    const normalized = heroName.toLowerCase();
-    const ownedVariants = player.heroes.filter((hero) => hero.name.split(' ')[0].toLowerCase() === normalized);
-    const unlocked = ownedVariants.length > 0;
-    const highestOwned = ownedVariants.sort(
-      (a, b) => heroRarityOrder.indexOf(b.rarity) - heroRarityOrder.indexOf(a.rarity)
-    )[0];
-
-    return {
-      key: normalized,
-      displayName: heroName,
-      unlocked,
-      ownedCount: ownedVariants.length,
-      rarity: highestOwned?.rarity ?? 'common',
-      heroPreviewId: normalized,
-    };
-  });
-
-  const codexUnlockedCount = codexByName.filter((entry) => entry.unlocked).length;
-  const codexTotalCount = codexByName.length;
-
   const handleClaimQuest = (questId: string) => {
     const quest = dailyQuests.quests.find(q => q.id === questId);
     if (!quest || !quest.completed || quest.claimed) return;
@@ -1257,477 +1206,42 @@ const Index = () => {
       >
 
         {/* PAGE 0 — Invoquer */}
-        <div className="w-1/6 h-full overflow-y-auto pb-nav md:pl-16">
-          <div className="p-4 max-w-2xl mx-auto space-y-4">
-            {/* Tabs BC / Shards */}
-            <div className="flex gap-2">
-              <button onClick={() => setSummonTab('coins')} className={`flex-1 pixel-btn font-pixel text-[8px] flex items-center justify-center gap-2 ${summonTab === 'coins' ? 'pixel-btn-gold' : 'pixel-btn-secondary'}`}>
-                <Coins size={12} /> BomberCoins
-              </button>
-              <button onClick={() => setSummonTab('shards')} className={`flex-1 pixel-btn font-pixel text-[8px] flex items-center justify-center gap-2 ${summonTab === 'shards' ? 'pixel-btn-gold' : 'pixel-btn-secondary'}`}>
-                <Gem size={12} /> Fragments
-              </button>
-            </div>
-
-            {/* BC Tab */}
-            {summonTab === 'coins' && (
-              <div className="pixel-border bg-card p-4 space-y-3">
-                <h3 className="font-pixel text-[9px] text-foreground flex items-center gap-2"><Sparkles size={12} /> INVOCATION BC</h3>
-                <div className="grid grid-cols-3 gap-2">
-                  {([['single', '×1', 1000], ['x10', '×10', 9000], ['x100', '×100', 80000]] as const).map(([type, label, cost]) => (
-                    <button key={type} onClick={() => handleSummon(type)} disabled={player.bomberCoins < cost}
-                      className="pixel-btn pixel-btn-gold font-pixel text-[8px] flex flex-col items-center gap-1 disabled:opacity-40">
-                      <span>{label}</span>
-                      <span className="text-[7px]">{cost.toLocaleString('fr-FR')} BC</span>
-                    </button>
-                  ))}
-                </div>
-                <PityTracker pitiCounts={{
-                  rare: player.pityCounters.rare,
-                  superRare: player.pityCounters.superRare,
-                  epic: player.pityCounters.epic,
-                  legend: player.pityCounters.legend,
-                }} />
-              </div>
-            )}
-
-            {/* Shards Tab */}
-            {summonTab === 'shards' && (
-              <div className="pixel-border bg-card p-4 space-y-3">
-                <h3 className="font-pixel text-[9px] text-foreground flex items-center gap-2"><Gem size={12} /> INVOCATION FRAGMENTS</h3>
-                <div className="grid grid-cols-3 gap-1">
-                  {(['rare', 'super-rare', 'epic', 'legend', 'super-legend'] as Rarity[]).map(r => {
-                    const costs: Record<string, number> = { rare: 50, 'super-rare': 150, epic: 400, legend: 1000, 'super-legend': 2500 };
-                    return (
-                      <button key={r} onClick={() => setSelectedShardRarity(r)}
-                        className={`pixel-border p-2 font-pixel text-[7px] text-center transition-all ${selectedShardRarity === r ? 'ring-2 ring-primary bg-primary/10' : 'bg-muted/30'}`}
-                        style={{ color: `hsl(var(--game-rarity-${r}))` }}>
-                        {RARITY_CONFIG[r].label}<br />
-                        <span className="text-muted-foreground">{costs[r]} 💎</span>
-                      </button>
-                    );
-                  })}
-                </div>
-                <button onClick={handleSummonShards} disabled={player.universalShards < ({ rare: 50, 'super-rare': 150, epic: 400, legend: 1000, 'super-legend': 2500 }[selectedShardRarity] || 0)}
-                  className="pixel-btn pixel-btn-gold w-full font-pixel text-[8px] flex items-center justify-center gap-2 disabled:opacity-40">
-                  <Sparkles size={14} /> INVOQUER — {({ rare: 50, 'super-rare': 150, epic: 400, legend: 1000, 'super-legend': 2500 }[selectedShardRarity])} 💎
-                </button>
-              </div>
-            )}
-
-            {/* Dernière invocation */}
-            {lastSummoned && (
-              <div className="pixel-border bg-card p-4 relative overflow-hidden">
-                {/* Flash de fond blanc au nouveau batch */}
-                <AnimatePresence>
-                  {showSummonFlash && (
-                    <motion.div
-                      key="summon-flash"
-                      initial={{ opacity: 1 }}
-                      animate={{ opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="absolute inset-0 bg-white pointer-events-none z-10"
-                    />
-                  )}
-                </AnimatePresence>
-                <h3 className="font-pixel text-[9px] text-foreground mb-3">DERNIÈRE INVOCATION</h3>
-                {(() => {
-                  const RARITY_BADGE_COLORS: Record<string, string> = {
-                    common: 'text-muted-foreground',
-                    rare: 'text-green-400',
-                    'super-rare': 'text-blue-400',
-                    epic: 'text-orange-400',
-                    legend: 'text-yellow-400',
-                    'super-legend': 'text-purple-400',
-                  };
-                  const RARITY_GLOW_COLORS: Record<string, string> = {
-                    'super-rare': 'rgba(100,160,255,0.5)',
-                    epic: 'rgba(255,136,0,0.55)',
-                    legend: 'rgba(255,200,0,0.6)',
-                    'super-legend': 'rgba(200,80,255,0.65)',
-                  };
-                  const HIGH_RARITIES = ['epic', 'legend', 'super-legend'];
-                  const GLOW_RARITIES = ['super-rare', 'epic', 'legend', 'super-legend'];
-
-                  if (summonedBatch.length > 1) {
-                    return (
-                      <div className="grid grid-cols-5 gap-1">
-                        <AnimatePresence>
-                          {summonedBatch.slice(0, 10).map((h, i) => {
-                            const isHigh = HIGH_RARITIES.includes(h.rarity);
-                            const isGlow = GLOW_RARITIES.includes(h.rarity);
-                            const glowColor = RARITY_GLOW_COLORS[h.rarity];
-                            return (
-                              <motion.div
-                                key={h.id}
-                                initial={{ opacity: 0, y: 20, scale: 0.8 }}
-                                animate={isGlow ? {
-                                  opacity: 1, y: 0, scale: 1,
-                                  boxShadow: [
-                                    `0 0 6px ${glowColor}`,
-                                    `0 0 14px ${glowColor}`,
-                                    `0 0 6px ${glowColor}`,
-                                  ],
-                                } : { opacity: 1, y: 0, scale: 1 }}
-                                transition={isGlow ? {
-                                  opacity: { delay: i * 0.08, duration: 0.3 },
-                                  y: { delay: i * 0.08, duration: 0.3 },
-                                  scale: { delay: i * 0.08, duration: 0.3 },
-                                  boxShadow: { delay: i * 0.08 + 0.3, duration: 1.2, repeat: Infinity, ease: 'easeInOut' },
-                                } : { delay: i * 0.08, duration: 0.3 }}
-                                className={`flex flex-col items-center gap-1 p-1 rounded-md ${isHigh ? 'ring-2 ring-game-gold/60' : ''}`}
-                              >
-                                <HeroAvatar heroId={h.id} heroName={h.name} rarity={h.rarity} size={36} />
-                                <p className={`font-pixel text-[6px] truncate w-full text-center ${RARITY_BADGE_COLORS[h.rarity] || 'text-muted-foreground'}`}>
-                                  {RARITY_CONFIG[h.rarity].label}
-                                </p>
-                              </motion.div>
-                            );
-                          })}
-                        </AnimatePresence>
-                      </div>
-                    );
-                  }
-
-                  const h = lastSummoned;
-                  const isHigh = HIGH_RARITIES.includes(h.rarity);
-                  const isGlow = GLOW_RARITIES.includes(h.rarity);
-                  const glowColor = RARITY_GLOW_COLORS[h.rarity];
-                  return (
-                    <motion.div
-                      key={h.id}
-                      initial={{ opacity: 0, y: 20, scale: 0.8 }}
-                      animate={isGlow ? {
-                        opacity: 1, y: 0, scale: 1,
-                        boxShadow: [
-                          `0 0 8px ${glowColor}`,
-                          `0 0 20px ${glowColor}`,
-                          `0 0 8px ${glowColor}`,
-                        ],
-                      } : { opacity: 1, y: 0, scale: 1 }}
-                      transition={isGlow ? {
-                        opacity: { duration: 0.3 },
-                        y: { duration: 0.3 },
-                        scale: { duration: 0.3 },
-                        boxShadow: { delay: 0.3, duration: 1.4, repeat: Infinity, ease: 'easeInOut' },
-                      } : { duration: 0.3 }}
-                      className={`flex flex-col items-center gap-2 p-2 rounded-md ${isHigh ? 'ring-2 ring-game-gold/60' : ''}`}
-                    >
-                      <HeroAvatar heroId={h.id} heroName={h.name} rarity={h.rarity} size={64} />
-                      <p className="font-pixel text-[9px] text-foreground">{h.name}</p>
-                      <p className={`font-pixel text-[8px] ${RARITY_BADGE_COLORS[h.rarity] || 'text-muted-foreground'}`}>
-                        {RARITY_CONFIG[h.rarity].label}
-                      </p>
-                    </motion.div>
-                  );
-                })()}
-              </div>
-            )}
-          </div>
-        </div>
+        <SummonPage
+          player={player}
+          summonTab={summonTab}
+          setSummonTab={setSummonTab}
+          selectedShardRarity={selectedShardRarity}
+          setSelectedShardRarity={setSelectedShardRarity}
+          handleSummon={handleSummon}
+          handleSummonShards={handleSummonShards}
+          lastSummoned={lastSummoned}
+          summonedBatch={summonedBatch}
+          showSummonFlash={showSummonFlash}
+          SHARD_COSTS={SHARD_COSTS}
+        />
 
         {/* PAGE 1 — Héros */}
-        <div className="w-1/6 h-full overflow-y-auto pb-nav md:pl-16">
-          <div className="p-4 max-w-6xl mx-auto">
-            {upgradeHeroId && upgradeHeroData ? (
-              /* VUE DÉTAIL HÉROS — pleine page */
-              <HeroDetailInline
-                hero={upgradeHeroData}
-                coins={player.bomberCoins}
-                allHeroes={player.heroes}
-                onBack={() => setUpgradeHeroId(null)}
-                onUpgrade={handleUpgrade}
-                onAscend={handleAscend}
-              />
-            ) : (
-              <>
-            {/* Sub-tabs */}
-            <div className="flex gap-1 mb-4 sticky top-0 bg-background/95 backdrop-blur py-2 z-10">
-              {(['collection', 'codex', 'equipes'] as const).map(tab => (
-                <button key={tab} onClick={() => setHeroesTab(tab)}
-                  className={`flex-1 font-pixel text-[8px] py-2 rounded transition-colors ${
-                    heroesTab === tab ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                  }`}>
-                  {tab === 'collection' ? 'Collection' : tab === 'codex' ? 'Codex' : 'Équipes'}
-                </button>
-              ))}
-            </div>
-
-            {/* Tab Collection */}
-            {heroesTab === 'collection' && (
-              <motion.div variants={pixelFade} initial="hidden" animate="visible" className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h2 className="font-pixel text-xs text-foreground flex items-center gap-2">
-                    <Users size={16} /> TOUS LES HÉROS ({player.heroes.length})
-                  </h2>
-                </div>
-
-                <HeroCollectionStats heroes={player.heroes} />
-
-                <div className="pixel-border bg-card">
-                  <button
-                    onClick={() => setFiltersExpanded(p => !p)}
-                    className="flex items-center justify-between w-full p-3"
-                  >
-                    <span className="font-pixel text-[9px] text-foreground flex items-center gap-2">
-                      <Filter size={12} /> TRIER / FILTRER
-                      {(heroFilters.rarity !== 'all' || heroFilters.level !== 'all' || heroFilters.sortBy !== 'rarity' || heroFilters.showDuplicatesOnly || heroFilters.showLockedOnly) && (
-                        <span className="text-[7px] text-primary">● actifs</span>
-                      )}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <span className="font-pixel text-[7px] text-muted-foreground">{filteredHeroes.length}/{player.heroes.length}</span>
-                      <ChevronDown size={14} className={`text-muted-foreground transition-transform ${filtersExpanded ? 'rotate-180' : ''}`} />
-                    </div>
-                  </button>
-
-                  {filtersExpanded && (
-                    <div className="px-3 pb-3 space-y-3 border-t border-border">
-                      {/* Tri */}
-                      <div className="pt-2 space-y-1.5">
-                        <p className="font-pixel text-[7px] text-muted-foreground uppercase">Trier par</p>
-                        <div className="flex gap-1.5 flex-wrap">
-                          {([['rarity', 'Rareté'], ['level', 'Niveau']] as const).map(([val, label]) => (
-                            <button
-                              key={val}
-                              onClick={() => setHeroFilters(f => ({ ...f, sortBy: val }))}
-                              className={`font-pixel text-[7px] px-2.5 py-1 border transition-colors ${
-                                heroFilters.sortBy === val
-                                  ? 'border-primary text-primary bg-primary/15'
-                                  : 'border-border text-muted-foreground bg-muted/30 hover:border-primary/50'
-                              }`}
-                            >
-                              {label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Filtre rareté */}
-                      <div className="space-y-1.5">
-                        <p className="font-pixel text-[7px] text-muted-foreground uppercase">Rareté</p>
-                        <div className="flex gap-1 flex-wrap">
-                          {(['all', ...Object.keys(RARITY_CONFIG)] as ('all' | Rarity)[]).map(r => (
-                            <button
-                              key={r}
-                              onClick={() => setHeroFilters(f => ({ ...f, rarity: r }))}
-                              className={`font-pixel text-[7px] px-2 py-0.5 border transition-colors ${
-                                heroFilters.rarity === r
-                                  ? 'border-primary text-primary bg-primary/15'
-                                  : 'border-border text-muted-foreground bg-muted/30 hover:border-primary/50'
-                              }`}
-                            >
-                              {r === 'all' ? 'Tous' : RARITY_CONFIG[r as Rarity].label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Filtre niveau */}
-                      <div className="space-y-1.5">
-                        <p className="font-pixel text-[7px] text-muted-foreground uppercase">Niveau</p>
-                        <div className="flex gap-1 flex-wrap">
-                          {(['all', '1-20', '21-40', '41-60', '61+'] as HeroLevelFilter[]).map(l => (
-                            <button
-                              key={l}
-                              onClick={() => setHeroFilters(f => ({ ...f, level: l }))}
-                              className={`font-pixel text-[7px] px-2 py-0.5 border transition-colors ${
-                                heroFilters.level === l
-                                  ? 'border-primary text-primary bg-primary/15'
-                                  : 'border-border text-muted-foreground bg-muted/30 hover:border-primary/50'
-                              }`}
-                            >
-                              {l === 'all' ? 'Tous' : `Niv.${l}`}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Toggles + reset */}
-                      <div className="flex gap-1.5 flex-wrap items-center pt-1 border-t border-border">
-                        <button
-                          onClick={() => setHeroFilters(f => ({ ...f, showDuplicatesOnly: !f.showDuplicatesOnly }))}
-                          className={`font-pixel text-[7px] px-2 py-1 border transition-colors ${
-                            heroFilters.showDuplicatesOnly ? 'border-orange-400 text-orange-400 bg-orange-400/15' : 'border-border text-muted-foreground bg-muted/30'
-                          }`}
-                        >
-                          Doublons
-                        </button>
-                        <button
-                          onClick={() => setHeroFilters(f => ({ ...f, showLockedOnly: !f.showLockedOnly }))}
-                          className={`font-pixel text-[7px] px-2 py-1 border transition-colors ${
-                            heroFilters.showLockedOnly ? 'border-yellow-400 text-yellow-400 bg-yellow-400/15' : 'border-border text-muted-foreground bg-muted/30'
-                          }`}
-                        >
-                          🔒 Lockés
-                        </button>
-                        <button
-                          onClick={() => setHeroFilters(DEFAULT_HERO_FILTERS)}
-                          className="pixel-btn pixel-btn-secondary font-pixel text-[7px] px-2 py-1 min-h-0 ml-auto"
-                        >
-                          Réinitialiser
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {filteredHeroes.length === 0 ? (
-                  <EmptyState
-                    icon={Filter}
-                    title="Aucun héros ne correspond"
-                    description="Essayez d'élargir un critère ou réinitialisez les filtres."
-                    action={{
-                      label: 'Réinitialiser les filtres',
-                      onClick: () => setHeroFilters(DEFAULT_HERO_FILTERS),
-                      variant: 'secondary'
-                    }}
-                  />
-                ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                    {filteredHeroes.map(hero => (
-                      <HeroCard key={hero.id} hero={hero} onClick={() => setUpgradeHeroId(hero.id)} />
-                    ))}
-                  </div>
-                )}
-              </motion.div>
-            )}
-
-            {/* Tab Codex */}
-            {heroesTab === 'codex' && (
-              <motion.div variants={pixelFade} initial="hidden" animate="visible" className="space-y-4">
-                <div className="pixel-border bg-card p-4 space-y-2">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="font-pixel text-[9px] text-foreground flex items-center gap-2">
-                      <Trophy size={12} className="text-game-gold" /> Collection débloquée
-                    </p>
-                    <p className="font-pixel text-[10px] text-primary tabular-nums">
-                      {codexUnlockedCount}/{codexTotalCount}
-                    </p>
-                  </div>
-                  <div className="w-full h-2.5 bg-muted overflow-hidden">
-                    <motion.div
-                      className="h-full bg-gradient-to-r from-primary to-game-gold"
-                      initial={{ width: 0 }}
-                      animate={{ width: `${Math.max(2, Math.round((codexUnlockedCount / codexTotalCount) * 100))}%` }}
-                      transition={{ duration: 0.4 }}
-                    />
-                  </div>
-                  <p className="text-[8px] text-muted-foreground">
-                    Les héros non débloqués restent masqués (silhouette) pour garder la surprise.
-                  </p>
-                </div>
-
-                {/* Filtre clan Codex — boutons toggle pixel art */}
-                <div className="pixel-border bg-card p-3 space-y-2">
-                  <p className="font-pixel text-[7px] text-muted-foreground uppercase">Filtrer par clan</p>
-                  <div className="flex gap-1.5 flex-wrap">
-                    <button
-                      onClick={() => setCodexClanFilter('all')}
-                      className={`font-pixel text-[7px] px-2.5 py-1 border transition-colors ${
-                        codexClanFilter === 'all'
-                          ? 'border-primary text-primary bg-primary/15'
-                          : 'border-border text-muted-foreground bg-muted/30 hover:border-primary/50'
-                      }`}
-                    >
-                      Tous
-                    </button>
-                    {HERO_FAMILIES.map(family => (
-                      <button
-                        key={family.id}
-                        onClick={() => setCodexClanFilter(codexClanFilter === family.id ? 'all' : family.id)}
-                        className={`font-pixel text-[7px] px-2.5 py-1 border transition-colors ${
-                          codexClanFilter === family.id
-                            ? 'border-primary text-primary bg-primary/15'
-                            : 'border-border text-muted-foreground bg-muted/30 hover:border-primary/50'
-                        }`}
-                      >
-                        {family.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Group codex entries by rarity */}
-                <div className="space-y-6">
-                  {CODEX_RARITY_ORDER.map((rarity) => {
-                    const entriesForRarity = codexByName.filter(entry => {
-                      if (entry.rarity !== rarity) return false;
-                      if (codexClanFilter !== 'all') {
-                        const heroFamily = HERO_FAMILY_MAP[entry.key];
-                        if (heroFamily !== codexClanFilter) return false;
-                      }
-                      return true;
-                    });
-                    const unlockedCount = entriesForRarity.filter(e => e.unlocked).length;
-                    const totalCount = entriesForRarity.length;
-
-                    if (totalCount === 0) return null;
-
-                    return (
-                      <div key={rarity} className="space-y-2">
-                        {/* Rarity header */}
-                        <p className={`font-pixel text-[8px] ${CODEX_RARITY_COLOR[rarity]}`}>
-                          {CODEX_RARITY_LABEL[rarity]} ({unlockedCount}/{totalCount})
-                        </p>
-
-                        {/* Grid for this rarity */}
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                          {entriesForRarity.map((entry) => (
-                            <div
-                              key={entry.key}
-                              className={`pixel-border p-3 transition-all ${
-                                entry.unlocked ? `bg-card rarity-${entry.rarity}` : 'bg-muted/30'
-                              }`}
-                            >
-                              <div className="relative flex justify-center mb-2">
-                                <div className={entry.unlocked ? '' : 'opacity-35 grayscale blur-[0.8px]'}>
-                                  <HeroAvatar heroId={entry.heroPreviewId} rarity={entry.rarity} size={48} />
-                                </div>
-                                {!entry.unlocked && (
-                                  <div className="absolute inset-0 flex items-center justify-center">
-                                    <div className="px-2 py-0.5 rounded bg-background/80 border border-border flex items-center gap-1">
-                                      <LockIcon size={10} className="text-muted-foreground" />
-                                      <span className="font-pixel text-[7px] text-muted-foreground">LOCKED</span>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                              <p className="font-pixel text-[8px] text-center text-foreground truncate">
-                                {entry.unlocked ? entry.displayName : '???'}
-                              </p>
-                              <p className="text-[8px] text-center mt-1" style={{ color: `hsl(var(--game-rarity-${entry.rarity}))` }}>
-                                {entry.unlocked ? RARITY_CONFIG[entry.rarity].label : 'Inconnu'}
-                              </p>
-                              <p className="text-[8px] text-center text-muted-foreground mt-1 tabular-nums">
-                                {entry.unlocked ? `Possédés: ${entry.ownedCount}` : 'À invoquer'}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </motion.div>
-            )}
-
-            {/* Tab Équipes */}
-            {heroesTab === 'equipes' && (
-              <TeamPresets
-                heroes={player.heroes}
-                presets={teamPresets}
-                onSave={setTeamPresets}
-                onLoadTeam={(heroIds) => {
-                  setSelectedHeroes(new Set(heroIds));
-                  toast('Équipe chargée !', { description: 'Prête pour le combat.' });
-                }}
-              />
-            )}
-              </>
-            )}
-          </div>
-        </div>
+        <HeroesPage
+          player={player}
+          heroesTab={heroesTab}
+          setHeroesTab={setHeroesTab}
+          heroFilters={heroFilters}
+          setHeroFilters={setHeroFilters}
+          filteredHeroes={filteredHeroes}
+          filtersExpanded={filtersExpanded}
+          setFiltersExpanded={setFiltersExpanded}
+          codexClanFilter={codexClanFilter}
+          setCodexClanFilter={setCodexClanFilter}
+          upgradeHeroId={upgradeHeroId}
+          setUpgradeHeroId={setUpgradeHeroId}
+          upgradeHeroData={upgradeHeroData}
+          teamPresets={teamPresets}
+          setTeamPresets={setTeamPresets}
+          selectedHeroes={selectedHeroes}
+          setSelectedHeroes={setSelectedHeroes}
+          handleUpgrade={handleUpgrade}
+          handleAscend={handleAscend}
+        />
 
         {/* PAGE 2 — Combat */}
         <div className={`w-1/6 h-full overflow-y-auto pb-nav ${isInBattle ? '' : 'md:pl-16'}`}>
@@ -2200,321 +1714,43 @@ const Index = () => {
           </div>
         </div>
 
-        {/* PAGE 3 — Social */}
-        <div className="w-1/6 h-full overflow-y-auto pb-nav md:pl-16">
-          <div className="p-4 max-w-2xl mx-auto space-y-6">
-            {/* Player Stats */}
-            <PlayerStats
-              mapsCompleted={player.mapsCompleted}
-              heroesTotal={player.heroes.length}
-              achievementsUnlocked={ACHIEVEMENTS.filter(a => player.achievements[a.id]?.unlocked).length}
-              achievementsTotal={ACHIEVEMENTS.length}
-              storyHighestStage={storyProgress.highestStage}
-              bossesDefeated={storyProgress.bossesDefeated?.length ?? 0}
-              heroesAtMax={player.heroes.filter(h => h.level >= MAX_LEVEL_BY_RARITY[h.rarity]).length}
-            />
-
-            {/* Daily Quests */}
-            <DailyQuests
-              quests={dailyQuests}
-              onClaim={handleClaimQuest}
-              onClaimBonus={handleClaimDailyBonus}
-            />
-
-            {/* Achievements */}
-            <motion.div variants={pixelFade} initial="hidden" animate="visible" className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="font-pixel text-xs text-foreground flex items-center gap-2">
-                  <Trophy size={16} /> SUCCÈS
-                </h2>
-              </div>
-              <Achievements
-                achievements={player.achievements}
-                onClaimReward={(achievementId: string) => {
-                  const { newState, claimed, reward } = claimAchievementReward(player.achievements, achievementId);
-                  if (claimed && reward) {
-                    setPlayer(prev => ({
-                      ...prev,
-                      bomberCoins: reward.type === 'coins' ? prev.bomberCoins + reward.amount : prev.bomberCoins,
-                      universalShards: reward.type === 'shards' && !reward.rarity
-                        ? (prev.universalShards || 0) + reward.amount
-                        : (prev.universalShards || 0),
-                      shards: reward.type === 'shards' && reward.rarity
-                        ? {
-                            ...prev.shards,
-                            [reward.rarity as keyof typeof prev.shards]: (prev.shards[reward.rarity as keyof typeof prev.shards] || 0) + reward.amount,
-                          }
-                        : prev.shards,
-                      achievements: newState,
-                    }));
-                    toast('Récompense réclamée!', {
-                      description: `${reward.amount} ${reward.type === 'coins' ? 'pièces' : reward.rarity ? `shards ${reward.rarity}` : 'shards universels'}`,
-                    });
-                  }
-                }}
-                onClaimAll={(ids: string[]) => {
-                  let currentAchievements = player.achievements;
-                  let totalCoins = 0;
-                  let totalShards = 0;
-                  for (const id of ids) {
-                    const { newState, claimed, reward } = claimAchievementReward(currentAchievements, id);
-                    if (claimed && reward) {
-                      currentAchievements = newState;
-                      if (reward.type === 'coins') totalCoins += reward.amount;
-                      else totalShards += reward.amount;
-                    }
-                  }
-                  setPlayer(prev => ({
-                    ...prev,
-                    bomberCoins: prev.bomberCoins + totalCoins,
-                    universalShards: (prev.universalShards || 0) + totalShards,
-                    achievements: currentAchievements,
-                  }));
-                  toast(`${ids.length} succès récupérés !`, {
-                    description: [
-                      totalCoins > 0 ? `${totalCoins} pièces` : '',
-                      totalShards > 0 ? `${totalShards} shards` : '',
-                    ].filter(Boolean).join(' · '),
-                  });
-                }}
-              />
-            </motion.div>
-
-          </div>
-        </div>
+        {/* PAGE 3 — Progression */}
+        <ProgressionPage
+          player={player}
+          setPlayer={setPlayer}
+          dailyQuests={dailyQuests}
+          setDailyQuests={setDailyQuests}
+          storyProgress={storyProgress}
+          handleClaimQuest={handleClaimQuest}
+          handleClaimDailyBonus={handleClaimDailyBonus}
+        />
 
         {/* PAGE 4 — Forge */}
-        <div className="w-1/6 h-full overflow-y-auto pb-nav md:pl-16">
-          <div className="p-4 max-w-2xl mx-auto">
-            {/* Sub-tabs Fusion | Recyclage */}
-            <div className="flex gap-1 mb-4 sticky top-0 bg-background/95 backdrop-blur py-2 z-10">
-              {(['fusion', 'recycle'] as const).map(tab => (
-                <button key={tab} onClick={() => setForgeTab(tab)}
-                  className={`flex-1 font-pixel text-[8px] py-2 rounded transition-colors ${
-                    forgeTab === tab ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-                  }`}>
-                  {tab === 'fusion' ? 'Fusion' : 'Recyclage'}
-                </button>
-              ))}
-            </div>
-
-            {/* Fusion */}
-            {forgeTab === 'fusion' && (
-              <motion.div variants={pixelFade} initial="hidden" animate="visible" className="space-y-4">
-
-                {/* Sélecteur de recette — compact */}
-                <div className="flex gap-2 flex-wrap">
-                  {MERGE_RECIPES.map((recipe, idx) => {
-                    const { maxed } = getAvailableForMerge(recipe.from);
-                    const canMerge = maxed >= recipe.count;
-                    return (
-                      <button
-                        key={idx}
-                        onClick={() => setSelectedRecipeIdx(idx)}
-                        className={`pixel-border px-3 py-2 text-center transition-all flex-1 min-w-[80px] ${
-                          selectedRecipeIdx === idx
-                            ? 'ring-2 ring-primary bg-primary/10'
-                            : canMerge
-                              ? 'bg-muted hover:bg-muted/80'
-                              : 'bg-muted/30 opacity-60'
-                        }`}
-                      >
-                        <span className="font-pixel text-[7px]" style={{ color: `hsl(var(--game-rarity-${recipe.from}))` }}>
-                          {RARITY_CONFIG[recipe.from].label}
-                        </span>
-                        <span className="font-pixel text-[7px] text-muted-foreground mx-1">→</span>
-                        <span className="font-pixel text-[7px]" style={{ color: `hsl(var(--game-rarity-${recipe.to}))` }}>
-                          {RARITY_CONFIG[recipe.to].label}
-                        </span>
-                        <p className="text-[7px] text-muted-foreground mt-0.5">{maxed}/{recipe.count}</p>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* FORGE */}
-                <div className="pixel-border bg-card p-4 space-y-5">
-
-                  {/* Slot Principal — héros à upgrader */}
-                  <div>
-                    <p className="font-pixel text-[8px] text-muted-foreground mb-2 flex items-center gap-1">
-                      <span className="text-primary">▲</span> HÉROS À UPGRADER
-                    </p>
-                    <div className="flex justify-center">
-                      <button
-                        onClick={() => {
-                          const recipe = MERGE_RECIPES[selectedRecipeIdx];
-                          const alreadyIds = new Set(fusionSlots.slice(1).filter(Boolean).map(h => h!.id));
-                          setFusionPickerHeroes(
-                            player.heroes.filter(h =>
-                              h.rarity === recipe.from &&
-                              h.level >= RARITY_CONFIG[recipe.from].maxLevel &&
-                              !alreadyIds.has(h.id)
-                            )
-                          );
-                          handleSlotClick(0);
-                          setFusionPickerSlot(0);
-                          setFusionPickerOpen(true);
-                        }}
-                        className={`w-28 h-28 pixel-border transition-all flex flex-col items-center justify-center gap-2 ${
-                          fusionSlots[0]
-                            ? `bg-card rarity-${fusionSlots[0].rarity} hover:scale-105`
-                            : 'bg-muted/30 border-dashed hover:bg-muted/50'
-                        }`}
-                      >
-                        {fusionSlots[0] ? (
-                          <>
-                            <HeroAvatar heroId={fusionSlots[0].id} heroName={fusionSlots[0].name} rarity={fusionSlots[0].rarity} size={48} />
-                            <p className="font-pixel text-[8px] text-foreground truncate max-w-[96px]">{fusionSlots[0].name.split(' ')[0]}</p>
-                            <p className="font-pixel text-[7px]" style={{ color: `hsl(var(--game-rarity-${fusionSlots[0].rarity}))` }}>
-                              {RARITY_CONFIG[fusionSlots[0].rarity].label} · niv.{fusionSlots[0].level}
-                            </p>
-                          </>
-                        ) : (
-                          <>
-                            <span className="text-3xl text-muted-foreground/40">+</span>
-                            <p className="font-pixel text-[7px] text-muted-foreground">Choisir</p>
-                          </>
-                        )}
-                      </button>
-                    </div>
-                    {/* Flèche et résultat */}
-                    {fusionSlots[0] && (
-                      <div className="text-center mt-2">
-                        <p className="font-pixel text-[8px] text-muted-foreground">↓ fusionné en</p>
-                        <p className="font-pixel text-[9px]" style={{ color: `hsl(var(--game-rarity-${MERGE_RECIPES[selectedRecipeIdx].to}))` }}>
-                          {RARITY_CONFIG[MERGE_RECIPES[selectedRecipeIdx].to].label} · niv.{RARITY_CONFIG[MERGE_RECIPES[selectedRecipeIdx].from].maxLevel}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Séparateur */}
-                  <div className="border-t border-border/50" />
-
-                  {/* Slots Nourriture */}
-                  <div>
-                    <p className="font-pixel text-[8px] text-muted-foreground mb-3 flex items-center gap-1">
-                      <span className="text-destructive">▼</span> NOURRITURES ({fusionSlots.slice(1).filter(Boolean).length}/{MERGE_RECIPES[selectedRecipeIdx].count - 1})
-                    </p>
-                    <div className="flex flex-wrap gap-3 justify-center">
-                      {Array.from({ length: MERGE_RECIPES[selectedRecipeIdx].count - 1 }).map((_, i) => {
-                        const slotIdx = i + 1;
-                        const hero = fusionSlots[slotIdx];
-                        const alreadyIds = new Set([
-                          fusionSlots[0]?.id,
-                          ...fusionSlots.slice(1).filter((_, ii) => ii !== i).filter(Boolean).map(h => h!.id),
-                        ].filter(Boolean) as string[]);
-                        return (
-                          <div key={slotIdx} className="relative">
-                            <button
-                              onClick={() => {
-                                const recipe = MERGE_RECIPES[selectedRecipeIdx];
-                                setFusionPickerHeroes(
-                                  player.heroes.filter(h =>
-                                    h.rarity === recipe.from &&
-                                    h.level >= RARITY_CONFIG[recipe.from].maxLevel &&
-                                    !alreadyIds.has(h.id) &&
-                                    !h.isLocked
-                                  )
-                                );
-                                handleSlotClick(slotIdx);
-                                setFusionPickerSlot(slotIdx);
-                                setFusionPickerOpen(true);
-                              }}
-                              className={`w-20 h-20 pixel-border transition-all flex flex-col items-center justify-center gap-1 ${
-                                hero
-                                  ? `bg-card rarity-${hero.rarity} hover:scale-105`
-                                  : 'bg-muted/30 border-dashed hover:bg-muted/50'
-                              }`}
-                            >
-                              {hero ? (
-                                <>
-                                  <HeroAvatar heroId={hero.id} heroName={hero.name} rarity={hero.rarity} size={36} />
-                                  <p className="font-pixel text-[7px] text-foreground truncate max-w-[72px]">{hero.name.split(' ')[0]}</p>
-                                </>
-                              ) : (
-                                <span className="text-2xl text-muted-foreground/40">+</span>
-                              )}
-                            </button>
-                            {hero && (
-                              <button
-                                onClick={() => handleSlotClear(slotIdx)}
-                                className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-destructive flex items-center justify-center"
-                              >
-                                <X size={10} className="text-white" />
-                              </button>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Résultat de fusion */}
-                  {lastFusedHero && (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className="pixel-border bg-card p-4 flex flex-col items-center gap-2 text-center"
-                    >
-                      <p className="font-pixel text-[8px] text-game-gold">✨ FUSION RÉUSSIE !</p>
-                      <HeroAvatar heroId={lastFusedHero.id} heroName={lastFusedHero.name} rarity={lastFusedHero.rarity} size={48} />
-                      <p className="font-pixel text-[9px] text-foreground">{lastFusedHero.name}</p>
-                      <button onClick={() => setLastFusedHero(null)} className="pixel-btn pixel-btn-secondary font-pixel text-[8px] px-3 py-1 min-h-0">
-                        Continuer
-                      </button>
-                    </motion.div>
-                  )}
-
-                  {/* Bouton fusionner */}
-                  <div className="flex flex-col gap-2">
-                    <button
-                      onClick={executeFusionFromSlots}
-                      disabled={fusionSlots.filter(Boolean).length !== MERGE_RECIPES[selectedRecipeIdx].count}
-                      className={`pixel-btn pixel-btn-gold w-full font-pixel text-xs flex items-center justify-center gap-2 min-h-[44px] ${
-                        fusionSlots.filter(Boolean).length !== MERGE_RECIPES[selectedRecipeIdx].count ? 'opacity-50 cursor-not-allowed' : ''
-                      }`}
-                    >
-                      <Sparkles size={16} /> FUSIONNER
-                    </button>
-                    <button onClick={mergeAll} disabled={isMerging} className="pixel-btn pixel-btn-secondary font-pixel text-[8px] flex items-center justify-center gap-2 w-full">
-                      <Zap size={12} /> TOUT FUSIONNER
-                    </button>
-                  </div>
-                </div>
-
-                {/* Bottom sheet picker */}
-                <HeroPickerBottomSheet
-                  open={fusionPickerOpen}
-                  heroes={fusionPickerHeroes}
-                  selectedIds={new Set(fusionSlots.filter(Boolean).map(h => h!.id))}
-                  onSelect={(hero) => {
-                    handleHeroSelect(hero);
-                    setFusionPickerOpen(false);
-                  }}
-                  onClose={() => setFusionPickerOpen(false)}
-                  title={fusionPickerSlot === 0 ? 'CHOISIR LE HÉROS À UPGRADER' : 'CHOISIR UNE NOURRITURE'}
-                />
-
-              </motion.div>
-            )}
-
-            {/* Recyclage */}
-            {forgeTab === 'recycle' && (
-              <motion.div variants={pixelFade} initial="hidden" animate="visible" className="space-y-4">
-                <div className="pixel-border bg-card p-3 sm:p-4">
-                  <RecyclePanel
-                    heroes={player.heroes}
-                    universalShards={player.universalShards}
-                    onRecycle={handleRecycle}
-                    onToggleLock={handleToggleLock}
-                  />
-                </div>
-              </motion.div>
-            )}
-          </div>
-        </div>
+        <ForgePage
+          player={player}
+          forgeTab={forgeTab}
+          setForgeTab={setForgeTab}
+          selectedRecipeIdx={selectedRecipeIdx}
+          setSelectedRecipeIdx={setSelectedRecipeIdx}
+          fusionSlots={fusionSlots}
+          lastFusedHero={lastFusedHero}
+          setLastFusedHero={setLastFusedHero}
+          isMerging={isMerging}
+          getAvailableForMerge={getAvailableForMerge}
+          executeFusionFromSlots={executeFusionFromSlots}
+          handleSlotClick={handleSlotClick}
+          handleHeroSelect={handleHeroSelect}
+          handleSlotClear={handleSlotClear}
+          mergeAll={mergeAll}
+          fusionPickerOpen={fusionPickerOpen}
+          setFusionPickerOpen={setFusionPickerOpen}
+          fusionPickerSlot={fusionPickerSlot}
+          setFusionPickerSlot={setFusionPickerSlot}
+          fusionPickerHeroes={fusionPickerHeroes}
+          setFusionPickerHeroes={setFusionPickerHeroes}
+          handleRecycle={handleRecycle}
+          handleToggleLock={handleToggleLock}
+        />
 
         {/* PAGE 5 — Marché */}
         <div className="w-1/6 h-full overflow-y-auto pb-nav md:pl-16">
