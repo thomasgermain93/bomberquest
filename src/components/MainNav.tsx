@@ -8,12 +8,12 @@ interface MainNavProps {
 }
 
 const PAGES = [
-  { icon: Sparkles, label: 'Invoquer' },
-  { icon: Users, label: 'Héros' },
-  { icon: Swords, label: 'Combat' },
-  { icon: Trophy, label: 'Progression' },
-  { icon: Flame, label: 'Forge' },
-  { icon: Store, label: 'Marché' },
+  { icon: Sparkles, label: 'Invoquer', testId: 'tab-summon' },
+  { icon: Users, label: 'Héros', testId: 'tab-heroes' },
+  { icon: Swords, label: 'Combat', testId: 'tab-combat' },
+  { icon: Trophy, label: 'Progression', testId: 'tab-progression' },
+  { icon: Flame, label: 'Forge', testId: 'tab-fusion' },
+  { icon: Store, label: 'Marché', testId: 'tab-marketplace' },
 ];
 
 export function MainNav({ page, onNavigate }: MainNavProps) {
@@ -29,12 +29,13 @@ export function MainNav({ page, onNavigate }: MainNavProps) {
         )}
       >
         <div className="flex items-stretch h-full">
-          {PAGES.map(({ icon: Icon, label }, index) => {
+          {PAGES.map(({ icon: Icon, label, testId }, index) => {
             const isActive = page === index;
             return (
               <button
                 key={index}
                 onClick={() => onNavigate(index)}
+                data-testid={testId}
                 className={cn(
                   'relative flex flex-1 flex-col items-center justify-center gap-0.5 px-1',
                   'transition-colors duration-150',
@@ -65,12 +66,13 @@ export function MainNav({ page, onNavigate }: MainNavProps) {
           'bg-card/95 backdrop-blur border-r border-border',
         )}
       >
-        {PAGES.map(({ icon: Icon, label }, index) => {
+        {PAGES.map(({ icon: Icon, label, testId }, index) => {
           const isActive = page === index;
           return (
             <button
               key={index}
               onClick={() => onNavigate(index)}
+              data-testid={testId}
               title={label}
               className={cn(
                 'relative flex items-center justify-center',
