@@ -14,6 +14,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: '2026-03-22',
     title: 'Mises à jour récentes',
     changes: [
+      { type: 'feature', description: 'fix: marketplace — snapshot héros en fallback RPC (Héros introuvable) (#388)' },
       { type: 'feature', description: '[ARCH] Décomposer Index.tsx (2598 lignes) en composants et hooks spécialisés (#374)' },
       { type: 'feature', description: '[ARCH] Activer TypeScript strict mode progressivement (#376)' },
       { type: 'feature', description: '[ARCH] Décomposer engine.ts (796 lignes) en modules spécialisés (#375)' },
