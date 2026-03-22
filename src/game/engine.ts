@@ -22,10 +22,10 @@ function buildStoryTargets(
   state: Pick<GameState, 'enemies' | 'boss' | 'isStoryMode'>
 ): { position: { x: number; y: number }; hp: number; isBoss?: boolean }[] | undefined {
   if (!state.isStoryMode) return state.enemies;
-  if (state.boss && state.boss.hp > 0) {
+  if (state.boss && (state.boss as any).hp > 0) {
     return [
       ...(state.enemies || []).map(e => ({ ...e, isBoss: false as const })),
-      { ...state.boss, isBoss: true as const },
+      { ...(state.boss as any), isBoss: true as const },
     ];
   }
   return state.enemies;
@@ -39,7 +39,7 @@ const XP_REWARDS = {
 };
 
 
-export function generateMap(width: number, height: number, blockDensity: number, numChests: number): GameMap {
+export function generateMap(width: number, height: number, blockDensity: number, numChests: number, mapIndex?: number): GameMap {
   const tiles: TileType[][] = [];
 
   for (let y = 0; y < height; y++) {
@@ -89,7 +89,16 @@ export function generateMap(width: number, height: number, blockDensity: number,
   }
 
   const chestCount = Math.min(numChests, floorTiles.length);
-  const tiers: ChestTier[] = ['wood', 'wood', 'wood', 'silver', 'silver', 'gold'];
+  let tiers: ChestTier[];
+  if (mapIndex === undefined || mapIndex <= 1) {
+    tiers = ['wood', 'wood', 'wood', 'silver', 'silver', 'gold'];
+  } else if (mapIndex <= 3) {
+    tiers = ['wood', 'silver', 'silver', 'gold', 'gold'];
+  } else if (mapIndex === 4) {
+    tiers = ['silver', 'gold', 'gold', 'crystal'];
+  } else {
+    tiers = ['gold', 'crystal', 'crystal', 'legendary'];
+  }
 
   for (let i = 0; i < chestCount; i++) {
     const pos = floorTiles[i];
@@ -445,9 +454,9 @@ export function tickGame(state: GameState, deltaMs: number): GameState {
   if (!state.isRunning || state.isPaused || state.mapCompleted) return state;
 
   const dt = (deltaMs / 1000) * state.speed;
-  const newState = { ...state };
-  const map = { ...newState.map, tiles: newState.map.tiles.map(row => [...row]), chests: [...newState.map.chests] };
-  const heroes = newState.heroes.map(h => ({ ...h, position: { ...h.position } }));
+  let newState = { ...state };
+  let map = { ...newState.map, tiles: newState.map.tiles.map(row => [...row]), chests: [...newState.map.chests] };
+  let heroes = newState.heroes.map(h => ({ ...h, position: { ...h.position } }));
   // Pré-calculer les clan skills une seule fois par tick (#271)
   const activeClanSkills = getActiveClanSkills(heroes);
   let bombs = [...newState.bombs];
@@ -526,11 +535,14 @@ export function tickGame(state: GameState, deltaMs: number): GameState {
     const chainedBombs = bombs.filter(b =>
       tiles.some(t => t.x === b.position.x && t.y === b.position.y)
     );
+    const baseChainChance = 0.80;
+    const chainChanceBonus = getClanBonus('chain_chance', heroes, activeClanSkills);
+    const chainChance = Math.min(1.0, baseChainChance + chainChanceBonus);
     for (const cb of chainedBombs) {
+      if (Math.random() >= chainChance) continue;
       bombs = bombs.filter(b => b.id !== cb.id);
       const cbTiles = getExplosionTiles(map, cb.position, cb.range);
       explosions.push({ id: genId(), tiles: cbTiles, timer: 0.4, team: cb.team, heroId: cb.heroId, family: cb.family });
-      // TODO #168 chain_chance arcane-circuit : augmenter la probabilité de réaction en chaîne si cb.family === 'arcane-circuit'
     }
 
     // Explosion damage to heroes: only enemy bombs can hurt heroes
