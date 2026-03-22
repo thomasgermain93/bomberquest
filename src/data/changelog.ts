@@ -14,6 +14,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: '2026-03-22',
     title: 'Mises à jour récentes',
     changes: [
+      { type: 'feature', description: '[BUG] ui-qa-radar : data-testid manquants — tab-fusion et tab-heroes non trouvés (#358)' },
       { type: 'feature', description: 'fix: lint cleanup — unused vars, console.log DEV-only, worktrees (#379)' },
       { type: 'feature', description: 'fix: marketplace accessible + bouton fin histoire mobile (#352)' },
       { type: 'feature', description: 'Art Pipeline: skins/sprites pour nouveaux héros (#163)' },
