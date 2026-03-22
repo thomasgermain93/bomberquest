@@ -55,7 +55,7 @@ async function fetchProfileWithRetry(userId: string, retryCount = 0): Promise<Pr
     return await getProfile(userId);
   } catch (err) {
     const error = err as Error & { code?: string };
-    console.error('AUTH_PROFILE_FETCH_ERROR', { code: error.code || 'UNKNOWN', message: error.message });
+    if (import.meta.env.DEV) console.error('AUTH_PROFILE_FETCH_ERROR', { code: error.code || 'UNKNOWN', message: error.message });
     if (retryCount < MAX_RETRIES) {
       await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
       return fetchProfileWithRetry(userId, retryCount + 1);
@@ -96,7 +96,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setProfile(profileData);
     } catch (err) {
       const error = err as Error & { code?: string };
-      console.error('AUTH_PROFILE_INIT_ERROR', { code: error.code || 'UNKNOWN', message: error.message });
+      if (import.meta.env.DEV) console.error('AUTH_PROFILE_INIT_ERROR', { code: error.code || 'UNKNOWN', message: error.message });
     }
   }, []);
 
@@ -131,7 +131,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       })
       .catch((err) => {
-        console.error('AUTH_SESSION_GET_ERROR', { code: 'SESSION_GET_FAILED', message: err.message });
+        if (import.meta.env.DEV) console.error('AUTH_SESSION_GET_ERROR', { code: 'SESSION_GET_FAILED', message: err.message });
         setLoading(false);
       });
 
@@ -207,7 +207,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       if (conflictError) {
-        console.error('PROFILE_CHECK_CONFLICT_ERROR', { code: conflictError.code || 'UNKNOWN', message: conflictError.message });
+        if (import.meta.env.DEV) console.error('PROFILE_CHECK_CONFLICT_ERROR', { code: conflictError.code || 'UNKNOWN', message: conflictError.message });
       } else if (conflictExists) {
         return { error: 'Ce pseudo est déjà utilisé.' };
       }
@@ -222,7 +222,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (error.code === '23505' || error.message.includes('unique') || error.message.includes('duplicate')) {
           return { error: 'Ce pseudo est déjà utilisé par un autre joueur.' };
         }
-        console.error('PROFILE_UPDATE_ERROR', { code: error.code || 'UNKNOWN', message: error.message });
+        if (import.meta.env.DEV) console.error('PROFILE_UPDATE_ERROR', { code: error.code || 'UNKNOWN', message: error.message });
         return { error: 'Erreur technique. Veuillez réessayer plus tard.' };
       }
 
@@ -230,7 +230,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { error: null };
     } catch (err) {
       const error = err as Error & { code?: string };
-      console.error('PROFILE_SET_NAME_ERROR', { code: error.code || 'UNKNOWN', message: error.message });
+      if (import.meta.env.DEV) console.error('PROFILE_SET_NAME_ERROR', { code: error.code || 'UNKNOWN', message: error.message });
       return { error: 'Erreur technique. Veuillez réessayer plus tard.' };
     }
   }, [user?.id]);

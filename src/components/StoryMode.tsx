@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { StoryRegion, StoryStage, StoryProgress } from '@/game/storyTypes';
+import { motion } from 'framer-motion';
+import { StoryStage, StoryProgress } from '@/game/storyTypes';
 import { STORY_REGIONS } from '@/game/storyData';
 import { PlayerData, RARITY_CONFIG } from '@/game/types';
-import { ChevronLeft, ChevronRight, Lock, Star, Swords, Trophy, Coins, Shield, Skull, Crown, Users, Check } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Lock, Swords, Coins, Shield, Skull, Crown, Users, Check } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import HeroCard from '@/components/HeroCard';
 import PixelIcon from '@/components/PixelIcon';

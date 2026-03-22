@@ -42,7 +42,7 @@ export function savePlayerData(data: PlayerData): void {
     localStorage.setItem(SAVE_KEY, JSON.stringify(data));
     localStorage.setItem(SAVE_TS_KEY, String(Date.now()));
   } catch {
-    console.warn('Échec de la sauvegarde');
+    if (import.meta.env.DEV) console.warn('Échec de la sauvegarde');
   }
 }
 
@@ -80,7 +80,7 @@ export function loadPlayerData(): PlayerData {
       return parsed;
     }
   } catch {
-    console.warn('Échec du chargement de la sauvegarde');
+    if (import.meta.env.DEV) console.warn('Échec du chargement de la sauvegarde');
   }
   return getDefaultPlayerData();
 }

@@ -22,7 +22,7 @@
  *   'wip'     = sprite PNG en cours de création par l'artiste
  *   'missing' = héros sans entrée dans HERO_VISUALS (ne doit jamais arriver)
  */
-import { HERO_FAMILIES, Rarity, HERO_VISUALS, HeroFamilyId, getHeroVisualTraits } from '@/game/types';
+import { HERO_FAMILIES, Rarity, getHeroVisualTraits } from '@/game/types';
 import { HERO_POOL } from '@/game/heroPool';
 
 export type AssetStatus = 'missing' | 'wip' | 'ready';

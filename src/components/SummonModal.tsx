@@ -28,7 +28,6 @@ const SummonModal: React.FC<SummonModalProps> = ({ isOpen, onClose, onSummon, co
     setShowExplosion(false);
     setTimeout(() => {
       onSummon(type);
-      const tempBatch = type === 'single' ? [lastSummoned].filter(Boolean) : type === 'x10' ? Array(10).fill(null) : Array(100).fill(null);
       const rarities = ['common', 'rare', 'super-rare', 'epic', 'legend', 'super-legend'];
       const randomRarity = rarities[Math.floor(Math.random() * 3)];
       setCurrentRarity(randomRarity);

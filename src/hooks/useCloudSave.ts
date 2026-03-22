@@ -144,7 +144,7 @@ export function useCloudSave(userId: string | undefined, canWriteCloud: boolean)
         : undefined,
     };
 
-    console.log('CLOUD_LOAD_ROWS', {
+    if (import.meta.env.DEV) console.log('CLOUD_LOAD_ROWS', {
       hasSave: !!saveData,
       heroRows: heroes.length,
       source: heroesResult.data?.length > 0 ? 'player_heroes' : heroes.length > 0 ? 'migration' : 'empty',
