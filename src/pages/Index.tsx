@@ -24,8 +24,8 @@ import { loadPlayerData, savePlayerData, getDefaultPlayerData, saveStoryProgress
 import { getUpgradeCost, upgradeHero, ascendHero, getAscensionCost, countDuplicates, upgradeSkillWithDuplicate } from '@/game/upgradeSystem';
 import { trackCombatVictory, trackLevelUp, trackChestsOpened, trackBossDefeated, claimAchievementReward, AchievementDefinition, ACHIEVEMENTS } from '@/game/achievements';
 import { DailyQuestData, loadDailyQuests, saveDailyQuests, generateDailyQuests, updateQuestProgress, ALL_CLAIMED_BONUS, ALL_CLAIMED_XP_BONUS } from '@/game/questSystem';
-import { StoryProgress, StoryStage, BOSS_LEVEL_BY_TYPE, BossType, EnemyType } from '@/game/storyTypes';
-import { getHeroFamily, getClanAffinityMultiplier, getActiveClanSkills } from '@/game/clanSystem';
+import { StoryProgress, StoryStage, BOSS_LEVEL_BY_TYPE, BossType } from '@/game/storyTypes';
+import { getHeroFamily, getActiveClanSkills } from '@/game/clanSystem';
 import { spawnEnemy, spawnBoss, tickEnemies, tickBoss, damageEnemiesFromExplosion, damageBossFromExplosion, checkEnemyHeroCollision, checkBossHeroCollision } from '@/game/enemyAI';
 import { STORY_REGIONS } from '@/game/storyData';
 import { getExplosionTiles } from '@/game/engine';
@@ -453,22 +453,11 @@ const Index = () => {
             processedExplosionsRef.current.add(exp.id);
             SFX.explosion();
             if (exp.team === 'heroes') {
-              // Trouver le héros ayant posé la bombe pour appliquer son affinité clan (#154)
-              // TODO #154 : affinité précise par ennemi individuel — nécessite refacto damageEnemiesFromExplosion
+              // Trouver le héros ayant posé la bombe pour appliquer son affinité clan par ennemi individuel (#154, #366)
               const bombHero = exp.heroId ? state.heroes.find(h => h.id === exp.heroId) : undefined;
               const heroFamily = bombHero ? getHeroFamily(bombHero) : undefined;
-              // Calculer un multiplicateur d'affinité moyen basé sur les types d'ennemis présents dans l'explosion
-              const hitEnemies = enemies.filter(e => {
-                const ex = Math.round(e.position.x);
-                const ey = Math.round(e.position.y);
-                return e.hp > 0 && exp.tiles.some(t => t.x === ex && t.y === ey);
-              });
-              const affinityMult = hitEnemies.length > 0
-                ? hitEnemies.reduce((sum, e) => sum + getClanAffinityMultiplier(heroFamily, e.type as EnemyType), 0) / hitEnemies.length
-                : 1.0;
               const basePower = Math.max(...state.heroes.map(h => h.stats.pwr), 1);
-              const heroPower = Math.round(basePower * affinityMult);
-              const { enemies: updatedEnemies, kills, totalDamage } = damageEnemiesFromExplosion(enemies, exp.tiles, heroPower, exp.heroId);
+              const { enemies: updatedEnemies, kills, totalDamage } = damageEnemiesFromExplosion(enemies, exp.tiles, basePower, exp.heroId, heroFamily);
               enemies = updatedEnemies;
               enemiesKilled += kills;
               if (kills > 0) {
@@ -491,7 +480,7 @@ const Index = () => {
 
               if (boss && boss.hp > 0) {
                 const prevHp = boss.hp;
-                const bossResult = damageBossFromExplosion(boss, exp.tiles, heroPower + 1);
+                const bossResult = damageBossFromExplosion(boss, exp.tiles, basePower + 1);
                 boss = bossResult.boss;
                 if (boss.hp < prevHp) {
                   SFX.bossHit();
@@ -613,7 +602,7 @@ const Index = () => {
 
   const startTreasureHunt = () => {
     const mapConfig = MAP_CONFIGS[selectedMap];
-    const map = generateMap(mapConfig.width, mapConfig.height, mapConfig.blockDensity, mapConfig.chests);
+    const map = generateMap(mapConfig.width, mapConfig.height, mapConfig.blockDensity, mapConfig.chests, selectedMap);
 
     const spawnPoints = [
       { x: 1, y: 1 }, { x: map.width - 2, y: 1 },
