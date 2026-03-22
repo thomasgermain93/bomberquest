@@ -96,15 +96,18 @@ export function useCreateListing() {
       sellerId,
       heroId,
       price,
+      heroSnapshot,
     }: {
       sellerId: string;
       heroId: string;
       price: number;
+      heroSnapshot?: MarketplaceHeroSnapshot;
     }) => {
       const { data, error } = await supabase.rpc('list_hero_for_sale' as never, {
         p_seller_id: sellerId,
         p_hero_id: heroId,
         p_price: price,
+        p_hero_snapshot: heroSnapshot ?? null,
       } as never);
       if (error) throw error;
       const result = data as { success: boolean; error?: string; listing_id?: string };
