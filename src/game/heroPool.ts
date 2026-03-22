@@ -28,7 +28,7 @@ export const HERO_POOL: HeroTemplate[] = [
   { templateId: 'rex',   name: 'Rex',   icon: 'sword',  family: 'forge-guard' },
   { templateId: 'atlas', name: 'Atlas', icon: 'shield', family: 'forge-guard' },
   { templateId: 'duke',  name: 'Duke',  icon: 'crown',  family: 'forge-guard' },
-  { templateId: 'maxg',  name: 'Max',   icon: 'axe',    family: 'forge-guard' },
+  { templateId: 'max',   name: 'Max',   icon: 'axe',    family: 'forge-guard' },
   { templateId: 'brick', name: 'Brick', icon: 'shield', family: 'forge-guard' },
   // shadow-core (ombre)
   { templateId: 'ash',   name: 'Ash',   icon: 'skull',   family: 'shadow-core' },

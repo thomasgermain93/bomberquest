@@ -445,9 +445,9 @@ export function tickGame(state: GameState, deltaMs: number): GameState {
   if (!state.isRunning || state.isPaused || state.mapCompleted) return state;
 
   const dt = (deltaMs / 1000) * state.speed;
-  let newState = { ...state };
-  let map = { ...newState.map, tiles: newState.map.tiles.map(row => [...row]), chests: [...newState.map.chests] };
-  let heroes = newState.heroes.map(h => ({ ...h, position: { ...h.position } }));
+  const newState = { ...state };
+  const map = { ...newState.map, tiles: newState.map.tiles.map(row => [...row]), chests: [...newState.map.chests] };
+  const heroes = newState.heroes.map(h => ({ ...h, position: { ...h.position } }));
   // Pré-calculer les clan skills une seule fois par tick (#271)
   const activeClanSkills = getActiveClanSkills(heroes);
   let bombs = [...newState.bombs];
