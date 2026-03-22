@@ -127,7 +127,7 @@ const XP_FOR_LEVEL: Record<number, number> = {
 
 /** Skill unlock levels (every 20 levels) */
 const SKILL_UNLOCK_LEVELS: Record<Rarity, number[]> = {
-  common: [20],
+  common: [],
   rare: [20, 40],
   'super-rare': [20, 40, 60],
   epic: [20, 40, 60, 80],
@@ -452,9 +452,8 @@ export function canUpgradeSkill(
   }
 
   const needed = SKILL_UPGRADE_COST[currentLevel] || 1;
-  const heroBaseName = hero.name.split(' #')[0];
   const availableDuplicates = duplicates.filter(
-    d => d.id !== hero.id && d.name.split(' #')[0] === heroBaseName && !d.isLocked
+    d => d.id !== hero.id && d.templateId && d.templateId === hero.templateId && !d.isLocked
   ).length;
 
   if (availableDuplicates < needed) {
@@ -506,10 +505,9 @@ export function upgradeSkillWithDuplicate(
     return { updatedHeroes: heroes, success: false, message: check.reason, removedIds: [] };
   }
 
-  // Trouver les doublons à consommer (même nom de base, non verrouillés)
-  const heroBaseName = hero.name.split(' #')[0];
+  // Trouver les doublons à consommer (même templateId, non verrouillés)
   const duplicatesToConsume = heroes
-    .filter(d => d.id !== heroId && d.name.split(' #')[0] === heroBaseName && !d.isLocked)
+    .filter(d => d.id !== heroId && d.templateId && d.templateId === hero.templateId && !d.isLocked)
     .slice(0, check.duplicatesNeeded);
 
   const removedIds = duplicatesToConsume.map(d => d.id);
