@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Hero, PlayerData } from '@/game/types';
+import { Hero, HeroFamilyId, PlayerData, Rarity } from '@/game/types';
 import { StoryProgress } from '@/game/storyTypes';
 import { DailyQuestData } from '@/game/questSystem';
 import { getDefaultPlayerData } from '@/game/saveSystem';
@@ -10,6 +10,7 @@ type PlayerHeroRow = Database['public']['Tables']['player_heroes']['Row'];
 
 // Colonnes présentes en DB mais absentes du type généré (ajoutées via migration ultérieure)
 interface PlayerHeroRowExtended extends PlayerHeroRow {
+  xp: number | null;
   progression_stats: Json | null;
   is_locked: boolean | null;
   family: string | null;
@@ -40,7 +41,7 @@ function rowToHero(row: PlayerHeroRowExtended): Hero {
   return {
     id: row.id,
     name: row.name,
-    rarity: row.rarity,
+    rarity: row.rarity as Rarity,
     level: Number.isFinite(Number(row.level)) ? Math.max(1, Math.min(Number(row.level), 120)) : 1,
     stars: row.stars,
     xp: Number.isFinite(Number(row.xp)) ? Number(row.xp) : 0,
@@ -60,7 +61,7 @@ function rowToHero(row: PlayerHeroRowExtended): Hero {
     stuckTimer: 0,
     progressionStats: row.progression_stats as unknown as Hero['progressionStats'] ?? { chestsOpened: 0, totalDamageDealt: 0, battlesPlayed: 0, victories: 0, obtainedAt: Date.now() },
     isLocked: row.is_locked ?? false,
-    family: row.family ?? undefined,
+    family: (row.family as HeroFamilyId) ?? undefined,
   };
 }
 
@@ -134,13 +135,13 @@ export function useCloudSave(userId: string | undefined, canWriteCloud: boolean)
 
     const playerData: PlayerData = {
       ...getDefaultPlayerData(),  // valeurs par défaut pour tout champ manquant
-      ...(statsOnly as PlayerData),
+      ...(statsOnly as unknown as PlayerData),
       heroes,
       // tutorialStep: undefined = tutoriel terminé. Comme JSON.stringify omet les valeurs undefined,
       // un joueur ayant terminé le tutoriel n'aura pas cette clé dans statsOnly.
       // Sans cette ligne, getDefaultPlayerData() imposerait 0 et relancerait le tutoriel.
       tutorialStep: 'tutorialStep' in (statsOnly ?? {})
-        ? (statsOnly as PlayerData).tutorialStep
+        ? (statsOnly as unknown as PlayerData).tutorialStep
         : undefined,
     };
 

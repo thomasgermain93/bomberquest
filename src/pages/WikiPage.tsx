@@ -36,7 +36,7 @@ const WikiPage: React.FC = () => {
   // Related articles
   const relatedArticles = (article.relatedSlugs || [])
     .map((s) => WIKI_ARTICLES.find((a) => a.slug === s))
-    .filter(Boolean);
+    .filter((a): a is NonNullable<typeof a> => a !== undefined);
 
   return (
     <div className="min-h-screen bg-background">
