@@ -17,7 +17,7 @@ interface CreateListingModalProps {
   open: boolean;
   heroes: Hero[];
   isLoading: boolean;
-  onConfirm: (heroId: string, price: number) => void;
+  onConfirm: (heroId: string, price: number, hero: Hero) => void;
   onClose: () => void;
 }
 
@@ -38,8 +38,8 @@ export default function CreateListingModal({
   const selectedHero = sellableHeroes.find((h) => h.id === selectedHeroId) ?? null;
 
   const handleConfirm = () => {
-    if (!selectedHeroId || price < 100) return;
-    onConfirm(selectedHeroId, price);
+    if (!selectedHeroId || !selectedHero || price < 100) return;
+    onConfirm(selectedHeroId, price, selectedHero);
     setSelectedHeroId(null);
     setPrice(1000);
   };

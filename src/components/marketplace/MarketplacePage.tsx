@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Store, Tag, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { PlayerData, Rarity, RARITY_CONFIG } from '@/game/types';
+import { PlayerData, Rarity, RARITY_CONFIG, Hero } from '@/game/types';
 import {
   useListings,
   useMyListings,
@@ -64,10 +64,24 @@ export default function MarketplacePage({ player, user, onTransactionComplete }:
     }
   };
 
-  const handleCreateListing = async (heroId: string, price: number) => {
+  const handleCreateListing = async (heroId: string, price: number, hero: Hero) => {
     if (!user) return;
+    const heroSnapshot = {
+      name: hero.name,
+      rarity: hero.rarity,
+      level: hero.level,
+      stars: hero.stars,
+      xp: hero.xp,
+      stats: hero.stats as Record<string, number>,
+      skills: hero.skills,
+      currentStamina: hero.currentStamina,
+      maxStamina: hero.maxStamina,
+      houseLevel: hero.houseLevel,
+      icon: hero.icon,
+      family: hero.family,
+    };
     try {
-      await createListing.mutateAsync({ sellerId: user.id, heroId, price });
+      await createListing.mutateAsync({ sellerId: user.id, heroId, price, heroSnapshot });
       toast.success('Héros mis en vente avec succès !');
       setCreateOpen(false);
       onTransactionComplete();
