@@ -9,52 +9,38 @@ import { useSummonLogic } from '@/hooks/useSummonLogic';
 import { useFusionLogic, MERGE_RECIPES } from '@/hooks/useFusionLogic';
 import GameGrid from '@/components/GameGrid';
 import CombatHeroPanel from '@/components/CombatHeroPanel';
-import HeroCard from '@/components/HeroCard';
-import HeroCollectionStats from '@/components/HeroCollectionStats';
 import SummonModal from '@/components/SummonModal';
-import HeroUpgradeModal from '@/components/HeroUpgradeModal';
-import HeroDetailInline from '@/components/HeroDetailInline';
 import HeroPickerModal from '@/components/HeroPickerModal';
-import HeroPickerBottomSheet from '@/components/HeroPickerBottomSheet';
 import StoryMode from '@/components/StoryMode';
-import { GameState, Hero, MAP_CONFIGS, PlayerData, RARITY_CONFIG, RARITY_ORDER, sortByRarity, Rarity, HERO_NAMES, HERO_FAMILIES, HERO_FAMILY_MAP, HeroFamilyId, MAX_LEVEL_BY_RARITY } from '@/game/types';
+import { GameState, Hero, MAP_CONFIGS, PlayerData, RARITY_CONFIG, RARITY_ORDER, Rarity, HERO_NAMES, HeroFamilyId } from '@/game/types';
 import { generateMap, tickGame } from '@/game/engine';
 // summonHero and generateHero are now used inside useSummonLogic / useFusionLogic
 import { loadPlayerData, savePlayerData, getDefaultPlayerData, saveStoryProgress, loadStoryProgress } from '@/game/saveSystem';
 import { getUpgradeCost, upgradeHero, ascendHero, getAscensionCost, countDuplicates, upgradeSkillWithDuplicate } from '@/game/upgradeSystem';
-import { trackCombatVictory, trackLevelUp, trackChestsOpened, trackBossDefeated, claimAchievementReward, AchievementDefinition, ACHIEVEMENTS } from '@/game/achievements';
+import { trackCombatVictory, trackLevelUp, trackChestsOpened, trackBossDefeated, AchievementDefinition } from '@/game/achievements';
 import { DailyQuestData, loadDailyQuests, saveDailyQuests, generateDailyQuests, updateQuestProgress, ALL_CLAIMED_BONUS, ALL_CLAIMED_XP_BONUS } from '@/game/questSystem';
-import { Boss, StoryProgress, StoryStage, BOSS_LEVEL_BY_TYPE, BossType } from '@/game/storyTypes';
+import { StoryProgress, StoryStage, BOSS_LEVEL_BY_TYPE, BossType } from '@/game/storyTypes';
 import { getHeroFamily, getActiveClanSkills } from '@/game/clanSystem';
 import { spawnEnemy, spawnBoss, tickEnemies, tickBoss, damageEnemiesFromExplosion, damageBossFromExplosion, checkEnemyHeroCollision, checkBossHeroCollision } from '@/game/enemyAI';
 import { STORY_REGIONS } from '@/game/storyData';
-import { getExplosionTiles } from '@/game/engine';
-import { generateShardRewards, applyShardRewards, ShardReward, generateUniversalShardReward } from '@/game/shardRewardSystem';
+import { ShardReward, generateUniversalShardReward } from '@/game/shardRewardSystem';
 import { recycleHeroes } from '@/game/recycleSystem';
-import RecyclePanel from '@/components/RecyclePanel';
 import MarketplacePage from '@/components/marketplace/MarketplacePage';
 import SummonPage from '@/pages/game/SummonPage';
 import HeroesPage from '@/pages/game/HeroesPage';
 import ProgressionPage from '@/pages/game/ProgressionPage';
 import ForgePage from '@/pages/game/ForgePage';
-import DailyQuests from '@/components/DailyQuests';
-import Achievements from '@/components/Achievements';
-import PlayerStats from '@/components/PlayerStats';
-import XpBar from '@/components/XpBar';
 import PixelIcon from '@/components/PixelIcon';
 import HeroAvatar from '@/components/HeroAvatar';
 import SlimHeader from '@/components/SlimHeader';
 import MainNav from '@/components/MainNav';
 import TeamPresets, { TeamPreset } from '@/components/TeamPresets';
 import PixelLoader from '@/components/PixelLoader';
-import EmptyState from '@/components/EmptyState';
-import { Users, Sparkles, Swords, Map as MapIcon, Trophy, Coins, Play, Pause, DoorOpen, Check, Scroll, FastForward, BookOpen, Shield, Skull, Lock as LockIcon, Hammer, ArrowDown, Gem, Filter, ChevronDown, Zap, Volume2, VolumeX, X } from 'lucide-react';
-import PityTracker from '@/components/PityTracker';
+import { Users, Sparkles, Swords, Map as MapIcon, Trophy, Coins, Play, Pause, DoorOpen, Check, Scroll, FastForward, Shield, Skull, Lock as LockIcon, Filter, X } from 'lucide-react';
 import VictoryOverlay from '@/components/VictoryOverlay';
 import DefeatOverlay from '@/components/DefeatOverlay';
 import TutorialOverlay from '@/components/TutorialOverlay';
 import { useTutorial } from '@/hooks/useTutorial';
-import DailyResetTimer from '@/components/DailyResetTimer';
 import { SFX, isMuted, setMuted } from '@/game/sfx';
 import { toast } from 'sonner';
 
@@ -811,7 +797,7 @@ const Index = () => {
     }
 
     // Spawn boss in center
-    let boss: Boss | null = null;
+    let boss = null;
     if (stage.boss) {
       const centerX = Math.floor(map.width / 2);
       const centerY = Math.floor(map.height / 2);
@@ -949,16 +935,15 @@ const Index = () => {
 
       if (stateSnapshot.mapCompleted) {
         if (stageSnapshot.boss) {
-          const stageSnapshotBoss = stageSnapshot.boss; // narrow type for closure
-          const bossLevel = BOSS_LEVEL_BY_TYPE[stageSnapshotBoss as BossType];
-
+          const bossLevel = BOSS_LEVEL_BY_TYPE[stageSnapshot.boss as BossType];
+          
           setStoryProgress(prev => ({
             ...prev,
             completedStages: prev.completedStages.includes(stageSnapshot.id)
               ? prev.completedStages
               : [...prev.completedStages, stageSnapshot.id],
-            bossesDefeated: !prev.bossesDefeated.includes(stageSnapshotBoss)
-              ? [...prev.bossesDefeated, stageSnapshotBoss]
+            bossesDefeated: !prev.bossesDefeated.includes(stageSnapshot.boss)
+              ? [...prev.bossesDefeated, stageSnapshot.boss]
               : prev.bossesDefeated,
             highestStage: Math.max(prev.highestStage, stageSnapshot.stageNumber),
             bossFirstClearRewards: !prev.bossFirstClearRewards.includes(bossLevel)
@@ -1134,47 +1119,6 @@ const Index = () => {
     return getActiveClanSkills(activeHeroes);
   }, [player.heroes, selectedHeroes]);
 
-  // Codex rarity grouping constants
-  const CODEX_RARITY_ORDER: Rarity[] = ['super-legend', 'legend', 'epic', 'super-rare', 'rare', 'common'];
-  const CODEX_RARITY_LABEL: Record<Rarity, string> = {
-    'super-legend': 'Super Légende',
-    'legend': 'Légende',
-    'epic': 'Épique',
-    'super-rare': 'Super Rare',
-    'rare': 'Rare',
-    'common': 'Commun',
-  };
-  const CODEX_RARITY_COLOR: Record<Rarity, string> = {
-    'super-legend': 'text-purple-400',
-    'legend': 'text-yellow-400',
-    'epic': 'text-orange-400',
-    'super-rare': 'text-blue-400',
-    'rare': 'text-green-400',
-    'common': 'text-muted-foreground',
-  };
-
-  const heroRarityOrder: Rarity[] = ['common', 'rare', 'super-rare', 'epic', 'legend', 'super-legend'];
-  const codexByName = HERO_NAMES.map((heroName) => {
-    const normalized = heroName.toLowerCase();
-    const ownedVariants = player.heroes.filter((hero) => hero.name.split(' ')[0].toLowerCase() === normalized);
-    const unlocked = ownedVariants.length > 0;
-    const highestOwned = ownedVariants.sort(
-      (a, b) => heroRarityOrder.indexOf(b.rarity) - heroRarityOrder.indexOf(a.rarity)
-    )[0];
-
-    return {
-      key: normalized,
-      displayName: heroName,
-      unlocked,
-      ownedCount: ownedVariants.length,
-      rarity: highestOwned?.rarity ?? 'common',
-      heroPreviewId: normalized,
-    };
-  });
-
-  const codexUnlockedCount = codexByName.filter((entry) => entry.unlocked).length;
-  const codexTotalCount = codexByName.length;
-
   const handleClaimQuest = (questId: string) => {
     const quest = dailyQuests.quests.find(q => q.id === questId);
     if (!quest || !quest.completed || quest.claimed) return;
@@ -1275,7 +1219,6 @@ const Index = () => {
           showSummonFlash={showSummonFlash}
           SHARD_COSTS={SHARD_COSTS}
         />
-
 
         {/* PAGE 1 — Héros */}
         <HeroesPage
@@ -1770,6 +1713,7 @@ const Index = () => {
 
           </div>
         </div>
+
         {/* PAGE 3 — Progression */}
         <ProgressionPage
           player={player}
@@ -1807,6 +1751,7 @@ const Index = () => {
           handleRecycle={handleRecycle}
           handleToggleLock={handleToggleLock}
         />
+
         {/* PAGE 5 — Marché */}
         <div className="w-1/6 h-full overflow-y-auto pb-nav md:pl-16">
           <MarketplacePage
@@ -1841,7 +1786,7 @@ const Index = () => {
       )}
       {gameState && (
         <DefeatOverlay
-          show={(gameState.isStoryMode ?? false) && (gameState.storyFailed ?? false)}
+          show={gameState.isStoryMode && gameState.storyFailed}
           heroesKO={gameState.heroes.filter(h => h.currentStamina === 0)}
           onRetry={() => {
             if (currentStoryStage) startStoryStage(currentStoryStage);
