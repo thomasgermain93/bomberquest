@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import PixelIcon from '@/components/PixelIcon';
 import HeroAvatar from '@/components/HeroAvatar';
-import { Hero, RARITY_CONFIG, MAX_LEVEL_BY_RARITY } from '@/game/types';
-import { getStatsAtLevel, getAscensionCost, MAX_STARS, countDuplicates, getXpProgress, getMaxLevel, getUnlockedSkills } from '@/game/upgradeSystem';
+import { Hero, RARITY_CONFIG } from '@/game/types';
+import { getStatsAtLevel, getAscensionCost, MAX_STARS, countDuplicates, getXpProgress, getMaxLevel } from '@/game/upgradeSystem';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Swords, Zap, Target, Bomb, Battery, Clover, Shield, Star, ArrowUp, Coins, TrendingUp, Lock, Sparkles, Users, User, Calendar, Trophy, Gem, ArrowLeft } from 'lucide-react';
@@ -25,7 +25,7 @@ const STAT_META: Record<string, { icon: React.ReactNode; label: string }> = {
   lck: { icon: <Clover size={14} />, label: 'Chance' },
 };
 
-const HeroDetailInline: React.FC<HeroDetailInlineProps> = ({ hero, coins, allHeroes, onBack, onUpgrade, onAscend }) => {
+const HeroDetailInline: React.FC<HeroDetailInlineProps> = ({ hero, coins, allHeroes, onBack, onUpgrade: _onUpgrade, onAscend }) => {
   const [activeTab, setActiveTab] = useState<'upgrade' | 'identity'>('upgrade');
 
   const config = RARITY_CONFIG[hero.rarity];

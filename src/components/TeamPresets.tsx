@@ -71,7 +71,7 @@ const TeamPresets: React.FC<TeamPresetsProps> = ({
     setLocalPresets(updated);
   };
 
-  const handleSaveSlot = (slotIndex: number) => {
+  const handleSaveSlot = (_slotIndex: number) => {
     onSave(localPresets);
     setEditingSlot(null);
     toast('Équipe sauvegardée !');

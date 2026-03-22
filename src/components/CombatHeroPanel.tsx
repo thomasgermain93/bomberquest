@@ -6,14 +6,6 @@ interface CombatHeroPanelProps {
   deployedHeroes: Hero[];
 }
 
-const RARITY_BORDER: Record<string, string> = {
-  common: 'border-gray-400',
-  rare: 'border-blue-400',
-  'super-rare': 'border-purple-500',
-  epic: 'border-orange-500',
-  legend: 'border-yellow-400',
-  'super-legend': 'border-red-500',
-};
 
 export default function CombatHeroPanel({ deployedHeroes }: CombatHeroPanelProps) {
   if (!deployedHeroes || deployedHeroes.length === 0) return null;

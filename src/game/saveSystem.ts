@@ -1,4 +1,4 @@
-import { PlayerData, Rarity } from './types';
+import { PlayerData, Rarity, Hero } from './types';
 import { generateHero } from './summoning';
 import { StoryProgress } from './storyTypes';
 import { getDefaultAchievementState } from './achievements';
@@ -42,7 +42,7 @@ export function savePlayerData(data: PlayerData): void {
     localStorage.setItem(SAVE_KEY, JSON.stringify(data));
     localStorage.setItem(SAVE_TS_KEY, String(Date.now()));
   } catch {
-    console.warn('Échec de la sauvegarde');
+    if (import.meta.env.DEV) console.warn('Échec de la sauvegarde');
   }
 }
 
@@ -68,7 +68,7 @@ export function loadPlayerData(): PlayerData {
       }
       parsed.xp = Number.isFinite(Number(parsed?.xp)) ? Number(parsed.xp) : 0;
       if (Array.isArray(parsed.heroes)) {
-        parsed.heroes = parsed.heroes.map((hero: any) => ({
+        parsed.heroes = parsed.heroes.map((hero: Partial<Hero>) => ({
           ...hero,
           xp: Number.isFinite(Number(hero?.xp)) ? Number(hero.xp) : 0,
           level: Number.isFinite(Number(hero?.level)) ? Math.max(1, Math.min(Number(hero.level), 120)) : 1,
@@ -80,7 +80,7 @@ export function loadPlayerData(): PlayerData {
       return parsed;
     }
   } catch {
-    console.warn('Échec du chargement de la sauvegarde');
+    if (import.meta.env.DEV) console.warn('Échec du chargement de la sauvegarde');
   }
   return getDefaultPlayerData();
 }

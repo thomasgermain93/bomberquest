@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import PixelIcon from '@/components/PixelIcon';
 import { Hero, RARITY_CONFIG } from '@/game/types';
-import { MAX_STARS, getMaxLevel } from '@/game/upgradeSystem';
+import { MAX_STARS } from '@/game/upgradeSystem';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Shield, Star } from 'lucide-react';
 import HeroDetailContent from '@/components/HeroDetailContent';
@@ -21,7 +21,6 @@ const HeroUpgradeModal: React.FC<HeroUpgradeModalProps> = ({ hero, coins, allHer
   if (!hero) return null;
 
   const config = RARITY_CONFIG[hero.rarity];
-  const maxLevel = getMaxLevel(hero.rarity);
 
   return (
     <Dialog open={!!hero} onOpenChange={() => onClose()}>

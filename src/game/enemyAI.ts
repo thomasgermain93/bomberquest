@@ -1,6 +1,5 @@
-import { GameMap, Bomb } from './types';
+import { GameMap } from './types';
 import { Enemy, Boss, ENEMY_CONFIG, BOSS_CONFIG, BossType, EnemyType } from './storyTypes';
-import { getExplosionTiles, findPath } from './engine';
 
 let enemyIdCounter = 1000;
 const genEnemyId = () => `enemy_${enemyIdCounter++}`;

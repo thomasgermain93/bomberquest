@@ -1,9 +1,9 @@
 import React from 'react';
 import HeroAvatar from '@/components/HeroAvatar';
 import { Hero, RARITY_CONFIG } from '@/game/types';
-import { getStatsAtLevel, getAscensionCost, MAX_STARS, countDuplicates, getXpProgress, getMaxLevel, getUnlockedSkills } from '@/game/upgradeSystem';
+import { getStatsAtLevel, getAscensionCost, MAX_STARS, countDuplicates, getXpProgress, getMaxLevel } from '@/game/upgradeSystem';
 import { Progress } from '@/components/ui/progress';
-import { Swords, Zap, Target, Bomb, Battery, Clover, Shield, Star, ArrowUp, Coins, TrendingUp, Lock, Sparkles, Users, User, Calendar, Trophy, Gem } from 'lucide-react';
+import { Swords, Zap, Target, Bomb, Battery, Clover, ArrowUp, Coins, TrendingUp, Lock, Sparkles, Users, User, Calendar, Trophy, Gem } from 'lucide-react';
 
 export const STAT_META: Record<string, { icon: React.ReactNode; label: string }> = {
   pwr: { icon: <Swords size={14} />, label: 'Puissance' },
@@ -29,7 +29,7 @@ const HeroDetailContent: React.FC<HeroDetailContentProps> = ({
   coins,
   allHeroes,
   activeTab,
-  onUpgrade,
+  onUpgrade: _onUpgrade,
   onAscend,
   variant = 'modal',
 }) => {

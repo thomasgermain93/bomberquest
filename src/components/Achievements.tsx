@@ -124,7 +124,7 @@ const AchievementItem: React.FC<AchievementItemProps> = ({ achievement, progress
   );
 };
 
-const Achievements: React.FC<AchievementsProps> = ({ achievements, onClose, onClaimReward, onClaimAll }) => {
+const Achievements: React.FC<AchievementsProps> = ({ achievements, onClaimReward, onClaimAll }) => {
   const [activeTab, setActiveTab] = useState('all');
 
   const { unlocked, inProgress, locked, claimableIds } = useMemo(() => ({
