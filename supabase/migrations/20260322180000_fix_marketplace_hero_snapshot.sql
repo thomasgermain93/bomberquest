@@ -1,5 +1,9 @@
 -- Fix list_hero_for_sale : accepte un hero_snapshot en fallback
 -- si le héros n'est pas encore dans player_heroes (sync cloud non effectué)
+
+-- Supprimer l'ancienne signature (3 params) pour éviter l'ambiguïté
+DROP FUNCTION IF EXISTS list_hero_for_sale(UUID, TEXT, BIGINT);
+
 CREATE OR REPLACE FUNCTION list_hero_for_sale(
   p_seller_id     UUID,
   p_hero_id       TEXT,
@@ -78,4 +82,4 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION list_hero_for_sale TO authenticated;
+GRANT EXECUTE ON FUNCTION list_hero_for_sale(UUID, TEXT, BIGINT, JSONB) TO authenticated;
