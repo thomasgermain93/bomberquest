@@ -29,7 +29,6 @@ import MarketplacePage from '@/components/marketplace/MarketplacePage';
 import SummonPage from '@/pages/game/SummonPage';
 import HeroesPage from '@/pages/game/HeroesPage';
 import ProgressionPage from '@/pages/game/ProgressionPage';
-import ForgePage from '@/pages/game/ForgePage';
 import PixelIcon from '@/components/PixelIcon';
 import HeroAvatar from '@/components/HeroAvatar';
 import SlimHeader from '@/components/SlimHeader';
@@ -77,7 +76,7 @@ const Index = () => {
   const navigate = useNavigate();
   const [screen, setScreen] = useState<Screen>('hub');
   const [page, setPage] = useState(2); // page Combat par défaut
-  const [heroesTab, setHeroesTab] = useState<'collection' | 'codex' | 'equipes'>('collection');
+  const [heroesTab, setHeroesTab] = useState<'collection' | 'codex' | 'equipes' | 'forge'>('collection');
   const [combatTab, setCombatTab] = useState<'treasure' | 'story'>('treasure');
   const [forgeTab, setForgeTab] = useState<'fusion' | 'recycle'>('fusion');
   const [fusionPickerOpen, setFusionPickerOpen] = useState(false);
@@ -1146,7 +1145,7 @@ const Index = () => {
 
   const isInBattle = screen === 'treasure-hunt' || screen === 'story-battle';
 
-  const PAGE_TITLES = ['Invoquer', 'Héros', 'Combat', 'Social', 'Forge', 'Marché'];
+  const PAGE_TITLES = ['Invoquer', 'Héros', 'Combat', 'Progression', 'Marché'];
 
   // Touch swipe handlers
   const touchStartX = useRef(0);
@@ -1161,7 +1160,7 @@ const Index = () => {
     const deltaX = e.changedTouches[0].clientX - touchStartX.current;
     const deltaY = e.changedTouches[0].clientY - touchStartY.current;
     if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 60) {
-      if (deltaX < 0) setPage(p => Math.min(5, p + 1));
+      if (deltaX < 0) setPage(p => Math.min(4, p + 1));
       if (deltaX > 0) setPage(p => Math.max(0, p - 1));
     }
   }, []);
@@ -1195,11 +1194,11 @@ const Index = () => {
         onToggleMute={toggleMute}
       />
 
-      {/* Container swipeable 6 pages */}
+      {/* Container swipeable 5 pages */}
       <motion.div
         className="flex flex-1 min-h-0 pt-12"
-        style={{ width: '600%' }}
-        animate={{ x: `${-page * (100 / 6)}%` }}
+        style={{ width: '500%' }}
+        animate={{ x: `${-page * (100 / 5)}%` }}
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
@@ -1241,10 +1240,32 @@ const Index = () => {
           setSelectedHeroes={setSelectedHeroes}
           handleUpgrade={handleUpgrade}
           handleAscend={handleAscend}
+          forgeTab={forgeTab}
+          setForgeTab={setForgeTab}
+          selectedRecipeIdx={selectedRecipeIdx}
+          setSelectedRecipeIdx={setSelectedRecipeIdx}
+          fusionSlots={fusionSlots}
+          lastFusedHero={lastFusedHero}
+          setLastFusedHero={setLastFusedHero}
+          isMerging={isMerging}
+          getAvailableForMerge={getAvailableForMerge}
+          executeFusionFromSlots={executeFusionFromSlots}
+          handleSlotClick={handleSlotClick}
+          handleHeroSelect={handleHeroSelect}
+          handleSlotClear={handleSlotClear}
+          mergeAll={mergeAll}
+          fusionPickerOpen={fusionPickerOpen}
+          setFusionPickerOpen={setFusionPickerOpen}
+          fusionPickerSlot={fusionPickerSlot}
+          setFusionPickerSlot={setFusionPickerSlot}
+          fusionPickerHeroes={fusionPickerHeroes}
+          setFusionPickerHeroes={setFusionPickerHeroes}
+          handleRecycle={handleRecycle}
+          handleToggleLock={handleToggleLock}
         />
 
         {/* PAGE 2 — Combat */}
-        <div className={`w-1/6 h-full overflow-y-auto pb-nav ${isInBattle ? '' : 'md:pl-16'}`}>
+        <div className={`w-1/5 h-full overflow-y-auto pb-nav ${isInBattle ? '' : 'md:pl-16'}`}>
           <div className="p-4 max-w-6xl mx-auto">
             {/* Tabs Chasse au Trésor / Mode Histoire */}
             {!isInBattle && (
@@ -1725,35 +1746,8 @@ const Index = () => {
           handleClaimDailyBonus={handleClaimDailyBonus}
         />
 
-        {/* PAGE 4 — Forge */}
-        <ForgePage
-          player={player}
-          forgeTab={forgeTab}
-          setForgeTab={setForgeTab}
-          selectedRecipeIdx={selectedRecipeIdx}
-          setSelectedRecipeIdx={setSelectedRecipeIdx}
-          fusionSlots={fusionSlots}
-          lastFusedHero={lastFusedHero}
-          setLastFusedHero={setLastFusedHero}
-          isMerging={isMerging}
-          getAvailableForMerge={getAvailableForMerge}
-          executeFusionFromSlots={executeFusionFromSlots}
-          handleSlotClick={handleSlotClick}
-          handleHeroSelect={handleHeroSelect}
-          handleSlotClear={handleSlotClear}
-          mergeAll={mergeAll}
-          fusionPickerOpen={fusionPickerOpen}
-          setFusionPickerOpen={setFusionPickerOpen}
-          fusionPickerSlot={fusionPickerSlot}
-          setFusionPickerSlot={setFusionPickerSlot}
-          fusionPickerHeroes={fusionPickerHeroes}
-          setFusionPickerHeroes={setFusionPickerHeroes}
-          handleRecycle={handleRecycle}
-          handleToggleLock={handleToggleLock}
-        />
-
-        {/* PAGE 5 — Marché */}
-        <div className="w-1/6 h-full overflow-y-auto pb-nav md:pl-16">
+        {/* PAGE 4 — Marché */}
+        <div className="w-1/5 h-full overflow-y-auto pb-nav md:pl-16">
           <MarketplacePage
             player={player}
             user={user}

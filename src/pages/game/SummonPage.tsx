@@ -62,7 +62,7 @@ const SummonPage: React.FC<SummonPageProps> = ({
   showSummonFlash,
 }) => {
   return (
-    <div className="w-1/6 h-full overflow-y-auto pb-nav md:pl-16">
+    <div className="w-1/5 h-full overflow-y-auto pb-nav md:pl-16">
       <div className="p-4 max-w-2xl mx-auto space-y-4">
         {/* Tabs BC / Shards */}
         <div className="flex gap-2">

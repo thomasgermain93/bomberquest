@@ -10,9 +10,10 @@ import HeroDetailInline from '@/components/HeroDetailInline';
 import HeroAvatar from '@/components/HeroAvatar';
 import EmptyState from '@/components/EmptyState';
 import TeamPresets, { TeamPreset } from '@/components/TeamPresets';
+import ForgePage from '@/pages/game/ForgePage';
 import { toast } from 'sonner';
 
-type HeroesTab = 'collection' | 'codex' | 'equipes';
+type HeroesTab = 'collection' | 'codex' | 'equipes' | 'forge';
 type HeroLevelFilter = 'all' | '1-20' | '21-40' | '41-60' | '61+';
 type HeroSortBy = 'rarity' | 'level';
 
@@ -70,6 +71,29 @@ interface HeroesPageProps {
   setSelectedHeroes: React.Dispatch<React.SetStateAction<Set<string>>>;
   handleUpgrade: (heroId: string) => void;
   handleAscend: (heroId: string) => void;
+  // Forge props
+  forgeTab: 'fusion' | 'recycle';
+  setForgeTab: (tab: 'fusion' | 'recycle') => void;
+  selectedRecipeIdx: number;
+  setSelectedRecipeIdx: (idx: number) => void;
+  fusionSlots: (Hero | null)[];
+  lastFusedHero: Hero | null;
+  setLastFusedHero: (hero: Hero | null) => void;
+  isMerging: boolean;
+  getAvailableForMerge: (rarity: string) => { maxed: number };
+  executeFusionFromSlots: () => void;
+  handleSlotClick: (slotIdx: number) => void;
+  handleHeroSelect: (hero: Hero) => void;
+  handleSlotClear: (slotIdx: number) => void;
+  mergeAll: () => void;
+  fusionPickerOpen: boolean;
+  setFusionPickerOpen: (open: boolean) => void;
+  fusionPickerSlot: number;
+  setFusionPickerSlot: (slot: number) => void;
+  fusionPickerHeroes: Hero[];
+  setFusionPickerHeroes: (heroes: Hero[]) => void;
+  handleRecycle: (ids: string[], shardsGained: number) => void;
+  handleToggleLock: (heroId: string) => void;
 }
 
 const heroRarityOrder: Rarity[] = ['common', 'rare', 'super-rare', 'epic', 'legend', 'super-legend'];
@@ -94,6 +118,28 @@ const HeroesPage: React.FC<HeroesPageProps> = ({
   setSelectedHeroes,
   handleUpgrade,
   handleAscend,
+  forgeTab,
+  setForgeTab,
+  selectedRecipeIdx,
+  setSelectedRecipeIdx,
+  fusionSlots,
+  lastFusedHero,
+  setLastFusedHero,
+  isMerging,
+  getAvailableForMerge,
+  executeFusionFromSlots,
+  handleSlotClick,
+  handleHeroSelect,
+  handleSlotClear,
+  mergeAll,
+  fusionPickerOpen,
+  setFusionPickerOpen,
+  fusionPickerSlot,
+  setFusionPickerSlot,
+  fusionPickerHeroes,
+  setFusionPickerHeroes,
+  handleRecycle,
+  handleToggleLock,
 }) => {
   const codexByName = HERO_NAMES.map((heroName) => {
     const normalized = heroName.toLowerCase();
@@ -117,7 +163,7 @@ const HeroesPage: React.FC<HeroesPageProps> = ({
   const codexTotalCount = codexByName.length;
 
   return (
-    <div className="w-1/6 h-full overflow-y-auto pb-nav md:pl-16">
+    <div className="w-1/5 h-full overflow-y-auto pb-nav md:pl-16">
       <div className="p-4 max-w-6xl mx-auto">
         {upgradeHeroId && upgradeHeroData ? (
           /* VUE DÉTAIL HÉROS — pleine page */
@@ -133,12 +179,12 @@ const HeroesPage: React.FC<HeroesPageProps> = ({
           <>
             {/* Sub-tabs */}
             <div className="flex gap-1 mb-4 sticky top-0 bg-background/95 backdrop-blur py-2 z-10">
-              {(['collection', 'codex', 'equipes'] as const).map(tab => (
+              {(['collection', 'codex', 'equipes', 'forge'] as const).map(tab => (
                 <button key={tab} onClick={() => setHeroesTab(tab)}
                   className={`flex-1 font-pixel text-[8px] py-2 rounded transition-colors ${
                     heroesTab === tab ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'
                   }`}>
-                  {tab === 'collection' ? 'Collection' : tab === 'codex' ? 'Codex' : 'Équipes'}
+                  {tab === 'collection' ? 'Collection' : tab === 'codex' ? 'Codex' : tab === 'equipes' ? 'Équipes' : 'Forge'}
                 </button>
               ))}
             </div>
@@ -409,6 +455,35 @@ const HeroesPage: React.FC<HeroesPageProps> = ({
                   setSelectedHeroes(new Set(heroIds));
                   toast('Équipe chargée !', { description: 'Prête pour le combat.' });
                 }}
+              />
+            )}
+
+            {/* Tab Forge */}
+            {heroesTab === 'forge' && (
+              <ForgePage
+                player={player}
+                forgeTab={forgeTab}
+                setForgeTab={setForgeTab}
+                selectedRecipeIdx={selectedRecipeIdx}
+                setSelectedRecipeIdx={setSelectedRecipeIdx}
+                fusionSlots={fusionSlots}
+                lastFusedHero={lastFusedHero}
+                setLastFusedHero={setLastFusedHero}
+                isMerging={isMerging}
+                getAvailableForMerge={getAvailableForMerge}
+                executeFusionFromSlots={executeFusionFromSlots}
+                handleSlotClick={handleSlotClick}
+                handleHeroSelect={handleHeroSelect}
+                handleSlotClear={handleSlotClear}
+                mergeAll={mergeAll}
+                fusionPickerOpen={fusionPickerOpen}
+                setFusionPickerOpen={setFusionPickerOpen}
+                fusionPickerSlot={fusionPickerSlot}
+                setFusionPickerSlot={setFusionPickerSlot}
+                fusionPickerHeroes={fusionPickerHeroes}
+                setFusionPickerHeroes={setFusionPickerHeroes}
+                handleRecycle={handleRecycle}
+                handleToggleLock={handleToggleLock}
               />
             )}
           </>

@@ -66,8 +66,7 @@ const ForgePage: React.FC<ForgePageProps> = ({
   handleToggleLock,
 }) => {
   return (
-    <div className="w-1/6 h-full overflow-y-auto pb-nav md:pl-16">
-      <div className="p-4 max-w-2xl mx-auto">
+    <div className="p-4 max-w-2xl mx-auto">
         {/* Sub-tabs Fusion | Recyclage */}
         <div className="flex gap-1 mb-4 sticky top-0 bg-background/95 backdrop-blur py-2 z-10">
           {(['fusion', 'recycle'] as const).map(tab => (
@@ -296,7 +295,6 @@ const ForgePage: React.FC<ForgePageProps> = ({
           </motion.div>
         )}
       </div>
-    </div>
   );
 };
 

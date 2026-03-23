@@ -1,9 +1,9 @@
 import { motion } from 'framer-motion';
-import { Sparkles, Users, Swords, Trophy, Flame, Store } from 'lucide-react';
+import { Sparkles, Users, Swords, Trophy, Store } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface MainNavProps {
-  page: number; // 0-5
+  page: number; // 0-4
   onNavigate: (page: number) => void;
 }
 
@@ -12,7 +12,6 @@ const PAGES = [
   { icon: Users, label: 'Héros', testId: 'tab-heroes' },
   { icon: Swords, label: 'Combat', testId: 'tab-combat' },
   { icon: Trophy, label: 'Progression', testId: 'tab-progression' },
-  { icon: Flame, label: 'Forge', testId: 'tab-fusion' },
   { icon: Store, label: 'Marché', testId: 'tab-marketplace' },
 ];
 
